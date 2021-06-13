@@ -13,7 +13,7 @@ largeFont = pygame.font.SysFont('Ubuntu Mono', 200)
 pygame.display.set_caption('Tower Defense')
 
 Map = maps.PLAINS
-rounds = [
+waves = [
     '000',
     '11100000',
     '11111222000',
@@ -222,13 +222,16 @@ class Enemy:
             return
 
         if self.line[0][0] > self.line[1][0]:
-            self.x -= 1
+            self.x = max(self.x - 1, self.line[1][0])
         elif self.line[0][0] < self.line[1][0]:
-            self.x += 1
+            self.x = min(self.x + 1, self.line[1][0])
         elif self.line[0][1] > self.line[1][1]:
-            self.y -= 1
+            self.y = max(self.y - 1, self.line[1][1])
+        elif self.line[0][1] < self.line[1][1]:
+            self.y = min(self.y + 1, self.line[1][1])
         else:
-            self.y += 1
+            return
+
         self.totalMovement += 1
 
     def update(self):
@@ -239,21 +242,35 @@ class Enemy:
                 if projectile.freeze:
                     projectiles.remove(projectile)
                     self.freezeTimer = 99 if projectile.parent.upgrades[2] else 50
-                    return
                 else:
                     projectiles.remove(projectile)
                     if projectile.explosiveRadius > 0:
                         projectile.explode(self)
                     self.kill()
-                    return
 
         if [self.x, self.y] == self.line[1]:
-            try:
-                self.line[0] = self.line[1]
-                self.line[1] = Map.path[Map.path.index(self.line[1]) + 1]
-            except IndexError:
-                HP -= damages[self.tier]
-                self.kill(False)
+            self.line[0] = self.line[1]
+            self.line[1] = Map.path[Map.path.index(self.line[1]) + 1]
+
+        check = Map.checkReachEnd.split(' ')
+        if check[0] == 'x':
+            if check[1] == '<':
+                if self.x >= int(check[2]):
+                    return
+            elif check[1] == '>':
+                if self.x <= int(check[2]):
+                    return
+        elif check[0] == 'y':
+            if check[1] == '<':
+                if self.y >= int(check[2]):
+                    return
+            elif check[1] == '>':
+                if self.y <= int(check[2]):
+                    return
+
+        HP -= damages[self.tier]
+        self.kill(False)
+        updateEnemies()
 
     def draw(self):
         pygame.draw.circle(screen, colors[self.tier], (self.x, self.y), 10)
@@ -347,18 +364,13 @@ def draw():
 
 
 def move():
-    global enemies
-
-    nextIter = []
-
     for enemy in enemies:
         for i in range(speed[enemy.tier]):
             enemy.update()
             enemy.move()
             enemy.update()
 
-        if not enemy.delete:
-            nextIter.append(enemy)
+    updateEnemies()
 
     for tower in towers:
         tower.update()
@@ -367,24 +379,23 @@ def move():
     for projectile in projectiles:
         projectile.move()
 
-    enemies = nextIter
-
 
 def spawn(wave: int):
-    global win
+    for char in waves[wave]:
+        enemies.append(Enemy(int(char), Map.path[0], [Map.path[0], Map.path[1]]))
 
-    try:
-        for char in rounds[wave]:
-            enemies.append(Enemy(int(char), Map.path[0], [Map.path[0], Map.path[1]]))
+        for n in range(18):
+            main()
 
-            for n in range(18):
-                main()
-    except IndexError:
-        win = True
+
+def updateEnemies():
+    global enemies
+
+    enemies = [enemy for enemy in enemies if not enemy.delete]
 
 
 def main():
-    global coins, selected, clickOffset, wave, nextWave, placing
+    global coins, selected, clickOffset, wave, nextWave, placing, win
 
     if len(enemies) == 0:
         if nextWave <= 0:
@@ -394,11 +405,13 @@ def main():
             if nextWave == 300:
                 coins += 100
                 wave += 1
+                if wave == len(waves):
+                    win = True
             nextWave -= 0.5 if pygame.key.get_pressed()[pygame.K_SPACE] else 1
 
     mx, my = pygame.mouse.get_pos()
 
-    clock.tick(120 if pygame.key.get_pressed()[pygame.K_SPACE] else 60)
+    clock.tick(300 if pygame.key.get_pressed()[pygame.K_SPACE] else 60)
     draw()
     move()
 
@@ -427,23 +440,19 @@ def main():
                         selected = None
 
                 if 810 <= mx <= 910:
-                    if 40 <= my <= 70:
-                        if coins >= 50:
-                            coins -= 50
-                            placing = 'Turret'
-                            selected = None
+                    prices = {
+                        'Turret': 50,
+                        'Ice Tower': 30,
+                        'Bomb Tower': 100
+                    }
 
-                    elif 120 <= my <= 150:
-                        if coins >= 30:
-                            coins -= 30
-                            placing = 'Ice Tower'
+                    n = 0
+                    for tower, cost in prices.items():
+                        if 40 + n * 80 <= my <= 70 + n * 80 and coins >= cost:
+                            coins -= cost
+                            placing = tower
                             selected = None
-
-                    elif 200 <= my <= 230:
-                        if coins >= 100:
-                            coins -= 100
-                            placing = 'Bomb Tower'
-                            selected = None
+                        n += 1
 
                 elif 295 <= mx <= 595 and 485 <= my <= 570:
                     n = (my - 485) // 30
