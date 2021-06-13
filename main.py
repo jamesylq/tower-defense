@@ -1,7 +1,6 @@
 import pygame
 import maps
 import math
-import random
 
 
 screen = pygame.display.set_mode((1000, 600))
@@ -12,7 +11,8 @@ font = pygame.font.SysFont('Ubuntu Mono', 20)
 largeFont = pygame.font.SysFont('Ubuntu Mono', 200)
 pygame.display.set_caption('Tower Defense')
 
-Map = maps.DESERT
+Maps = [maps.PLAINS, maps.POND, maps.DESERT]
+Map = None
 waves = [
     '000',
     '11100000',
@@ -23,12 +23,13 @@ waves = [
     '444444444444444444444',
     '5555555555555555555554444444444'
 ]
-colors = [0xFF0000, 0x0000DD, 0x00FF00, 0xFFFF00, 0xFF1493, 0x444444]
+colors = [(255, 0, 0), (0, 0, 221), (0, 255, 0), (255, 255, 0), (255, 20, 147), (68, 68, 68)]
 damages = [1, 2, 3, 4, 5, 6]
 speed = [1, 1, 2, 3, 5, 7]
 
 enemies = []
 projectiles = []
+piercingProjectiles = []
 towers = []
 HP = 100
 coins = 50
@@ -38,6 +39,7 @@ placing = ''
 nextWave = 299
 wave = 0
 win = False
+MapSelect = True
 
 
 class Towers:
@@ -79,7 +81,7 @@ class Turret(Towers):
     def GUIUpgrades(self):
         for n in range(3):
             if self.upgrades[n]:
-                pygame.draw.rect(screen, 0xffffbf, (295, 485 + 30 * n, 300, 30))
+                pygame.draw.rect(screen, (255, 255, 191), (295, 485 + 30 * n, 300, 30))
             pygame.draw.rect(screen, (128, 128, 128), (295, 485 + 30 * n, 300, 30), 5)
         screen.blit(font.render('Upgrades:', True, 0), (200, 475))
         screen.blit(font.render('Longer Range      [$30]', True, (32, 32, 32)), (300, 485))
@@ -118,7 +120,7 @@ class IceTower(Towers):
     def GUIUpgrades(self):
         for n in range(3):
             if self.upgrades[n]:
-                pygame.draw.rect(screen, 0xffffbf, (295, 485 + 30 * n, 300, 30))
+                pygame.draw.rect(screen, (255, 255, 191), (295, 485 + 30 * n, 300, 30))
             pygame.draw.rect(screen, (128, 128, 128), (295, 485 + 30 * n, 300, 30), 5)
         screen.blit(font.render('Upgrades:', True, 0), (200, 475))
         screen.blit(font.render('Longer Range      [$20]', True, (32, 32, 32)), (300, 485))
@@ -126,9 +128,47 @@ class IceTower(Towers):
         screen.blit(font.render('Longer Freeze     [$35]', True, (32, 32, 32)), (300, 545))
 
 
+class Bowler(Towers):
+    name = 'Bowler'
+    color = (32, 32, 32)
+    req = 3
+    price = 120
+
+    def __init__(self, x: int, y: int):
+        super().__init__(x, y)
+        self.range = 0
+
+    def draw(self):
+        pygame.draw.circle(screen, self.color, (self.x, self.y), 15)
+
+    def attack(self):
+        if self.timer >= (100 if self.upgrades[1] else 150):
+            try:
+                for direction in ['left', 'right', 'up', 'down']:
+                    piercingProjectiles.append(PiercingProjectile(self, self.x, self.y, 10 if self.upgrades[2] else 3, direction))
+                self.timer = 0
+            except AttributeError:
+                pass
+        else:
+            self.timer += 1
+
+    def update(self):
+        pass
+
+    def GUIUpgrades(self):
+        for n in range(3):
+            if self.upgrades[n]:
+                pygame.draw.rect(screen, (255, 255, 191), (295, 485 + 30 * n, 300, 30))
+            pygame.draw.rect(screen, (128, 128, 128), (295, 485 + 30 * n, 300, 30), 5)
+        screen.blit(font.render('Upgrades:', True, 0), (200, 475))
+        screen.blit(font.render('Double Damage     [$30]', True, (32, 32, 32)), (300, 485))
+        screen.blit(font.render('More Rocks        [$20]', True, (32, 32, 32)), (300, 515))
+        screen.blit(font.render('10 Enemies Pierce [$50]', True, (32, 32, 32)), (300, 545))
+
+
 class BombTower(Towers):
     name = 'Bomb Tower'
-    color = 0
+    color = (0, 0, 0)
     req = 4
     price = 100
 
@@ -157,7 +197,7 @@ class BombTower(Towers):
     def GUIUpgrades(self):
         for n in range(3):
             if self.upgrades[n]:
-                pygame.draw.rect(screen, 0xffffbf, (295, 485 + 30 * n, 300, 30))
+                pygame.draw.rect(screen, (255, 255, 191), (295, 485 + 30 * n, 300, 30))
             pygame.draw.rect(screen, (128, 128, 128), (295, 485 + 30 * n, 300, 30), 5)
         screen.blit(font.render('Upgrades:', True, 0), (200, 475))
         screen.blit(font.render('Longer Range      [$30]', True, (32, 32, 32)), (300, 485))
@@ -216,7 +256,7 @@ class Wizard(Towers):
     def GUIUpgrades(self):
         for n in range(3):
             if self.upgrades[n]:
-                pygame.draw.rect(screen, 0xffffbf, (295, 485 + 30 * n, 300, 30))
+                pygame.draw.rect(screen, (255, 255, 191), (295, 485 + 30 * n, 300, 30))
             pygame.draw.rect(screen, (128, 128, 128), (295, 485 + 30 * n, 300, 30), 5)
         screen.blit(font.render('Upgrades:', True, 0), (200, 475))
         screen.blit(font.render('Longer Range      [$50]', True, (32, 32, 32)), (300, 485))
@@ -236,11 +276,11 @@ class Projectile:
         self.explosiveRadius = explosiveRadius
         self.freeze = freeze
         if self.explosiveRadius > 0:
-            self.color = 0
+            self.color = (0, 0, 0)
         elif self.freeze:
-            self.color = 0x0000BB
+            self.color = (0, 0, 187)
         else:
-            self.color = 0xBBBBBB
+            self.color = (187, 187, 187)
 
     def move(self):
         if self.dx is None:
@@ -263,6 +303,9 @@ class Projectile:
             self.x -= self.dx
             self.y -= self.dy
 
+        if self.x < 0 or self.x > 800 or self.y < 0 or self.y > 450:
+            projectiles.remove(self)
+
     def draw(self):
         pygame.draw.circle(screen, self.color, (self.x, self.y), 3)
 
@@ -275,32 +318,76 @@ class Projectile:
                 enemy.kill()
 
 
+class PiercingProjectile:
+    def __init__(self, parent: Towers, x: int, y: int, pierceLimit: int, direction: str):
+        self.parent = parent
+        self.x = x
+        self.y = y
+        self.pierce = pierceLimit
+        self.direction = direction
+        self.ignore = []
+
+    def move(self):
+        if self.direction == 'left':
+            self.x -= 1
+        elif self.direction == 'right':
+            self.x += 1
+        elif self.direction == 'up':
+            self.y -= 1
+        elif self.direction == 'down':
+            self.y += 1
+
+        if self.x < 0 or self.x > 800 or self.y < 0 or self.y > 450:
+            piercingProjectiles.remove(self)
+
+    def draw(self):
+        pygame.draw.circle(screen, (16, 16, 16), (self.x, self.y), 5)
+
+
 class Enemy:
-    def __init__(self, tier: int, spawn: [int, int], line: [[int, int], [int, int]]):
+    def __init__(self, tier: int, spawn: [int, int], lineIndex: int):
         self.tier = tier
         self.x, self.y = spawn
-        self.line = line
+        self.lineIndex = lineIndex
         self.delete = False
         self.totalMovement = 0
         self.freezeTimer = 0
 
     def move(self):
+        global HP
+
         if self.freezeTimer > 0:
             self.freezeTimer -= 1
-            return
-
-        if self.line[0][0] > self.line[1][0]:
-            self.x = max(self.x - 1, self.line[1][0])
-        elif self.line[0][0] < self.line[1][0]:
-            self.x = min(self.x + 1, self.line[1][0])
-        elif self.line[0][1] > self.line[1][1]:
-            self.y = max(self.y - 1, self.line[1][1])
-        elif self.line[0][1] < self.line[1][1]:
-            self.y = min(self.y + 1, self.line[1][1])
         else:
-            return
+            if len(Map.path) - 1 == self.lineIndex:
+                self.kill(False)
+                HP -= damages[self.tier]
+                updateEnemies()
+            else:
+                current = Map.path[self.lineIndex]
+                new = Map.path[self.lineIndex + 1]
 
-        self.totalMovement += 1
+                if current[0] < new[0]:
+                    self.x += 1
+                    if self.x >= new[0]:
+                        self.lineIndex += 1
+                elif current[0] > new[0]:
+                    self.x -= 1
+                    if self.x <= new[0]:
+                        self.lineIndex += 1
+                elif current[1] < new[1]:
+                    self.y += 1
+                    if self.y >= new[1]:
+                        self.lineIndex += 1
+                elif current[1] > new[1]:
+                    self.y -= 1
+                    if self.y <= new[1]:
+                        self.lineIndex += 1
+                else:
+                    self.kill(False)
+                    updateEnemies()
+
+                self.totalMovement += 1
 
     def update(self):
         global HP
@@ -316,14 +403,17 @@ class Enemy:
                         projectile.explode(self)
                     self.kill()
 
-        if [self.x, self.y] == self.line[1]:
-            try:
-                self.line[0] = self.line[1]
-                self.line[1] = Map.path[Map.path.index(self.line[1]) + 1]
-            except IndexError:
-                self.kill(False)
-                HP -= damages[self.tier]
-                updateEnemies()
+        for projectile in piercingProjectiles:
+            if abs(self.x - projectile.x) ** 2 + abs(self.y - projectile.y) ** 2 < 100:
+                if self not in projectile.ignore:
+                    new = self.kill()
+                    if projectile.parent.upgrades[0] and new is not None:
+                        new = new.kill()
+                    projectile.ignore.append(new)
+                    if projectile.pierce == 1:
+                        piercingProjectiles.remove(projectile)
+                    else:
+                        projectile.pierce -= 1
 
     def draw(self):
         pygame.draw.circle(screen, colors[self.tier], (self.x, self.y), 10)
@@ -337,7 +427,8 @@ class Enemy:
         else:
             coins += 1
             if spawnNew:
-                enemies.append(Enemy(self.tier - 1, (self.x, self.y), self.line))
+                enemies.append(Enemy(self.tier - 1, (self.x, self.y), self.lineIndex))
+                return enemies[-1]
 
 
 def getTarget(x: int, y: int, radius: int, ignore: [Enemy] = None) -> Enemy:
@@ -365,7 +456,7 @@ def draw():
     for i in range(len(Map.path) - 1):
         pygame.draw.line(screen, Map.pathColor, Map.path[i], Map.path[i + 1], 10)
 
-    pygame.draw.rect(screen, 0xAAAAAA, (0, 450, 1000, 150))
+    pygame.draw.rect(screen, (170, 170, 170), (0, 450, 1000, 150))
 
     screen.blit(font.render(f'Health: {HP} HP', True, 0), (10, 545))
     screen.blit(font.render(f'Coins: {coins}', True, 0), (10, 570))
@@ -389,16 +480,19 @@ def draw():
         for projectile in projectiles:
             projectile.draw()
 
-        pygame.draw.rect(screen, 0xDDDDDD, (800, 0, 200, 450))
+        for projectile in piercingProjectiles:
+            projectile.draw()
+
+        pygame.draw.rect(screen, (221, 221, 221), (800, 0, 200, 450))
 
         n = 0
         for towerType in Towers.__subclasses__():
             if wave + 1 >= towerType.req:
                 screen.blit(font.render(f'{towerType.name} (${towerType.price})', True, 0), (810, 10 + 80 * n))
-                pygame.draw.rect(screen, 0xBBBBBB, (945, 30 + 80 * n, 42, 42))
+                pygame.draw.rect(screen, (187, 187, 187), (945, 30 + 80 * n, 42, 42))
                 pygame.draw.circle(screen, towerType.color, (966, 51 + 80 * n), 15)
                 pygame.draw.line(screen, 0, (800, 80 + 80 * n), (1000, 80 + 80 * n), 3)
-                pygame.draw.rect(screen, 0x888888, (810, 40 + 80 * n, 100, 30))
+                pygame.draw.rect(screen, (136, 136, 136), (810, 40 + 80 * n, 100, 30))
                 screen.blit(font.render('Buy New', True, 0), (820, 42 + 80 * n))
             n += 1
 
@@ -437,10 +531,13 @@ def move():
     for projectile in projectiles:
         projectile.move()
 
+    for projectile in piercingProjectiles:
+        projectile.move()
+
 
 def spawn(wave: int):
     for char in waves[wave]:
-        enemies.append(Enemy(int(char), Map.path[0], [Map.path[0], Map.path[1]]))
+        enemies.append(Enemy(int(char), Map.path[0], 0))
 
         for n in range(18):
             main()
@@ -497,6 +594,7 @@ def main():
                     prices = {
                         'Turret': 50,
                         'Ice Tower': 30,
+                        'Bowler': 120,
                         'Bomb Tower': 100,
                         'Wizard': 250
                     }
@@ -513,6 +611,7 @@ def main():
                     upgrades = {
                         Turret: [30, 20, 75],
                         IceTower: [20, 15, 35],
+                        Bowler: [30, 20, 50],
                         BombTower: [30, 20, 75],
                         Wizard: [50, 75, 100]
                     }
@@ -526,11 +625,34 @@ def main():
 
 
 while True:
-    if not win:
-        main()
-    else:
-        if pygame.event.get(pygame.QUIT):
-            quit()
+    if MapSelect:
+        screen.fill((68, 68, 68))
 
-        clock.tick(60)
-        draw()
+        for n in range(len(Maps)):
+            pygame.draw.rect(screen, Maps[n].backgroundColor, (10, 40 * n + 10, 980, 30))
+            pygame.draw.rect(screen, (0, 0, 0), (10, 40 * n + 10, 980, 30), 3)
+            screen.blit(font.render(Maps[n].name.upper(), True, Maps[n].pathColor), (20, 12 + n * 40))
+
+        pygame.display.update()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                quit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                mx, my = pygame.mouse.get_pos()
+
+                if event.button == 1:
+                    if 10 <= mx <= 980:
+                        for n in range(len(Maps)):
+                            if 40 * n + 10 < my <= 40 * n + 40:
+                                Map = Maps[n]
+                                MapSelect = False
+    else:
+        if not win:
+            main()
+        else:
+            if pygame.event.get(pygame.QUIT):
+                quit()
+
+            clock.tick(60)
+            draw()
