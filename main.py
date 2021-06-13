@@ -9,6 +9,7 @@ pygame.init()
 pygame.font.init()
 clock = pygame.time.Clock()
 font = pygame.font.SysFont('Ubuntu Mono', 20)
+largeFont = pygame.font.SysFont('Ubuntu Mono', 200)
 pygame.display.set_caption('Tower Defense')
 
 Map = maps.PLAINS
@@ -297,7 +298,9 @@ def draw():
     for tower in towers:
         tower.draw()
 
-    if not win:
+    if win:
+        screen.blit(largeFont.render('You win!', True, (255, 255, 0)), (100, 150))
+    else:
         if selected is not None:
             original = pygame.transform.scale(pygame.image.load('Resources/Range.png'), (selected.range * 2, selected.range * 2))
             modified = original.copy()
@@ -350,6 +353,7 @@ def move():
 
     for enemy in enemies:
         for i in range(speed[enemy.tier]):
+            enemy.update()
             enemy.move()
             enemy.update()
 
