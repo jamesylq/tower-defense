@@ -12,7 +12,7 @@ font = pygame.font.SysFont('Ubuntu Mono', 20)
 largeFont = pygame.font.SysFont('Ubuntu Mono', 200)
 pygame.display.set_caption('Tower Defense')
 
-Map = maps.PLAINS
+Map = maps.DESERT
 waves = [
     '000',
     '11100000',
@@ -20,11 +20,12 @@ waves = [
     '1111100022222333',
     '333333333333333333333',
     '22222222222222222222222223333333333333333333333333',
-    '444444444444444444444'
+    '444444444444444444444',
+    '5555555555555555555554444444444'
 ]
-colors = [0xFF0000, 0x0000DD, 0x00FF00, 0xFFFF00, 0xFF1493]
-damages = [1, 2, 3, 4, 5]
-speed = [1, 1, 2, 3, 5]
+colors = [0xFF0000, 0x0000DD, 0x00FF00, 0xFFFF00, 0xFF1493, 0x444444]
+damages = [1, 2, 3, 4, 5, 6]
+speed = [1, 1, 2, 3, 5, 7]
 
 enemies = []
 projectiles = []
@@ -40,8 +41,7 @@ win = False
 
 
 class Towers:
-    def __init__(self, name: str, x: int, y: int):
-        self.name = name
+    def __init__(self, x: int, y: int):
         self.x = x
         self.y = y
         self.timer = 0
@@ -49,10 +49,13 @@ class Towers:
 
 
 class Turret(Towers):
+    name = 'Turret'
     color = (128, 128, 128)
+    req = 1
+    price = 50
 
     def __init__(self, x: int, y: int):
-        super().__init__('Turret', x, y)
+        super().__init__(x, y)
         self.range = 100
 
     def draw(self):
@@ -61,10 +64,10 @@ class Turret(Towers):
     def attack(self):
         if self.timer >= (25 if self.upgrades[1] else 50):
             try:
-                tx, ty = getTarget(self.x, self.y, self.range)
-                projectiles.append(Projectile(self, self.x, self.y, tx, ty, explosiveRadius=30 if self.upgrades[2] else 0))
+                closest = getTarget(self.x, self.y, self.range)
+                projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=30 if self.upgrades[2] else 0))
                 self.timer = 0
-            except TypeError:
+            except AttributeError:
                 pass
         else:
             self.timer += 1
@@ -85,10 +88,13 @@ class Turret(Towers):
 
 
 class IceTower(Towers):
+    name = 'Ice Tower'
     color = (32, 32, 200)
+    req = 2
+    price = 30
 
     def __init__(self, x: int, y: int):
-        super().__init__('Ice Tower', x, y)
+        super().__init__(x, y)
         self.range = 125
 
     def draw(self):
@@ -97,10 +103,10 @@ class IceTower(Towers):
     def attack(self):
         if self.timer >= (100 if self.upgrades[1] else 200):
             try:
-                tx, ty = getTarget(self.x, self.y, self.range)
-                projectiles.append(Projectile(self, self.x, self.y, tx, ty, freeze=True))
+                closest = getTarget(self.x, self.y, self.range)
+                projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, freeze=True))
                 self.timer = 0
-            except TypeError:
+            except AttributeError:
                 pass
         else:
             self.timer += 1
@@ -121,10 +127,13 @@ class IceTower(Towers):
 
 
 class BombTower(Towers):
+    name = 'Bomb Tower'
     color = 0
+    req = 4
+    price = 100
 
     def __init__(self, x: int, y: int):
-        super().__init__('Bomb Tower', x, y)
+        super().__init__(x, y)
         self.range = 50
 
     def draw(self):
@@ -133,10 +142,10 @@ class BombTower(Towers):
     def attack(self):
         if self.timer >= (125 if self.upgrades[1] else 250):
             try:
-                tx, ty = getTarget(self.x, self.y, self.range)
-                projectiles.append(Projectile(self, self.x, self.y, tx, ty, explosiveRadius=50))
+                closest = getTarget(self.x, self.y, self.range)
+                projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=50))
                 self.timer = 0
-            except TypeError:
+            except AttributeError:
                 pass
         else:
             self.timer += 1
@@ -154,6 +163,65 @@ class BombTower(Towers):
         screen.blit(font.render('Longer Range      [$30]', True, (32, 32, 32)), (300, 485))
         screen.blit(font.render('More Bombs        [$20]', True, (32, 32, 32)), (300, 515))
         screen.blit(font.render('Bigger Explosions [$75]', True, (32, 32, 32)), (300, 545))
+
+
+class Wizard(Towers):
+    name = 'Wizard'
+    color = (255, 255, 0)
+    req = 6
+    price = 250
+
+    def __init__(self, x: int, y: int):
+        super().__init__(x, y)
+        self.range = 125
+        self.lightning = [0, None, None, None]
+        self.lightningTimer = 0
+
+    def draw(self):
+        pygame.draw.circle(screen, self.color, (self.x, self.y), 15)
+
+    def attack(self):
+        if self.timer >= (80 if self.upgrades[2] else 160):
+            try:
+                closest = getTarget(self.x, self.y, self.range)
+                projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=60 if self.upgrades[2] else 30))
+                self.timer = 0
+            except AttributeError:
+                pass
+        else:
+            self.timer += 1
+
+        if self.lightningTimer >= 500:
+            self.lightningTimer = 0
+            self.lightning = [50, getTarget(self.x, self.y, 1000)]
+            if type(self.lightning[1]) is Enemy:
+                self.lightning.append(getTarget(self.lightning[1].x, self.lightning[1].y, 1000, [self.lightning[1]]))
+                if type(self.lightning[2]) is Enemy:
+                    self.lightning.append(getTarget(self.lightning[2].x, self.lightning[2].y, 1000, [self.lightning[1], self.lightning[2]]))
+
+            for n in range(3):
+                try:
+                    self.lightning[n + 1].kill()
+                except (AttributeError, IndexError):
+                    if n == 0:
+                        self.lightningTimer = 50
+                    return
+        elif self.upgrades[1]:
+            self.lightningTimer += 1
+
+    def update(self):
+        if self.upgrades[0]:
+            self.range = 200
+
+    def GUIUpgrades(self):
+        for n in range(3):
+            if self.upgrades[n]:
+                pygame.draw.rect(screen, 0xffffbf, (295, 485 + 30 * n, 300, 30))
+            pygame.draw.rect(screen, (128, 128, 128), (295, 485 + 30 * n, 300, 30), 5)
+        screen.blit(font.render('Upgrades:', True, 0), (200, 475))
+        screen.blit(font.render('Longer Range      [$50]', True, (32, 32, 32)), (300, 485))
+        screen.blit(font.render('Lightning Zap     [$75]', True, (32, 32, 32)), (300, 515))
+        screen.blit(font.render('Big Blast Radius  [$100]', True, (32, 32, 32)), (300, 545))
 
 
 class Projectile:
@@ -249,28 +317,13 @@ class Enemy:
                     self.kill()
 
         if [self.x, self.y] == self.line[1]:
-            self.line[0] = self.line[1]
-            self.line[1] = Map.path[Map.path.index(self.line[1]) + 1]
-
-        check = Map.checkReachEnd.split(' ')
-        if check[0] == 'x':
-            if check[1] == '<':
-                if self.x >= int(check[2]):
-                    return
-            elif check[1] == '>':
-                if self.x <= int(check[2]):
-                    return
-        elif check[0] == 'y':
-            if check[1] == '<':
-                if self.y >= int(check[2]):
-                    return
-            elif check[1] == '>':
-                if self.y <= int(check[2]):
-                    return
-
-        HP -= damages[self.tier]
-        self.kill(False)
-        updateEnemies()
+            try:
+                self.line[0] = self.line[1]
+                self.line[1] = Map.path[Map.path.index(self.line[1]) + 1]
+            except IndexError:
+                self.kill(False)
+                HP -= damages[self.tier]
+                updateEnemies()
 
     def draw(self):
         pygame.draw.circle(screen, colors[self.tier], (self.x, self.y), 10)
@@ -287,15 +340,21 @@ class Enemy:
                 enemies.append(Enemy(self.tier - 1, (self.x, self.y), self.line))
 
 
-def getTarget(x: int, y: int, radius: int) -> [int, int]:
+def getTarget(x: int, y: int, radius: int, ignore: [Enemy] = None) -> Enemy:
     currMaxEnemy, currMaxValue = None, 0
+    if ignore is None:
+        ignore = []
+
     for enemy in enemies:
+        if enemy in ignore:
+            continue
+
         if abs(enemy.x - x) ** 2 + abs(enemy.y - y) ** 2 <= radius ** 2:
             if currMaxValue < enemy.totalMovement:
                 currMaxEnemy = enemy
                 currMaxValue = enemy.totalMovement
     try:
-        return [currMaxEnemy.x, currMaxEnemy.y]
+        return currMaxEnemy
     except AttributeError:
         return None
 
@@ -316,7 +375,7 @@ def draw():
         tower.draw()
 
     if win:
-        screen.blit(largeFont.render('You win!', True, (255, 255, 0)), (100, 150))
+        screen.blit(largeFont.render('You win!', True, 0), (100, 150))
     else:
         if selected is not None:
             original = pygame.transform.scale(pygame.image.load('Resources/Range.png'), (selected.range * 2, selected.range * 2))
@@ -332,27 +391,26 @@ def draw():
 
         pygame.draw.rect(screen, 0xDDDDDD, (800, 0, 200, 450))
 
-        screen.blit(font.render('Turret ($50)', True, 0), (810, 10))
-        pygame.draw.rect(screen, 0xBBBBBB, (945, 30, 42, 42))
-        pygame.draw.circle(screen, Turret.color, (966, 51), 15)
-        pygame.draw.line(screen, 0, (800, 80), (1000, 80), 3)
-        pygame.draw.rect(screen, 0x888888, (810, 40, 100, 30))
-        screen.blit(font.render('Buy New', True, 0), (820, 42))
+        n = 0
+        for towerType in Towers.__subclasses__():
+            if wave + 1 >= towerType.req:
+                screen.blit(font.render(f'{towerType.name} (${towerType.price})', True, 0), (810, 10 + 80 * n))
+                pygame.draw.rect(screen, 0xBBBBBB, (945, 30 + 80 * n, 42, 42))
+                pygame.draw.circle(screen, towerType.color, (966, 51 + 80 * n), 15)
+                pygame.draw.line(screen, 0, (800, 80 + 80 * n), (1000, 80 + 80 * n), 3)
+                pygame.draw.rect(screen, 0x888888, (810, 40 + 80 * n, 100, 30))
+                screen.blit(font.render('Buy New', True, 0), (820, 42 + 80 * n))
+            n += 1
 
-        if wave >= 1:
-            screen.blit(font.render('Ice Tower ($30)', True, 0), (810, 90))
-            pygame.draw.rect(screen, 0xBBBBBB, (945, 110, 42, 42))
-            pygame.draw.circle(screen, IceTower.color, (966, 131), 15)
-            pygame.draw.line(screen, 0, (800, 160), (1000, 160), 3)
-            pygame.draw.rect(screen, 0x888888, (810, 120, 100, 30))
-            screen.blit(font.render('Buy New', True, 0), (820, 122))
-        if wave >= 3:
-            screen.blit(font.render('Bomb Tower ($100)', True, 0), (810, 170))
-            pygame.draw.rect(screen, 0xBBBBBB, (945, 190, 42, 42))
-            pygame.draw.circle(screen, BombTower.color, (966, 211), 15)
-            pygame.draw.line(screen, 0, (800, 240), (1000, 240), 3)
-            pygame.draw.rect(screen, 0x888888, (810, 200, 100, 30))
-            screen.blit(font.render('Buy New', True, 0), (820, 202))
+        for wizard in [tower for tower in towers if type(tower) is Wizard]:
+            if wizard.lightning[0] > 0:
+                wizard.lightning[0] -= 1
+                try:
+                    pygame.draw.line(screen, (191, 0, 255), [wizard.x, wizard.y], [wizard.lightning[1].x, wizard.lightning[1].y], 3)
+                    pygame.draw.line(screen, (191, 0, 255), [wizard.lightning[1].x, wizard.lightning[1].y], [wizard.lightning[2].x, wizard.lightning[2].y], 3)
+                    pygame.draw.line(screen, (191, 0, 255), [wizard.lightning[2].x, wizard.lightning[2].y], [wizard.lightning[3].x, wizard.lightning[3].y], 3)
+                except AttributeError:
+                    pass
 
         if issubclass(type(selected), Towers):
             selected.GUIUpgrades()
@@ -422,28 +480,25 @@ def main():
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 if mx <= 800 and my <= 450:
-                    if placing == 'Turret':
-                        placing = ''
-                        towers.append(Turret(mx, my))
-                    elif placing == 'Ice Tower':
-                        placing = ''
-                        towers.append(IceTower(mx, my))
-                    elif placing == 'Bomb Tower':
-                        placing = ''
-                        towers.append(BombTower(mx, my))
-                    else:
-                        for tower in towers:
-                            if abs(tower.x - mx) ** 2 + abs(tower.y - my) ** 2 <= 225:
-                                selected = tower
-                                clickOffset = [mx - tower.x, my - tower.y]
-                                return
-                        selected = None
+                    for towerType in Towers.__subclasses__():
+                        if towerType.name == placing:
+                            placing = ''
+                            towers.append(towerType(mx, my))
+                            return
+
+                    for tower in towers:
+                        if abs(tower.x - mx) ** 2 + abs(tower.y - my) ** 2 <= 225:
+                            selected = tower
+                            clickOffset = [mx - tower.x, my - tower.y]
+                            return
+                    selected = None
 
                 if 810 <= mx <= 910:
                     prices = {
                         'Turret': 50,
                         'Ice Tower': 30,
-                        'Bomb Tower': 100
+                        'Bomb Tower': 100,
+                        'Wizard': 250
                     }
 
                     n = 0
@@ -455,55 +510,19 @@ def main():
                         n += 1
 
                 elif 295 <= mx <= 595 and 485 <= my <= 570:
-                    n = (my - 485) // 30
-                    if type(selected) is Turret:
-                        if n == 0:
-                            if coins >= 30 and not selected.upgrades[0]:
-                                coins -= 30
-                                selected.upgrades[0] = True
-                            return
-                        elif n == 1:
-                            if coins >= 20 and not selected.upgrades[1]:
-                                coins -= 20
-                                selected.upgrades[1] = True
-                            return
-                        elif n == 2:
-                            if coins >= 75 and not selected.upgrades[2]:
-                                coins -= 75
-                                selected.upgrades[2] = True
-                            return
-                    elif type(selected) is IceTower:
-                        if n == 0:
-                            if coins >= 20 and not selected.upgrades[0]:
-                                coins -= 20
-                                selected.upgrades[0] = True
-                            return
-                        elif n == 1:
-                            if coins >= 15 and not selected.upgrades[1]:
-                                coins -= 15
-                                selected.upgrades[1] = True
-                            return
-                        elif n == 2:
-                            if coins >= 35 and not selected.upgrades[2]:
-                                coins -= 35
-                                selected.upgrades[2] = True
-                            return
-                    elif type(selected) is BombTower:
-                        if n == 0:
-                            if coins >= 30 and not selected.upgrades[0]:
-                                coins -= 30
-                                selected.upgrades[0] = True
-                            return
-                        elif n == 1:
-                            if coins >= 20 and not selected.upgrades[1]:
-                                coins -= 20
-                                selected.upgrades[1] = True
-                            return
-                        elif n == 2:
-                            if coins >= 75 and not selected.upgrades[2]:
-                                coins -= 75
-                                selected.upgrades[2] = True
-                            return
+                    upgrades = {
+                        Turret: [30, 20, 75],
+                        IceTower: [20, 15, 35],
+                        BombTower: [30, 20, 75],
+                        Wizard: [50, 75, 100]
+                    }
+
+                    if issubclass(type(selected), Towers):
+                        n = (my - 485) // 30
+                        cost = upgrades[type(selected)][n]
+                        if coins >= cost and wave + 1 >= selected.req and not selected.upgrades[n]:
+                            coins -= cost
+                            selected.upgrades[n] = True
 
 
 while True:
