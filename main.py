@@ -11,33 +11,19 @@ clock = pygame.time.Clock()
 font = pygame.font.SysFont('Ubuntu Mono', 20)
 pygame.display.set_caption('Tower Defense')
 
-Map = maps.DESERT
+Map = maps.PLAINS
 rounds = [
     '000',
     '11100000',
     '11111222000',
     '1111100022222333',
     '333333333333333333333',
-    '2323232323232323232323232323232323232323232323'
+    '22222222222222222222222223333333333333333333333333',
+    '444444444444444444444'
 ]
-colors = [
-    0xFF0000,
-    0x0000DD,
-    0x00FF00,
-    0xFFFF00
-]
-damages = [
-    1,
-    2,
-    3,
-    4
-]
-speed = [
-    1,
-    1,
-    2,
-    3
-]
+colors = [0xFF0000, 0x0000DD, 0x00FF00, 0xFFFF00, 0xFF1493]
+damages = [1, 2, 3, 4, 5]
+speed = [1, 1, 2, 3, 5]
 
 enemies = []
 projectiles = []
@@ -73,10 +59,10 @@ class Turret(Towers):
 
     def attack(self):
         if self.timer >= (25 if self.upgrades[1] else 50):
-            self.timer = 0
             try:
                 tx, ty = getTarget(self.x, self.y, self.range)
-                projectiles.append(Projectile(self, self.x, self.y, tx, ty, explosive=self.upgrades[2]))
+                projectiles.append(Projectile(self, self.x, self.y, tx, ty, explosiveRadius=30 if self.upgrades[2] else 0))
+                self.timer = 0
             except TypeError:
                 pass
         else:
@@ -92,9 +78,9 @@ class Turret(Towers):
                 pygame.draw.rect(screen, 0xffffbf, (295, 485 + 30 * n, 300, 30))
             pygame.draw.rect(screen, (128, 128, 128), (295, 485 + 30 * n, 300, 30), 5)
         screen.blit(font.render('Upgrades:', True, 0), (200, 475))
-        screen.blit(font.render('Longer Range    [$30]', True, (32, 32, 32)), (300, 485))
-        screen.blit(font.render('More Bullets    [$20]', True, (32, 32, 32)), (300, 515))
-        screen.blit(font.render('Explosive Shots [$75]', True, (32, 32, 32)), (300, 545))
+        screen.blit(font.render('Longer Range      [$30]', True, (32, 32, 32)), (300, 485))
+        screen.blit(font.render('More Bullets      [$20]', True, (32, 32, 32)), (300, 515))
+        screen.blit(font.render('Explosive Shots   [$75]', True, (32, 32, 32)), (300, 545))
 
 
 class IceTower(Towers):
@@ -109,10 +95,10 @@ class IceTower(Towers):
 
     def attack(self):
         if self.timer >= (100 if self.upgrades[1] else 200):
-            self.timer = 0
             try:
                 tx, ty = getTarget(self.x, self.y, self.range)
                 projectiles.append(Projectile(self, self.x, self.y, tx, ty, freeze=True))
+                self.timer = 0
             except TypeError:
                 pass
         else:
@@ -128,13 +114,49 @@ class IceTower(Towers):
                 pygame.draw.rect(screen, 0xffffbf, (295, 485 + 30 * n, 300, 30))
             pygame.draw.rect(screen, (128, 128, 128), (295, 485 + 30 * n, 300, 30), 5)
         screen.blit(font.render('Upgrades:', True, 0), (200, 475))
-        screen.blit(font.render('Longer Range    [$20]', True, (32, 32, 32)), (300, 485))
-        screen.blit(font.render('More Bullets    [$15]', True, (32, 32, 32)), (300, 515))
-        screen.blit(font.render('Longer Freeze   [$35]', True, (32, 32, 32)), (300, 545))
+        screen.blit(font.render('Longer Range      [$20]', True, (32, 32, 32)), (300, 485))
+        screen.blit(font.render('More Bullets      [$15]', True, (32, 32, 32)), (300, 515))
+        screen.blit(font.render('Longer Freeze     [$35]', True, (32, 32, 32)), (300, 545))
+
+
+class BombTower(Towers):
+    color = 0
+
+    def __init__(self, x: int, y: int):
+        super().__init__('Bomb Tower', x, y)
+        self.range = 50
+
+    def draw(self):
+        pygame.draw.circle(screen, self.color, (self.x, self.y), 15)
+
+    def attack(self):
+        if self.timer >= (125 if self.upgrades[1] else 250):
+            try:
+                tx, ty = getTarget(self.x, self.y, self.range)
+                projectiles.append(Projectile(self, self.x, self.y, tx, ty, explosiveRadius=50))
+                self.timer = 0
+            except TypeError:
+                pass
+        else:
+            self.timer += 1
+
+    def update(self):
+        if self.upgrades[0]:
+            self.range = 100
+
+    def GUIUpgrades(self):
+        for n in range(3):
+            if self.upgrades[n]:
+                pygame.draw.rect(screen, 0xffffbf, (295, 485 + 30 * n, 300, 30))
+            pygame.draw.rect(screen, (128, 128, 128), (295, 485 + 30 * n, 300, 30), 5)
+        screen.blit(font.render('Upgrades:', True, 0), (200, 475))
+        screen.blit(font.render('Longer Range      [$30]', True, (32, 32, 32)), (300, 485))
+        screen.blit(font.render('More Bombs        [$20]', True, (32, 32, 32)), (300, 515))
+        screen.blit(font.render('Bigger Explosions [$75]', True, (32, 32, 32)), (300, 545))
 
 
 class Projectile:
-    def __init__(self, parent: Towers, x: int, y: int, tx: int, ty: int, *, explosive: bool = False, freeze: bool = False):
+    def __init__(self, parent: Towers, x: int, y: int, tx: int, ty: int, *, explosiveRadius: int = 0, freeze: bool = False):
         self.parent = parent
         self.x = x
         self.y = y
@@ -142,10 +164,10 @@ class Projectile:
         self.ty = ty
         self.dx = None
         self.dy = None
-        self.explosive = explosive
+        self.explosiveRadius = explosiveRadius
         self.freeze = freeze
-        if self.explosive:
-            self.color = 0xFF0000
+        if self.explosiveRadius > 0:
+            self.color = 0
         elif self.freeze:
             self.color = 0x0000BB
         else:
@@ -180,7 +202,7 @@ class Projectile:
             if enemy == centre:
                 continue
 
-            if abs(enemy.x - self.x) ** 2 + abs(enemy.y - self.y) ** 2 < 900:
+            if abs(enemy.x - self.x) ** 2 + abs(enemy.y - self.y) ** 2 < self.explosiveRadius ** 2:
                 enemy.kill()
 
 
@@ -219,7 +241,7 @@ class Enemy:
                     return
                 else:
                     projectiles.remove(projectile)
-                    if projectile.explosive:
+                    if projectile.explosiveRadius > 0:
                         projectile.explode(self)
                     self.kill()
                     return
@@ -270,6 +292,7 @@ def draw():
 
     screen.blit(font.render(f'Health: {HP} HP', True, 0), (10, 545))
     screen.blit(font.render(f'Coins: {coins}', True, 0), (10, 570))
+    screen.blit(font.render(f'Wave {wave + 1}', True, 0), (900, 570))
 
     for tower in towers:
         tower.draw()
@@ -303,6 +326,13 @@ def draw():
             pygame.draw.line(screen, 0, (800, 160), (1000, 160), 3)
             pygame.draw.rect(screen, 0x888888, (810, 120, 100, 30))
             screen.blit(font.render('Buy New', True, 0), (820, 122))
+        if wave >= 3:
+            screen.blit(font.render('Bomb Tower ($100)', True, 0), (810, 170))
+            pygame.draw.rect(screen, 0xBBBBBB, (945, 190, 42, 42))
+            pygame.draw.circle(screen, BombTower.color, (966, 211), 15)
+            pygame.draw.line(screen, 0, (800, 240), (1000, 240), 3)
+            pygame.draw.rect(screen, 0x888888, (810, 200, 100, 30))
+            screen.blit(font.render('Buy New', True, 0), (820, 202))
 
         if issubclass(type(selected), Towers):
             selected.GUIUpgrades()
@@ -355,11 +385,11 @@ def main():
     if len(enemies) == 0:
         if nextWave <= 0:
             spawn(wave)
-            wave += 1
             nextWave = 300
         else:
             if nextWave == 300:
                 coins += 100
+                wave += 1
             nextWave -= 0.5 if pygame.key.get_pressed()[pygame.K_SPACE] else 1
 
     mx, my = pygame.mouse.get_pos()
@@ -381,6 +411,9 @@ def main():
                     elif placing == 'Ice Tower':
                         placing = ''
                         towers.append(IceTower(mx, my))
+                    elif placing == 'Bomb Tower':
+                        placing = ''
+                        towers.append(BombTower(mx, my))
                     else:
                         for tower in towers:
                             if abs(tower.x - mx) ** 2 + abs(tower.y - my) ** 2 <= 225:
@@ -389,17 +422,24 @@ def main():
                                 return
                         selected = None
 
-                elif 810 <= mx <= 910 and 40 <= my <= 70:
-                    if coins >= 50:
-                        coins -= 50
-                        placing = 'Turret'
-                        selected = None
+                if 810 <= mx <= 910:
+                    if 40 <= my <= 70:
+                        if coins >= 50:
+                            coins -= 50
+                            placing = 'Turret'
+                            selected = None
 
-                elif 810 <= mx <= 910 and 120 <= my <= 150:
-                    if coins >= 30:
-                        coins -= 30
-                        placing = 'Ice Tower'
-                        selected = None
+                    elif 120 <= my <= 150:
+                        if coins >= 30:
+                            coins -= 30
+                            placing = 'Ice Tower'
+                            selected = None
+
+                    elif 200 <= my <= 230:
+                        if coins >= 100:
+                            coins -= 100
+                            placing = 'Bomb Tower'
+                            selected = None
 
                 elif 295 <= mx <= 595 and 485 <= my <= 570:
                     n = (my - 485) // 30
@@ -435,11 +475,30 @@ def main():
                                 coins -= 35
                                 selected.upgrades[2] = True
                             return
+                    elif type(selected) is BombTower:
+                        if n == 0:
+                            if coins >= 30 and not selected.upgrades[0]:
+                                coins -= 30
+                                selected.upgrades[0] = True
+                            return
+                        elif n == 1:
+                            if coins >= 20 and not selected.upgrades[1]:
+                                coins -= 20
+                                selected.upgrades[1] = True
+                            return
+                        elif n == 2:
+                            if coins >= 75 and not selected.upgrades[2]:
+                                coins -= 75
+                                selected.upgrades[2] = True
+                            return
 
 
 while True:
     if not win:
         main()
     else:
+        if pygame.event.get(pygame.QUIT):
+            quit()
+
         clock.tick(60)
         draw()
