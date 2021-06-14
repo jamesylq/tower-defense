@@ -90,6 +90,34 @@ class Turret(Towers):
 
 
 class IceTower(Towers):
+    class SnowStormCircle:
+        def __init__(self, parent, x, y):
+            self.x = x
+            self.y = y
+            self.parent = parent
+            self.freezeDuration = 199 if self.parent.upgrades[2] else 100
+            self.visibleTicks = 0
+
+            smallRange = pygame.transform.scale(pygame.image.load('Resources/Ice Circle.png'), (250, 250))
+            self.smallIceCircle = smallRange.copy()
+            self.smallIceCircle.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
+
+            largeRange = pygame.transform.scale(pygame.image.load('Resources/Ice Circle.png'), (350, 350))
+            self.largeIceCircle = largeRange.copy()
+            self.largeIceCircle.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
+
+        def draw(self):
+            if self.visibleTicks > 0:
+                self.visibleTicks -= 1
+                screen.blit(self.largeIceCircle if self.parent.upgrades[0] else self.smallIceCircle, (self.x - self.parent.range, self.y - self.parent.range))
+
+        def freeze(self):
+            self.visibleTicks = 50
+
+            for enemy in enemies:
+                if abs(enemy.x - self.x) ** 2 + abs(enemy.y - self.y) ** 2 <= self.parent.range ** 2:
+                    enemy.freezeTimer = self.freezeDuration
+
     name = 'Ice Tower'
     color = (32, 32, 200)
     req = 2
@@ -98,18 +126,24 @@ class IceTower(Towers):
     def __init__(self, x: int, y: int):
         super().__init__(x, y)
         self.range = 125
+        self.snowCircle = self.SnowStormCircle(self, self.x, self.y)
 
     def draw(self):
         pygame.draw.circle(screen, self.color, (self.x, self.y), 15)
+        self.snowCircle.draw()
 
     def attack(self):
-        if self.timer >= (100 if self.upgrades[1] else 200):
-            try:
-                closest = getTarget(self.x, self.y, self.range)
-                projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, freeze=True))
+        if self.timer >= (500 if self.upgrades[1] else 100):
+            if self.upgrades[1]:
+                self.snowCircle.freeze()
                 self.timer = 0
-            except AttributeError:
-                pass
+            else:
+                try:
+                    closest = getTarget(self.x, self.y, self.range)
+                    projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, freeze=True))
+                    self.timer = 0
+                except AttributeError:
+                    pass
         else:
             self.timer += 1
 
@@ -124,7 +158,7 @@ class IceTower(Towers):
             pygame.draw.rect(screen, (128, 128, 128), (295, 485 + 30 * n, 300, 30), 5)
         screen.blit(font.render('Upgrades:', True, 0), (200, 475))
         screen.blit(font.render('Longer Range      [$20]', True, (32, 32, 32)), (300, 485))
-        screen.blit(font.render('More Bullets      [$15]', True, (32, 32, 32)), (300, 515))
+        screen.blit(font.render('Snowstorm Circle  [$25]', True, (32, 32, 32)), (300, 515))
         screen.blit(font.render('Longer Freeze     [$35]', True, (32, 32, 32)), (300, 545))
 
 
@@ -142,7 +176,7 @@ class Bowler(Towers):
         pygame.draw.circle(screen, self.color, (self.x, self.y), 15)
 
     def attack(self):
-        if self.timer >= (100 if self.upgrades[1] else 150):
+        if self.timer >= (200 if self.upgrades[1] else 300):
             try:
                 for direction in ['left', 'right', 'up', 'down']:
                     piercingProjectiles.append(PiercingProjectile(self, self.x, self.y, 10 if self.upgrades[2] else 3, direction))
@@ -396,7 +430,8 @@ class Enemy:
             if abs(self.x - projectile.x) ** 2 + abs(self.y - projectile.y) ** 2 < 100:
                 if projectile.freeze:
                     projectiles.remove(projectile)
-                    self.freezeTimer = 99 if projectile.parent.upgrades[2] else 50
+                    if type(projectile.parent) is IceTower:
+                        self.freezeTimer = 99 if projectile.parent.upgrades[2] else 50
                 else:
                     projectiles.remove(projectile)
                     if projectile.explosiveRadius > 0:
@@ -610,7 +645,7 @@ def main():
                 elif 295 <= mx <= 595 and 485 <= my <= 570:
                     upgrades = {
                         Turret: [30, 20, 75],
-                        IceTower: [20, 15, 35],
+                        IceTower: [20, 25, 35],
                         Bowler: [30, 20, 50],
                         BombTower: [30, 20, 75],
                         Wizard: [50, 75, 100]
