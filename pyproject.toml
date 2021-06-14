@@ -1,0 +1,11 @@
+[tool.poetry]
+name = "tower-defence"
+version = "0.1.0"
+description = ""
+authors = ["Ying Liqian <jamesylq@gmail.com>"]
+
+[tool.poetry.dependencies]
+pygame = "~2.0.1"
+python = ">=3.6.9"
+
+[tool.poetry.dev-dependencies]
