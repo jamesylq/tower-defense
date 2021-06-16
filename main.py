@@ -22,7 +22,7 @@ IceCircle = pygame.transform.scale(pygame.image.load('Resources/Ice Circle.png')
 largeIceCircle = IceCircle.copy()
 largeIceCircle.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
 
-Maps = [maps.PLAINS, maps.POND, maps.LAVA_SPIRAL, maps.DESERT, maps.THE_END]
+Maps = [maps.POND, maps.LAVA_SPIRAL, maps.PLAINS, maps.DESERT, maps.THE_END]
 Map = None
 waves = [
     '000',
@@ -692,15 +692,16 @@ def main():
 
     if len(enemies) == 0:
         if nextWave <= 0:
-            spawnleft = waves[wave]
+            try:
+                spawnleft = waves[wave]
+            except IndexError:
+                win = True
             spawndelay = 15
             nextWave = 300
         else:
             if nextWave == 300:
                 coins += 100
                 wave += 1
-                if wave == len(waves) + 1:
-                    win = True
             nextWave -= 1
 
     mx, my = pygame.mouse.get_pos()
@@ -734,7 +735,7 @@ def main():
                 if 810 <= mx <= 910:
                     n = 0
                     for tower in Towers.__subclasses__():
-                        if 40 + n * 80 + shopScroll <= my <= 70 + n * 80 + shopScroll <= 450 and coins >= tower.price and placing == '':
+                        if 40 + n * 80 + shopScroll <= my <= 70 + n * 80 + shopScroll <= 450 and coins >= tower.price and placing == '' and wave >= tower.req:
                             coins -= tower.price
                             placing = tower.name
                             selected = None
