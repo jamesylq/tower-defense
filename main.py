@@ -22,7 +22,7 @@ IceCircle = pygame.transform.scale(pygame.image.load('Resources/Ice Circle.png')
 largeIceCircle = IceCircle.copy()
 largeIceCircle.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
 
-Maps = [maps.PLAINS, maps.POND, maps.LAVA_SPIRAL, maps.DESERT]
+Maps = [maps.PLAINS, maps.POND, maps.LAVA_SPIRAL, maps.DESERT, maps.THE_END]
 Map = None
 waves = [
     '000',
@@ -54,6 +54,8 @@ wave = 0
 win = False
 MapSelect = True
 shopScroll = 0
+spawnleft = ''
+spawndelay = 9
 
 
 class Towers:
@@ -67,13 +69,13 @@ class Towers:
 class Turret(Towers):
     name = 'Turret'
     color = (128, 128, 128)
-    req = 1
+    req = 0
     price = 50
     upgradePrices = [30, 20, 75]
+    range = 100
 
     def __init__(self, x: int, y: int):
         super().__init__(x, y)
-        self.range = 100
 
     def draw(self):
         pygame.draw.circle(screen, self.color, (self.x, self.y), 15)
@@ -130,10 +132,10 @@ class IceTower(Towers):
     req = 2
     price = 30
     upgradePrices = [15, 25, 35]
+    range = 125
 
     def __init__(self, x: int, y: int):
         super().__init__(x, y)
-        self.range = 125
         self.snowCircle = self.SnowStormCircle(self, self.x, self.y)
 
     def draw(self):
@@ -176,10 +178,10 @@ class BombTower(Towers):
     req = 4
     price = 100
     upgradePrices = [30, 20, 75]
+    range = 50
 
     def __init__(self, x: int, y: int):
         super().__init__(x, y)
-        self.range = 50
 
     def draw(self):
         pygame.draw.circle(screen, self.color, (self.x, self.y), 15)
@@ -212,14 +214,14 @@ class BombTower(Towers):
 
 class BananaFarm(Towers):
     name = 'Banana Farm'
-    color = (55, 255, 0)
+    color = (255, 255, 0)
     req = 4
     price = 150
     upgradePrices = [30, 30, 40]
+    range = 100
 
     def __init__(self, x: int, y: int):
         super().__init__(x, y)
-        self.range = 100
 
     def draw(self):
         pygame.draw.circle(screen, self.color, (self.x, self.y), 15)
@@ -256,10 +258,10 @@ class Bowler(Towers):
     req = 5
     price = 175
     upgradePrices = [30, 20, 50]
+    range = 0
 
     def __init__(self, x: int, y: int):
         super().__init__(x, y)
-        self.range = 0
 
     def draw(self):
         pygame.draw.circle(screen, self.color, (self.x, self.y), 15)
@@ -333,14 +335,14 @@ class Wizard(Towers):
                             pygame.draw.line(screen, (191, 0, 255), [self.t2.x, self.t2.y], [self.t3.x, self.t3.y], 3)
 
     name = 'Wizard'
-    color = (255, 255, 0)
+    color = (128, 0, 128)
     req = 7
     price = 250
     upgradePrices = [30, 75, 50]
+    range = 125
 
     def __init__(self, x: int, y: int):
         super().__init__(x, y)
-        self.range = 125
         self.lightning = self.LightningBolt(self)
         self.lightningTimer = 0
 
@@ -467,7 +469,6 @@ class Enemy:
         self.tier = tier
         self.x, self.y = spawn
         self.lineIndex = lineIndex
-        self.delete = False
         self.totalMovement = 0
         self.freezeTimer = 0
 
@@ -478,9 +479,8 @@ class Enemy:
             self.freezeTimer -= 1
         else:
             if len(Map.path) - 1 == self.lineIndex:
-                self.kill(False)
+                self.kill(spawnNew=False)
                 HP -= damages[self.tier]
-                updateEnemies()
             else:
                 current = Map.path[self.lineIndex]
                 new = Map.path[self.lineIndex + 1]
@@ -502,8 +502,7 @@ class Enemy:
                     if self.y <= new[1]:
                         self.lineIndex += 1
                 else:
-                    self.kill(False)
-                    updateEnemies()
+                    self.kill(spawnNew=False)
 
                 self.totalMovement += 1
 
@@ -521,9 +520,9 @@ class Enemy:
                     if projectile.explosiveRadius > 0:
                         projectile.explode(self)
                         if self.tier == 6:
-                            self.kill()
+                            self.kill(coinMultiplier=projectile.coinMultiplier)
                     if self.tier != 6:
-                        self.kill()
+                        self.kill(coinMultiplier=projectile.coinMultiplier)
 
         if self.tier != 6:
             for projectile in piercingProjectiles:
@@ -541,10 +540,13 @@ class Enemy:
     def draw(self):
         pygame.draw.circle(screen, enemyColors[self.tier], (self.x, self.y), 10)
 
-    def kill(self, coinMultiplier: int = 1, spawnNew: bool = True):
+    def kill(self, *, spawnNew: bool = True, coinMultiplier: int = 1):
         global enemies, coins
 
-        self.delete = True
+        try:
+            enemies.remove(self)
+        except ValueError:
+            pass
         if self.tier == 0:
             coins += 2 * coinMultiplier
         else:
@@ -557,8 +559,10 @@ class Enemy:
 def income() -> float:
     total = 0.001
     for tower in towers:
-        if type(tower) is BananaFarm and tower.upgrades[1]:
+        if type(tower) is BananaFarm:
             total += 0.001
+            if tower.upgrades[1]:
+                total += 0.003
     return total
 
 
@@ -596,11 +600,28 @@ def draw():
         pygame.draw.line(screen, Map.pathColor, Map.path[i], Map.path[i + 1], 10)
     pygame.draw.circle(screen, Map.pathColor, Map.path[0], 10)
 
+    if placing != '':
+        screen.blit(font.render(f'Click anywhere on the map to place the {placing}!', True, 0), (250, 400))
+        if 0 <= mx <= 800 and 0 <= my <= 450:
+            classObj = None
+            for tower in Towers.__subclasses__():
+                if tower.name == placing:
+                    classObj = tower
+
+            pygame.draw.circle(screen, classObj.color, (mx, my), 15)
+            original = pygame.transform.scale(pygame.image.load('Resources/Range.png'), (classObj.range * 2, classObj.range * 2))
+            modified = original.copy()
+            modified.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
+            screen.blit(modified, (mx - classObj.range, my - classObj.range))
+
+    for enemy in enemies:
+        enemy.draw()
+
     pygame.draw.rect(screen, (221, 221, 221), (800, 0, 200, 450))
 
     n = 0
     for towerType in Towers.__subclasses__():
-        if wave + 1 >= towerType.req:
+        if wave >= towerType.req:
             screen.blit(font.render(f'{towerType.name} (${towerType.price})', True, 0), (810, 10 + 80 * n + shopScroll))
             pygame.draw.rect(screen, (187, 187, 187), (945, 30 + 80 * n + shopScroll, 42, 42))
             pygame.draw.circle(screen, towerType.color, (966, 51 + 80 * n + shopScroll), 15)
@@ -614,7 +635,8 @@ def draw():
 
     screen.blit(font.render(f'Health: {HP} HP', True, 0), (10, 545))
     screen.blit(font.render(f'Coins: {math.floor(coins)}', True, 0), (10, 570))
-    screen.blit(font.render(f'Wave {wave + 1}', True, 0), (900, 570))
+    screen.blit(font.render(f'FPS: {round(clock.get_fps(), 1)}', True, (0, 0, 0)), (10, 520))
+    screen.blit(font.render(f'Wave {max(wave, 1)}', True, 0), (900, 570))
 
     pygame.draw.rect(screen, (128, 128, 128), (775, 500, 200, 30))
     screen.blit(font.render('Map Selection', True, (0, 0, 0)), (800, 505))
@@ -628,9 +650,6 @@ def draw():
         modified.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
         screen.blit(modified, (selected.x - selected.range, selected.y - selected.range))
 
-    for enemy in enemies:
-        enemy.draw()
-
     for projectile in projectiles:
         projectile.draw()
 
@@ -639,9 +658,6 @@ def draw():
 
     if issubclass(type(selected), Towers):
         selected.GUIUpgrades()
-
-    if placing != '':
-        screen.blit(font.render(f'Click anywhere on the map to place the {placing}!', True, 0), (275, 480))
 
     pygame.display.update()
 
@@ -652,8 +668,6 @@ def move():
             enemy.update()
             enemy.move()
             enemy.update()
-
-    updateEnemies()
 
     for tower in towers:
         tower.update()
@@ -666,35 +680,26 @@ def move():
         projectile.move()
 
 
-def spawn(wave: int):
-    for char in waves[wave]:
-        enemies.append(Enemy(int(char), Map.path[0], 0))
-
-        for n in range(18):
-            main()
-
-
-def updateEnemies():
-    global enemies
-
-    enemies = [enemy for enemy in enemies if not enemy.delete]
-
-
 def main():
-    global coins, selected, clickOffset, wave, nextWave, placing, win, enemies, towers, shopScroll
+    global coins, selected, clickOffset, wave, nextWave, placing, win, enemies, towers, shopScroll, spawnleft, spawndelay
+
+    if spawndelay == 0 and len(spawnleft) > 0:
+        enemies.append(Enemy(int(spawnleft[0]), Map.path[0], 0))
+        spawnleft = spawnleft[1:]
+        spawndelay = 15
+    else:
+        spawndelay -= 1
 
     if len(enemies) == 0:
         if nextWave <= 0:
-            try:
-                spawn(wave)
-            except IndexError:
-                win = True
+            spawnleft = waves[wave]
+            spawndelay = 15
             nextWave = 300
         else:
             if nextWave == 300:
                 coins += 100
                 wave += 1
-                if wave == len(waves):
+                if wave == len(waves) + 1:
                     win = True
             nextWave -= 1
 
@@ -750,12 +755,15 @@ def main():
                     wave = 0
                     win = False
                     MapSelect = True
+                    shopScroll = 0
+                    spawnleft = ''
+                    spawndelay = 0
 
                 if 295 <= mx <= 595 and 485 <= my <= 570:
                     if issubclass(type(selected), Towers):
                         n = (my - 485) // 30
                         cost = type(selected).upgradePrices[n]
-                        if coins >= cost and wave + 1 >= selected.req and not selected.upgrades[n]:
+                        if coins >= cost and wave >= selected.req and not selected.upgrades[n]:
                             coins -= cost
                             selected.upgrades[n] = True
             elif event.button == 4:
@@ -763,7 +771,7 @@ def main():
                     shopScroll = min(0, shopScroll + 10)
             elif event.button == 5:
                 if mx > 800 and my < 450:
-                    maxScroll = len([tower for tower in Towers.__subclasses__() if wave + 1 >= tower.req]) * 80 - 450
+                    maxScroll = len([tower for tower in Towers.__subclasses__() if wave >= tower.req]) * 80 - 450
                     if maxScroll > 0:
                         shopScroll = max(-maxScroll, shopScroll - 10)
 
@@ -843,6 +851,9 @@ while True:
             wave = 0
             win = False
             MapSelect = True
+            shopScroll = 0
+            spawnleft = ''
+            spawndelay = 0
 
             while True:
                 screen.fill((32, 32, 32))
