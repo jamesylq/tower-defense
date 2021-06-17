@@ -1,6 +1,6 @@
 [tool.poetry]
-name = "tower-defence"
-version = "0.1.0"
+name = "tower-defense"
+version = "0.1.1"
 description = ""
 authors = ["Ying Liqian <jamesylq@gmail.com>"]
 
