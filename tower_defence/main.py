@@ -6,56 +6,47 @@ import math
 from _pickle import UnpicklingError
 
 
-screen = pygame.display.set_mode((1000, 600))
-pygame.init()
-pygame.font.init()
-clock = pygame.time.Clock()
-font = pygame.font.SysFont('Ubuntu Mono', 20)
-largeFont = pygame.font.SysFont('Ubuntu Mono', 75)
-pygame.display.set_caption('Tower Defense')
+screen, clock, font, largeFont, smallIceCircle, largeIceCircle, Maps, waves, enemyColors, speed, damages, info = [None] * 12
 
-IceCircle = pygame.transform.scale(pygame.image.load('Resources/Ice Circle.png'), (250, 250))
-smallIceCircle = IceCircle.copy()
-smallIceCircle.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
 
-IceCircle = pygame.transform.scale(pygame.image.load('Resources/Ice Circle.png'), (350, 350))
-largeIceCircle = IceCircle.copy()
-largeIceCircle.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
+class data:
+    def __init__(self, FinalHP: int = None):
+        self.PBs = {Map.name: None for Map in Maps}
+        self.enemies = []
+        self.projectiles = []
+        self.piercingProjectiles = []
+        self.towers = []
+        self.HP = 100
+        self.FinalHP = FinalHP
+        self.coins = 50
+        self.selected = None
+        self.placing = ''
+        self.nextWave = 299
+        self.wave = 0
+        self.win = False
+        self.MapSelect = True
+        self.shopScroll = 0
+        self.spawnleft = ''
+        self.spawndelay = 9
+        self.Map = None
 
-Maps = [maps.POND, maps.LAVA_SPIRAL, maps.PLAINS, maps.DESERT, maps.THE_END]
-Map = None
-waves = [
-    '000',
-    '11100000',
-    '11111222000',
-    '1111100022222333',
-    '333333333333333333333',
-    '22222222222222222222222223333333333333333333333333',
-    '444444444444444444444',
-    '5555555555555555555554444444444',
-    '666666666666666666666'
-]
-enemyColors = [(255, 0, 0), (0, 0, 221), (0, 255, 0), (255, 255, 0), (255, 20, 147), (68, 68, 68), (16, 16, 16)]
-damages = [1, 2, 3, 4, 5, 6, 8]
-speed = [1, 1, 2, 2, 3, 4, 2]
-
-enemies = []
-projectiles = []
-piercingProjectiles = []
-towers = []
-PBs = {}
-HP = 100
-FinalHP = None
-coins = 50
-selected = None
-placing = ''
-nextWave = 299
-wave = 0
-win = False
-MapSelect = True
-shopScroll = 0
-spawnleft = ''
-spawndelay = 9
+    def reset(self):
+        self.enemies = []
+        self.projectiles = []
+        self.piercingProjectiles = []
+        self.towers = []
+        self.HP = 100
+        self.coins = 50
+        self.selected = None
+        self.placing = ''
+        self.nextWave = 299
+        self.wave = 0
+        self.win = False
+        self.MapSelect = True
+        self.shopScroll = 0
+        self.spawnleft = ''
+        self.spawndelay = 9
+        self.Map = None
 
 
 class Towers:
@@ -84,7 +75,7 @@ class Turret(Towers):
         if self.timer >= (25 if self.upgrades[1] else 50):
             try:
                 closest = getTarget(self.x, self.y, self.range)
-                projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=30 if self.upgrades[2] else 0))
+                info.projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=30 if self.upgrades[2] else 0))
                 self.timer = 0
             except AttributeError:
                 pass
@@ -123,7 +114,7 @@ class IceTower(Towers):
         def freeze(self):
             self.visibleTicks = 50
 
-            for enemy in enemies:
+            for enemy in info.enemies:
                 if abs(enemy.x - self.x) ** 2 + abs(enemy.y - self.y) ** 2 <= self.parent.range ** 2:
                     enemy.freezeTimer = self.freezeDuration
 
@@ -150,7 +141,7 @@ class IceTower(Towers):
             else:
                 try:
                     closest = getTarget(self.x, self.y, self.range)
-                    projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, freeze=True))
+                    info.projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, freeze=True))
                     self.timer = 0
                 except AttributeError:
                     pass
@@ -190,7 +181,7 @@ class BombTower(Towers):
         if self.timer >= (125 if self.upgrades[1] else 250):
             try:
                 closest = getTarget(self.x, self.y, self.range)
-                projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=50))
+                info.projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=50))
                 self.timer = 0
             except AttributeError:
                 pass
@@ -231,7 +222,7 @@ class BananaFarm(Towers):
             if self.timer >= 100:
                 try:
                     closest = getTarget(self.x, self.y, self.range)
-                    projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y))
+                    info.projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y))
                     self.timer = 0
                 except AttributeError:
                     pass
@@ -270,7 +261,7 @@ class Bowler(Towers):
         if self.timer >= (200 if self.upgrades[1] else 300):
             try:
                 for direction in ['left', 'right', 'up', 'down']:
-                    piercingProjectiles.append(PiercingProjectile(self, self.x, self.y, 10 if self.upgrades[2] else 3, direction))
+                    info.piercingProjectiles.append(PiercingProjectile(self, self.x, self.y, 10 if self.upgrades[2] else 3, direction))
                 self.timer = 0
             except AttributeError:
                 pass
@@ -354,7 +345,7 @@ class Wizard(Towers):
         if self.timer >= (80 if self.upgrades[2] else 160):
             try:
                 closest = getTarget(self.x, self.y, self.range)
-                projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=60 if self.upgrades[2] else 30))
+                info.projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=60 if self.upgrades[2] else 30))
                 self.timer = 0
             except AttributeError:
                 pass
@@ -418,19 +409,19 @@ class Projectile:
                 self.x -= self.dx
                 self.y -= self.dy
             except ZeroDivisionError:
-                projectiles.remove(self)
+                info.projectiles.remove(self)
         else:
             self.x -= self.dx
             self.y -= self.dy
 
         if self.x < 0 or self.x > 800 or self.y < 0 or self.y > 450:
-            projectiles.remove(self)
+            info.projectiles.remove(self)
 
     def draw(self):
         pygame.draw.circle(screen, self.color, (self.x, self.y), 3)
 
     def explode(self, centre):
-        for enemy in enemies:
+        for enemy in info.enemies:
             if enemy == centre:
                 continue
 
@@ -458,7 +449,7 @@ class PiercingProjectile:
             self.y += 1
 
         if self.x < 0 or self.x > 800 or self.y < 0 or self.y > 450:
-            piercingProjectiles.remove(self)
+            info.piercingProjectiles.remove(self)
 
     def draw(self):
         pygame.draw.circle(screen, (16, 16, 16), (self.x, self.y), 5)
@@ -473,17 +464,15 @@ class Enemy:
         self.freezeTimer = 0
 
     def move(self):
-        global HP
-
         if self.freezeTimer > 0:
             self.freezeTimer -= 1
         else:
-            if len(Map.path) - 1 == self.lineIndex:
+            if len(info.Map.path) - 1 == self.lineIndex:
                 self.kill(spawnNew=False)
-                HP -= damages[self.tier]
+                info.HP -= damages[self.tier]
             else:
-                current = Map.path[self.lineIndex]
-                new = Map.path[self.lineIndex + 1]
+                current = info.Map.path[self.lineIndex]
+                new = info.Map.path[self.lineIndex + 1]
 
                 if current[0] < new[0]:
                     self.x += 1
@@ -507,16 +496,14 @@ class Enemy:
                 self.totalMovement += 1
 
     def update(self):
-        global HP
-
-        for projectile in projectiles:
+        for projectile in info.projectiles:
             if abs(self.x - projectile.x) ** 2 + abs(self.y - projectile.y) ** 2 < 100:
                 if projectile.freeze:
-                    projectiles.remove(projectile)
+                    info.projectiles.remove(projectile)
                     if type(projectile.parent) is IceTower:
                         self.freezeTimer = 99 if projectile.parent.upgrades[2] else 50
                 else:
-                    projectiles.remove(projectile)
+                    info.projectiles.remove(projectile)
                     if projectile.explosiveRadius > 0:
                         projectile.explode(self)
                         if self.tier == 6:
@@ -525,7 +512,7 @@ class Enemy:
                         self.kill(coinMultiplier=projectile.coinMultiplier)
 
         if self.tier != 6:
-            for projectile in piercingProjectiles:
+            for projectile in info.piercingProjectiles:
                 if abs(self.x - projectile.x) ** 2 + abs(self.y - projectile.y) ** 2 < 100:
                     if self not in projectile.ignore:
                         new = self.kill()
@@ -533,7 +520,7 @@ class Enemy:
                             new = new.kill()
                         projectile.ignore.append(new)
                         if projectile.pierce == 1:
-                            piercingProjectiles.remove(projectile)
+                            info.piercingProjectiles.remove(projectile)
                         else:
                             projectile.pierce -= 1
 
@@ -541,24 +528,22 @@ class Enemy:
         pygame.draw.circle(screen, enemyColors[self.tier], (self.x, self.y), 10)
 
     def kill(self, *, spawnNew: bool = True, coinMultiplier: int = 1):
-        global enemies, coins
-
         try:
-            enemies.remove(self)
+            info.enemies.remove(self)
         except ValueError:
             pass
         if self.tier == 0:
-            coins += 2 * coinMultiplier
+            info.coins += 2 * coinMultiplier
         else:
-            coins += 1 * coinMultiplier
+            info.coins += 1 * coinMultiplier
             if spawnNew:
-                enemies.append(Enemy(self.tier - 1, (self.x, self.y), self.lineIndex))
-                return enemies[-1]
+                info.enemies.append(Enemy(self.tier - 1, (self.x, self.y), self.lineIndex))
+                return info.enemies[-1]
 
 
 def income() -> float:
     total = 0.001
-    for tower in towers:
+    for tower in info.towers:
         if type(tower) is BananaFarm:
             total += 0.001
             if tower.upgrades[1]:
@@ -567,7 +552,7 @@ def income() -> float:
 
 
 def getCoinMultiplier(Tower: Towers) -> int:
-    bananaFarms = [tower for tower in towers if type(tower) is BananaFarm and tower.upgrades[2]]
+    bananaFarms = [tower for tower in info.towers if type(tower) is BananaFarm and tower.upgrades[2]]
     for bananaFarm in bananaFarms:
         if abs(Tower.x - bananaFarm.x) ** 2 + abs(Tower.y - bananaFarm.y) ** 2 < bananaFarm.range ** 2:
             return 2
@@ -579,7 +564,7 @@ def getTarget(x: int, y: int, radius: int, ignore: [Enemy] = None) -> Enemy:
     if ignore is None:
         ignore = []
 
-    for enemy in enemies:
+    for enemy in info.enemies:
         if enemy in ignore:
             continue
 
@@ -594,18 +579,20 @@ def getTarget(x: int, y: int, radius: int, ignore: [Enemy] = None) -> Enemy:
 
 
 def draw():
-    screen.fill(Map.backgroundColor)
+    mx, my = pygame.mouse.get_pos()
 
-    for i in range(len(Map.path) - 1):
-        pygame.draw.line(screen, Map.pathColor, Map.path[i], Map.path[i + 1], 10)
-    pygame.draw.circle(screen, Map.pathColor, Map.path[0], 10)
+    screen.fill(info.Map.backgroundColor)
 
-    if placing != '':
-        screen.blit(font.render(f'Click anywhere on the map to place the {placing}!', True, 0), (250, 400))
+    for i in range(len(info.Map.path) - 1):
+        pygame.draw.line(screen, info.Map.pathColor, info.Map.path[i], info.Map.path[i + 1], 10)
+    pygame.draw.circle(screen, info.Map.pathColor, info.Map.path[0], 10)
+
+    if info.placing != '':
+        screen.blit(font.render(f'Click anywhere on the map to place the {info.placing}!', True, 0), (250, 400))
         if 0 <= mx <= 800 and 0 <= my <= 450:
             classObj = None
             for tower in Towers.__subclasses__():
-                if tower.name == placing:
+                if tower.name == info.placing:
                     classObj = tower
 
             pygame.draw.circle(screen, classObj.color, (mx, my), 15)
@@ -614,100 +601,98 @@ def draw():
             modified.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
             screen.blit(modified, (mx - classObj.range, my - classObj.range))
 
-    for enemy in enemies:
+    for enemy in info.enemies:
         enemy.draw()
 
     pygame.draw.rect(screen, (221, 221, 221), (800, 0, 200, 450))
 
     n = 0
     for towerType in Towers.__subclasses__():
-        if wave >= towerType.req:
-            screen.blit(font.render(f'{towerType.name} (${towerType.price})', True, 0), (810, 10 + 80 * n + shopScroll))
-            pygame.draw.rect(screen, (187, 187, 187), (945, 30 + 80 * n + shopScroll, 42, 42))
-            pygame.draw.circle(screen, towerType.color, (966, 51 + 80 * n + shopScroll), 15)
-            pygame.draw.line(screen, 0, (800, 80 + 80 * n + shopScroll), (1000, 80 + 80 * n + shopScroll), 3)
-            pygame.draw.line(screen, 0, (800, 80 * n + shopScroll), (1000, 80 * n + shopScroll), 3)
-            pygame.draw.rect(screen, (136, 136, 136), (810, 40 + 80 * n + shopScroll, 100, 30))
-            screen.blit(font.render('Buy New', True, 0), (820, 42 + 80 * n + shopScroll))
+        if info.wave >= towerType.req:
+            screen.blit(font.render(f'{towerType.name} (${towerType.price})', True, 0), (810, 10 + 80 * n + info.shopScroll))
+            pygame.draw.rect(screen, (187, 187, 187), (945, 30 + 80 * n + info.shopScroll, 42, 42))
+            pygame.draw.circle(screen, towerType.color, (966, 51 + 80 * n + info.shopScroll), 15)
+            pygame.draw.line(screen, 0, (800, 80 + 80 * n + info.shopScroll), (1000, 80 + 80 * n + info.shopScroll), 3)
+            pygame.draw.line(screen, 0, (800, 80 * n + info.shopScroll), (1000, 80 * n + info.shopScroll), 3)
+            pygame.draw.rect(screen, (136, 136, 136), (810, 40 + 80 * n + info.shopScroll, 100, 30))
+            screen.blit(font.render('Buy New', True, 0), (820, 42 + 80 * n + info.shopScroll))
         n += 1
 
     pygame.draw.rect(screen, (170, 170, 170), (0, 450, 1000, 150))
 
-    screen.blit(font.render(f'Health: {HP} HP', True, 0), (10, 545))
-    screen.blit(font.render(f'Coins: {math.floor(coins)}', True, 0), (10, 570))
+    screen.blit(font.render(f'Health: {info.HP} HP', True, 0), (10, 545))
+    screen.blit(font.render(f'Coins: {math.floor(info.coins)}', True, 0), (10, 570))
     screen.blit(font.render(f'FPS: {round(clock.get_fps(), 1)}', True, (0, 0, 0)), (10, 520))
-    screen.blit(font.render(f'Wave {max(wave, 1)}', True, 0), (900, 570))
+    screen.blit(font.render(f'Wave {max(info.wave, 1)}', True, 0), (900, 570))
 
     pygame.draw.rect(screen, (128, 128, 128), (775, 500, 200, 30))
     screen.blit(font.render('Map Selection', True, (0, 0, 0)), (800, 505))
 
-    for tower in towers:
+    for tower in info.towers:
         tower.draw()
 
-    if selected is not None:
-        original = pygame.transform.scale(pygame.image.load('Resources/Range.png'), (selected.range * 2, selected.range * 2))
+    if info.selected is not None:
+        original = pygame.transform.scale(pygame.image.load('Resources/Range.png'), (info.selected.range * 2, info.selected.range * 2))
         modified = original.copy()
         modified.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
-        screen.blit(modified, (selected.x - selected.range, selected.y - selected.range))
+        screen.blit(modified, (info.selected.x - info.selected.range, info.selected.y - info.selected.range))
 
-    for projectile in projectiles:
+    for projectile in info.projectiles:
         projectile.draw()
 
-    for projectile in piercingProjectiles:
+    for projectile in info.piercingProjectiles:
         projectile.draw()
 
-    if issubclass(type(selected), Towers):
-        selected.GUIUpgrades()
+    if issubclass(type(info.selected), Towers):
+        info.selected.GUIUpgrades()
 
     pygame.display.update()
 
 
 def move():
-    for enemy in enemies:
+    for enemy in info.enemies:
         for i in range(speed[enemy.tier]):
             enemy.update()
             enemy.move()
             enemy.update()
 
-    for tower in towers:
+    for tower in info.towers:
         tower.update()
         tower.attack()
 
-    for projectile in projectiles:
+    for projectile in info.projectiles:
         projectile.move()
 
-    for projectile in piercingProjectiles:
+    for projectile in info.piercingProjectiles:
         projectile.move()
 
 
-def main():
-    global coins, selected, clickOffset, wave, nextWave, placing, win, enemies, towers, shopScroll, spawnleft, spawndelay
-
-    if spawndelay == 0 and len(spawnleft) > 0:
-        enemies.append(Enemy(int(spawnleft[0]), Map.path[0], 0))
-        spawnleft = spawnleft[1:]
-        spawndelay = 15
+def iterate():
+    if info.spawndelay == 0 and len(info.spawnleft) > 0:
+        info.enemies.append(Enemy(int(info.spawnleft[0]), info.Map.path[0], 0))
+        info.spawnleft = info.spawnleft[1:]
+        info.spawndelay = 15
     else:
-        spawndelay -= 1
+        info.spawndelay -= 1
 
-    if len(enemies) == 0:
-        if nextWave <= 0:
+    if len(info.enemies) == 0:
+        if info.nextWave <= 0:
             try:
-                spawnleft = waves[wave]
+                info.spawnleft = waves[info.wave]
             except IndexError:
-                win = True
-            spawndelay = 15
-            nextWave = 300
+                info.win = True
+            info.spawndelay = 15
+            info.nextWave = 300
         else:
-            if nextWave == 300:
-                coins += 100
-                wave += 1
-            nextWave -= 1
+            if info.nextWave == 300:
+                info.coins += 100
+                info.wave += 1
+            info.nextWave -= 1
 
     mx, my = pygame.mouse.get_pos()
 
     clock.tick(100)
-    coins += income()
+    info.coins += income()
 
     draw()
     move()
@@ -720,156 +705,160 @@ def main():
             if event.button == 1:
                 if mx <= 800 and my <= 450:
                     for towerType in Towers.__subclasses__():
-                        if towerType.name == placing:
-                            placing = ''
-                            towers.append(towerType(mx, my))
+                        if towerType.name == info.placing:
+                            info.placing = ''
+                            info.towers.append(towerType(mx, my))
                             return
 
-                    for tower in towers:
+                    for tower in info.towers:
                         if abs(tower.x - mx) ** 2 + abs(tower.y - my) ** 2 <= 225:
-                            selected = tower
-                            clickOffset = [mx - tower.x, my - tower.y]
+                            info.selected = tower
                             return
-                    selected = None
+                    info.selected = None
 
                 if 810 <= mx <= 910:
                     n = 0
                     for tower in Towers.__subclasses__():
-                        if 40 + n * 80 + shopScroll <= my <= 70 + n * 80 + shopScroll <= 450 and coins >= tower.price and placing == '' and wave >= tower.req:
-                            coins -= tower.price
-                            placing = tower.name
-                            selected = None
+                        if 40 + n * 80 + info.shopScroll <= my <= 70 + n * 80 + info.shopScroll <= 450 and info.coins >= tower.price and info.placing == '' and info.wave >= tower.req:
+                            info.coins -= tower.price
+                            info.placing = tower.name
+                            info.selected = None
                         n += 1
 
                 if 775 <= mx <= 975 and 500 <= my <= 530:
-                    global projectiles, piercingProjectiles, HP, MapSelect
-
-                    enemies = []
-                    projectiles = []
-                    piercingProjectiles = []
-                    towers = []
-                    HP = 100
-                    coins = 50
-                    selected = None
-                    placing = ''
-                    nextWave = 299
-                    wave = 0
-                    win = False
-                    MapSelect = True
-                    shopScroll = 0
-                    spawnleft = ''
-                    spawndelay = 0
+                    info.reset()
 
                 if 295 <= mx <= 595 and 485 <= my <= 570:
-                    if issubclass(type(selected), Towers):
+                    if issubclass(type(info.selected), Towers):
                         n = (my - 485) // 30
-                        cost = type(selected).upgradePrices[n]
-                        if coins >= cost and wave >= selected.req and not selected.upgrades[n]:
-                            coins -= cost
-                            selected.upgrades[n] = True
+                        cost = type(info.selected).upgradePrices[n]
+                        if info.coins >= cost and info.wave >= info.selected.req and not info.selected.upgrades[n]:
+                            info.coins -= cost
+                            info.selected.upgrades[n] = True
             elif event.button == 4:
                 if mx > 800 and my < 450:
-                    shopScroll = min(0, shopScroll + 10)
+                    info.shopScroll = min(0, info.shopScroll + 10)
             elif event.button == 5:
                 if mx > 800 and my < 450:
-                    maxScroll = len([tower for tower in Towers.__subclasses__() if wave >= tower.req]) * 80 - 450
+                    maxScroll = len([tower for tower in Towers.__subclasses__() if info.wave >= tower.req]) * 80 - 450
                     if maxScroll > 0:
-                        shopScroll = max(-maxScroll, shopScroll - 10)
+                        info.shopScroll = max(-maxScroll, info.shopScroll - 10)
 
     save()
 
 
 def save():
-    pickle.dump([enemies, projectiles, piercingProjectiles, towers, HP, coins, placing, nextWave, wave, MapSelect, Map, PBs, win], open('save.txt', 'wb'))
+    pickle.dump(info, open('save.txt', 'wb'))
 
 
 def load():
-    global enemies, projectiles, piercingProjectiles, towers, HP, coins, placing, nextWave, wave, MapSelect, Map, PBs, win
+    global info
 
     try:
-        enemies, projectiles, piercingProjectiles, towers, HP, coins, placing, nextWave, wave, MapSelect, Map, PBs, win = pickle.load(open('save.txt', 'rb'))
+        info = pickle.load(open('save.txt', 'rb'))
     except FileNotFoundError:
         open('save.txt', 'w')
     except (EOFError, ValueError, UnpicklingError):
         pass
 
-    for m in Maps:
-        if m.name not in PBs.keys():
-            PBs[m.name] = None
 
+def app():
+    global screen, clock, font, largeFont, smallIceCircle, largeIceCircle, Maps, waves, enemyColors, speed, damages, info
 
-load()
-while True:
-    mx, my = pygame.mouse.get_pos()
+    screen = pygame.display.set_mode((1000, 600))
+    pygame.init()
+    pygame.font.init()
+    clock = pygame.time.Clock()
+    font = pygame.font.SysFont('Ubuntu Mono', 20)
+    largeFont = pygame.font.SysFont('Ubuntu Mono', 75)
+    pygame.display.set_caption('Tower Defense')
 
-    if MapSelect:
-        screen.fill((68, 68, 68))
+    IceCircle = pygame.transform.scale(pygame.image.load('Resources/Ice Circle.png'), (250, 250))
+    smallIceCircle = IceCircle.copy()
+    smallIceCircle.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
 
-        screen.blit(font.render('Map Select', True, (255, 255, 255)), (450, 25))
+    IceCircle = pygame.transform.scale(pygame.image.load('Resources/Ice Circle.png'), (350, 350))
+    largeIceCircle = IceCircle.copy()
+    largeIceCircle.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
 
-        for n in range(len(Maps)):
-            pygame.draw.rect(screen, Maps[n].backgroundColor, (10, 40 * n + 60, 980, 30))
-            if 10 <= mx <= 980 and 40 * n + 60 < my <= 40 * n + 90:
-                pygame.draw.rect(screen, (128, 128, 128), (10, 40 * n + 60, 980, 30), 5)
-            else:
-                pygame.draw.rect(screen, (0, 0, 0), (10, 40 * n + 60, 980, 30), 3)
-            screen.blit(font.render(Maps[n].name.upper(), True, (0, 0, 0)), (20, 62 + n * 40))
-            screen.blit(font.render(f'(Best: {PBs[Maps[n].name]})', True, (225, 255, 0) if PBs[Maps[n].name] == 100 else (0, 0, 0)), (800, 62 + n * 40))
+    Maps = [maps.POND, maps.LAVA_SPIRAL, maps.PLAINS, maps.DESERT, maps.THE_END]
+    waves = [
+        '000',
+        '11100000',
+        '11111222000',
+        '1111100022222333',
+        '333333333333333333333',
+        '22222222222222222222222223333333333333333333333333',
+        '444444444444444444444',
+        '5555555555555555555554444444444',
+        '666666666666666666666'
+    ]
+    enemyColors = [(255, 0, 0), (0, 0, 221), (0, 255, 0), (255, 255, 0), (255, 20, 147), (68, 68, 68), (16, 16, 16)]
+    damages = [1, 2, 3, 4, 5, 6, 8]
+    speed = [1, 1, 2, 2, 3, 4, 2]
+    info = data()
 
-        pygame.display.update()
+    load()
+    while True:
+        mx, my = pygame.mouse.get_pos()
 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                quit()
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1:
-                    if 10 <= mx <= 980:
-                        for n in range(len(Maps)):
-                            if 40 * n + 60 <= my <= 40 * n + 90:
-                                Map = Maps[n]
-                                MapSelect = False
-    else:
-        if not win:
-            main()
+        if info.MapSelect:
+            screen.fill((68, 68, 68))
+
+            screen.blit(font.render('Map Select', True, (255, 255, 255)), (450, 25))
+
+            for n in range(len(Maps)):
+                pygame.draw.rect(screen, Maps[n].backgroundColor, (10, 40 * n + 60, 980, 30))
+                if 10 <= mx <= 980 and 40 * n + 60 < my <= 40 * n + 90:
+                    pygame.draw.rect(screen, (128, 128, 128), (10, 40 * n + 60, 980, 30), 5)
+                else:
+                    pygame.draw.rect(screen, (0, 0, 0), (10, 40 * n + 60, 980, 30), 3)
+                screen.blit(font.render(Maps[n].name.upper(), True, (0, 0, 0)), (20, 62 + n * 40))
+                screen.blit(font.render(f'(Best: {info.PBs[Maps[n].name]})', True, (225, 255, 0) if info.PBs[Maps[n].name] == 100 else (0, 0, 0)), (800, 62 + n * 40))
+
+            pygame.display.update()
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    quit()
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if event.button == 1:
+                        if 10 <= mx <= 980:
+                            for n in range(len(Maps)):
+                                if 40 * n + 60 <= my <= 40 * n + 90:
+                                    info.Map = Maps[n]
+                                    info.MapSelect = False
         else:
-            cont = False
-            save()
-            if PBs[Map.name] is None:
-                PBs[Map.name] = HP
-            elif PBs[Map.name] < HP:
-                PBs[Map.name] = HP
-            FinalHP = HP
-            enemies = []
-            projectiles = []
-            piercingProjectiles = []
-            towers = []
-            HP = 100
-            coins = 50
-            selected = None
-            clickOffset = []
-            placing = ''
-            nextWave = 299
-            wave = 0
-            win = False
-            MapSelect = True
-            shopScroll = 0
-            spawnleft = ''
-            spawndelay = 0
+            if not info.win:
+                iterate()
+            else:
+                cont = False
+                if info.PBs[info.Map.name] is None:
+                    info.PBs[info.Map.name] = info.HP
+                elif info.PBs[info.Map.name] < info.HP:
+                    info.PBs[info.Map.name] = info.HP
+                info.FinalHP = info.HP
+                info.reset()
+                save()
 
-            while True:
-                screen.fill((32, 32, 32))
-                screen.blit(largeFont.render(f'You Win!', True, (255, 255, 255)), (320, 100))
-                screen.blit(font.render(f'Your Final Score: {FinalHP}', True, (255, 255, 255)), (350, 300))
-                screen.blit(font.render(f'Press [SPACE] to continue!', True, (255, 255, 255)), (325, 350))
-                pygame.display.update()
+                while True:
+                    screen.fill((32, 32, 32))
+                    screen.blit(largeFont.render(f'You Win!', True, (255, 255, 255)), (320, 100))
+                    screen.blit(font.render(f'Your Final Score: {info.FinalHP}', True, (255, 255, 255)), (350, 300))
+                    screen.blit(font.render(f'Press [SPACE] to continue!', True, (255, 255, 255)), (325, 350))
+                    pygame.display.update()
 
-                for event in pygame.event.get():
-                    if event.type == pygame.KEYDOWN:
-                        if event.key == pygame.K_SPACE:
-                            cont = True
-                    elif event.type == pygame.QUIT:
-                        quit()
+                    for event in pygame.event.get():
+                        if event.type == pygame.KEYDOWN:
+                            if event.key == pygame.K_SPACE:
+                                cont = True
+                        elif event.type == pygame.QUIT:
+                            quit()
 
-                clock.tick(60)
-                if cont:
-                    break
+                    clock.tick(60)
+                    if cont:
+                        break
+
+
+if __name__ == '__main__':
+    app()
