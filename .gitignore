@@ -125,4 +125,4 @@ venv.bak/
 dmypy.json
 
 # Additional
-/save.txt
+tower_defense/save.txt

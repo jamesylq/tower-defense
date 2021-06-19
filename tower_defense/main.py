@@ -1,5 +1,6 @@
 import pygame
 import pickle
+import random
 import math
 
 from _pickle import UnpicklingError
@@ -546,11 +547,11 @@ class Enemy:
             info.enemies.remove(self)
         except ValueError:
             pass
-        if self.tier == 0:
-            info.coins += 2 * coinMultiplier
-        else:
-            info.coins += 1 * coinMultiplier
-            if spawnNew:
+        if spawnNew:
+            if self.tier == 0:
+                info.coins += 2 * coinMultiplier
+            else:
+                info.coins += 1 * coinMultiplier
                 info.enemies.append(Enemy(self.tier - 1, (self.x, self.y), self.lineIndex))
                 return info.enemies[-1]
 
@@ -820,6 +821,12 @@ def app():
             screen.fill((68, 68, 68))
 
             screen.blit(font.render('Map Select', True, (255, 255, 255)), (450, 25))
+            pygame.draw.rect(screen, (200, 200, 200), (850, 550, 125, 30))
+            screen.blit(font.render('Random Map', True, (0, 0, 0)), (860, 555))
+            if 850 <= mx <= 975 and 550 < my <= 580:
+                pygame.draw.rect(screen, (128, 128, 128), (850, 550, 125, 30), 5)
+            else:
+                pygame.draw.rect(screen, (0, 0, 0), (850, 550, 125, 30), 3)
 
             for n in range(len(Maps)):
                 pygame.draw.rect(screen, Maps[n].backgroundColor, (10, 40 * n + 60, 980, 30))
@@ -842,6 +849,9 @@ def app():
                                 if 40 * n + 60 <= my <= 40 * n + 90:
                                     info.Map = Maps[n]
                                     info.MapSelect = False
+                        if 850 <= mx <= 975 and 550 <= my <= 580:
+                            info.Map = random.choice(Maps)
+                            info.MapSelect = False
         else:
             if not info.win:
                 iterate()
