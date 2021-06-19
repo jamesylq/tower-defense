@@ -2,6 +2,7 @@ import pygame
 import pickle
 import random
 import math
+import glob
 
 from _pickle import UnpicklingError
 
@@ -611,7 +612,7 @@ def draw():
                     classObj = tower
 
             pygame.draw.circle(screen, classObj.color, (mx, my), 15)
-            original = pygame.transform.scale(pygame.image.load('Resources/Range.png'), (classObj.range * 2, classObj.range * 2))
+            original = pygame.transform.scale(pygame.image.load('resources/range.png'), (classObj.range * 2, classObj.range * 2))
             modified = original.copy()
             modified.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
             screen.blit(modified, (mx - classObj.range, my - classObj.range))
@@ -647,7 +648,7 @@ def draw():
         tower.draw()
 
     if info.selected is not None:
-        original = pygame.transform.scale(pygame.image.load('Resources/Range.png'), (info.selected.range * 2, info.selected.range * 2))
+        original = pygame.transform.scale(pygame.image.load('resources/range.png'), (info.selected.range * 2, info.selected.range * 2))
         modified = original.copy()
         modified.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
         screen.blit(modified, (info.selected.x - info.selected.range, info.selected.y - info.selected.range))
@@ -788,11 +789,11 @@ def app():
     largeFont = pygame.font.SysFont('Ubuntu Mono', 75)
     pygame.display.set_caption('Tower Defense')
 
-    IceCircle = pygame.transform.scale(pygame.image.load('Resources/Ice Circle.png'), (250, 250))
+    IceCircle = pygame.transform.scale(pygame.image.load('resources/ice_circle.png'), (250, 250))
     smallIceCircle = IceCircle.copy()
     smallIceCircle.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
 
-    IceCircle = pygame.transform.scale(pygame.image.load('Resources/Ice Circle.png'), (350, 350))
+    IceCircle = pygame.transform.scale(pygame.image.load('resources/ice_circle.png'), (350, 350))
     largeIceCircle = IceCircle.copy()
     largeIceCircle.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
 
