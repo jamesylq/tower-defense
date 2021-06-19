@@ -1,3 +1,4 @@
+import os
 import pygame
 import pickle
 import random
@@ -5,6 +6,8 @@ import math
 
 from _pickle import UnpicklingError
 
+current_path = os.path.dirname(__file__) # Where your .py file is located
+resource_path = os.path.join(current_path, 'resources') # The resource folder path
 
 screen, clock, font, largeFont, smallIceCircle, largeIceCircle, Maps, waves, enemyColors, speed, damages, info = [None] * 12
 
@@ -611,7 +614,7 @@ def draw():
                     classObj = tower
 
             pygame.draw.circle(screen, classObj.color, (mx, my), 15)
-            original = pygame.transform.scale(pygame.image.load('resources/range.png'), (classObj.range * 2, classObj.range * 2))
+            original = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'range.png')), (classObj.range * 2, classObj.range * 2))
             modified = original.copy()
             modified.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
             screen.blit(modified, (mx - classObj.range, my - classObj.range))
@@ -647,7 +650,7 @@ def draw():
         tower.draw()
 
     if info.selected is not None:
-        original = pygame.transform.scale(pygame.image.load('resources/range.png'), (info.selected.range * 2, info.selected.range * 2))
+        original = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'range.png')), (info.selected.range * 2, info.selected.range * 2))
         modified = original.copy()
         modified.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
         screen.blit(modified, (info.selected.x - info.selected.range, info.selected.y - info.selected.range))
@@ -788,11 +791,11 @@ def app():
     largeFont = pygame.font.SysFont('Ubuntu Mono', 75)
     pygame.display.set_caption('Tower Defense')
 
-    IceCircle = pygame.transform.scale(pygame.image.load('resources/ice_circle.png'), (250, 250))
+    IceCircle = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'ice_circle.png')), (250, 250))
     smallIceCircle = IceCircle.copy()
     smallIceCircle.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
 
-    IceCircle = pygame.transform.scale(pygame.image.load('resources/ice_circle.png'), (350, 350))
+    IceCircle = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'ice_circle.png')), (350, 350))
     largeIceCircle = IceCircle.copy()
     largeIceCircle.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
 
