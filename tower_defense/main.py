@@ -6,10 +6,11 @@ import math
 
 from _pickle import UnpicklingError
 
-current_path = os.path.dirname(__file__)    # Where your .py file is located
-resource_path = os.path.join(current_path, 'resources')     # The resource folder path
+current_path = os.path.dirname(__file__)
+resource_path = os.path.join(current_path, 'resources')
 
 screen, clock, font, largeFont, smallIceCircle, largeIceCircle, Maps, waves, enemyColors, speed, damages, info = [None] * 12
+MaxFPS = 100
 
 
 class Map:
@@ -28,43 +29,39 @@ THE_END = Map([[0, 225], [800, 225]], "The End", (100, 100, 100), (200, 200, 200
 
 
 class data:
+    defaults = {
+        'enemies': [],
+        'projectiles': [],
+        'piercingProjectiles': [],
+        'towers': [],
+        'HP': 100,
+        'FinalHP': None,
+        'coins': 50,
+        'selected': None,
+        'placing': '',
+        'nextWave': 299,
+        'wave': 0,
+        'win': False,
+        'lose': False,
+        'MapSelect': True,
+        'shopScroll': 0,
+        'spawnleft': '',
+        'spawndelay': 9,
+        'Map': None
+    }
+
     def __init__(self):
         self.PBs = {Map.name: None for Map in Maps}
-        self.enemies = []
-        self.projectiles = []
-        self.piercingProjectiles = []
-        self.towers = []
-        self.HP = 100
-        self.FinalHP = None
-        self.coins = 50
-        self.selected = None
-        self.placing = ''
-        self.nextWave = 299
-        self.wave = 0
-        self.win = False
-        self.MapSelect = True
-        self.shopScroll = 0
-        self.spawnleft = ''
-        self.spawndelay = 9
-        self.Map = None
+
+        for attr, default in self.defaults.items():
+            setattr(self, attr, default)
 
     def reset(self):
-        self.enemies = []
-        self.projectiles = []
-        self.piercingProjectiles = []
-        self.towers = []
-        self.HP = 100
-        self.coins = 50
-        self.selected = None
-        self.placing = ''
-        self.nextWave = 299
-        self.wave = 0
-        self.win = False
-        self.MapSelect = True
-        self.shopScroll = 0
-        self.spawnleft = ''
-        self.spawndelay = 9
-        self.Map = None
+        for attr, default in self.defaults.items():
+            if attr in ['PBs', 'FinalHP']:
+                continue
+
+            setattr(self, attr, default)
 
 
 class Towers:
@@ -559,6 +556,11 @@ class Enemy:
                 return info.enemies[-1]
 
 
+def centredBlit(font: pygame.font.Font, text: str, color: (int, int, int), pos: (int, int)):
+    textObj = font.render(text, True, color)
+    screen.blit(textObj, textObj.get_rect(center=pos))
+
+
 def income() -> float:
     total = 0.001
     for tower in info.towers:
@@ -709,14 +711,18 @@ def iterate():
 
     mx, my = pygame.mouse.get_pos()
 
-    clock.tick(100)
+    clock.tick(MaxFPS)
     info.coins += income()
 
     draw()
     move()
 
+    if info.HP <= 0:
+        info.lose = True
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
+            save()
             quit()
 
         elif event.type == pygame.MOUSEBUTTONDOWN:
@@ -762,8 +768,6 @@ def iterate():
                     if maxScroll > 0:
                         info.shopScroll = max(-maxScroll, info.shopScroll - 10)
 
-    save()
-
 
 def save():
     pickle.dump(info, open('save.txt', 'wb'))
@@ -774,6 +778,16 @@ def load():
 
     try:
         info = pickle.load(open('save.txt', 'rb'))
+
+        for attr, default in data.defaults.items():
+            if not hasattr(info, attr):
+                setattr(info, attr, default)
+                print(f'Updated Savefile: Added attribute {attr}')
+
+        for Map in Maps:
+            if Map.name not in info.PBs.keys():
+                info.PBs[Map.name] = None
+                print(f'Updated Savefile: Added map {Map.name}')
     except FileNotFoundError:
         open('save.txt', 'w')
     except (EOFError, ValueError, UnpicklingError):
@@ -844,6 +858,7 @@ def app():
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
+                    save()
                     quit()
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if event.button == 1:
@@ -856,9 +871,7 @@ def app():
                             info.Map = random.choice(Maps)
                             info.MapSelect = False
         else:
-            if not info.win:
-                iterate()
-            else:
+            if info.win:
                 cont = False
                 if info.PBs[info.Map.name] is None:
                     info.PBs[info.Map.name] = info.HP
@@ -866,13 +879,12 @@ def app():
                     info.PBs[info.Map.name] = info.HP
                 info.FinalHP = info.HP
                 info.reset()
-                save()
 
                 while True:
                     screen.fill((32, 32, 32))
-                    screen.blit(largeFont.render(f'You Win!', True, (255, 255, 255)), (320, 100))
-                    screen.blit(font.render(f'Your Final Score: {info.FinalHP}', True, (255, 255, 255)), (350, 300))
-                    screen.blit(font.render(f'Press [SPACE] to continue!', True, (255, 255, 255)), (325, 350))
+                    centredBlit(largeFont, 'You Win!', (255, 255, 255), (500, 125))
+                    centredBlit(font, f'Your Final Score: {info.FinalHP}', (255, 255, 255), (500, 250))
+                    centredBlit(font, f'Press [SPACE] to continue!', (255, 255, 255), (500, 280))
                     pygame.display.update()
 
                     for event in pygame.event.get():
@@ -880,11 +892,35 @@ def app():
                             if event.key == pygame.K_SPACE:
                                 cont = True
                         elif event.type == pygame.QUIT:
+                            save()
                             quit()
 
-                    clock.tick(60)
+                    clock.tick(MaxFPS)
                     if cont:
                         break
+            elif info.lose:
+                cont = False
+                info.reset()
+
+                while True:
+                    screen.fill((32, 32, 32))
+                    centredBlit(largeFont, 'You Lost!', (255, 255, 255), (500, 125))
+                    centredBlit(font, 'Press [SPACE] to continue!', (255, 255, 255), (500, 250))
+                    pygame.display.update()
+
+                    for event in pygame.event.get():
+                        if event.type == pygame.KEYDOWN:
+                            if event.key == pygame.K_SPACE:
+                                cont = True
+                        elif event.type == pygame.QUIT:
+                            save()
+                            quit()
+
+                    clock.tick(MaxFPS)
+                    if cont:
+                        break
+            else:
+                iterate()
 
 
 if __name__ == '__main__':
