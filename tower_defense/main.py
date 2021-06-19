@@ -2,7 +2,6 @@ import pygame
 import pickle
 import random
 import math
-import glob
 
 from _pickle import UnpicklingError
 
