@@ -6,8 +6,8 @@ import math
 
 from _pickle import UnpicklingError
 
-current_path = os.path.dirname(__file__) # Where your .py file is located
-resource_path = os.path.join(current_path, 'resources') # The resource folder path
+current_path = os.path.dirname(__file__)    # Where your .py file is located
+resource_path = os.path.join(current_path, 'resources')     # The resource folder path
 
 screen, clock, font, largeFont, smallIceCircle, largeIceCircle, Maps, waves, enemyColors, speed, damages, info = [None] * 12
 
