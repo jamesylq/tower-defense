@@ -26,38 +26,36 @@ LAVA_SPIRAL = Map([[300, 225], [575, 225], [575, 325], [125, 325], [125, 125], [
 PLAINS = Map([[25, 0], [25, 375], [500, 375], [500, 25], [350, 25], [350, 175], [750, 175], [750, 0]], "Plains", (19, 109, 21), (155, 118, 83))
 DESERT = Map([[0, 25], [750, 25], [750, 200], [25, 200], [25, 375], [800, 375]], "Desert", (170, 108, 35), (178, 151, 5))
 THE_END = Map([[0, 225], [800, 225]], "The End", (100, 100, 100), (200, 200, 200))
+defaults = {
+    'enemies': [],
+    'projectiles': [],
+    'piercingProjectiles': [],
+    'towers': [],
+    'HP': 100,
+    'FinalHP': None,
+    'coins': 50,
+    'selected': None,
+    'placing': '',
+    'nextWave': 299,
+    'wave': 0,
+    'win': False,
+    'lose': False,
+    'MapSelect': True,
+    'shopScroll': 0,
+    'spawnleft': '',
+    'spawndelay': 9,
+    'Map': None
+}
 
 
 class data:
-    defaults = {
-        'enemies': [],
-        'projectiles': [],
-        'piercingProjectiles': [],
-        'towers': [],
-        'HP': 100,
-        'FinalHP': None,
-        'coins': 50,
-        'selected': None,
-        'placing': '',
-        'nextWave': 299,
-        'wave': 0,
-        'win': False,
-        'lose': False,
-        'MapSelect': True,
-        'shopScroll': 0,
-        'spawnleft': '',
-        'spawndelay': 9,
-        'Map': None
-    }
-
     def __init__(self):
         self.PBs = {Map.name: None for Map in Maps}
-
-        for attr, default in self.defaults.items():
+        for attr, default in defaults.items():
             setattr(self, attr, default)
 
     def reset(self):
-        for attr, default in self.defaults.items():
+        for attr, default in defaults.items():
             if attr in ['PBs', 'FinalHP']:
                 continue
 
@@ -779,7 +777,7 @@ def load():
     try:
         info = pickle.load(open('save.txt', 'rb'))
 
-        for attr, default in data.defaults.items():
+        for attr, default in defaults.items():
             if not hasattr(info, attr):
                 setattr(info, attr, default)
                 print(f'Updated Savefile: Added attribute {attr}')
