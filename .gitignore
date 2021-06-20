@@ -126,3 +126,4 @@ dmypy.json
 
 # Additional
 tower_defense/save.txt
+/save.txt
