@@ -421,6 +421,7 @@ class Enemy:
         self.lineIndex = lineIndex
         self.totalMovement = 0
         self.freezeTimer = 0
+        self.HP = 1000 if self.tier == 'A' else 1
 
     def move(self):
         if self.freezeTimer > 0:
@@ -428,7 +429,7 @@ class Enemy:
         else:
             if len(info.Map.path) - 1 == self.lineIndex:
                 self.kill(spawnNew=False)
-                info.HP -= damages[self.tier]
+                info.HP -= damages[str(self.tier)]
             else:
                 current = info.Map.path[self.lineIndex]
                 new = info.Map.path[self.lineIndex + 1]
@@ -454,9 +455,12 @@ class Enemy:
 
                 self.totalMovement += 1
 
+            if type(self.tier) is str:
+                self.freezeTimer = 5
+
     def update(self):
         for projectile in info.projectiles:
-            if abs(self.x - projectile.x) ** 2 + abs(self.y - projectile.y) ** 2 < 100:
+            if abs(self.x - projectile.x) ** 2 + abs(self.y - projectile.y) ** 2 < 625 if type(self.tier) is str else 100:
                 if projectile.freeze:
                     info.projectiles.remove(projectile)
                     if type(projectile.parent) is IceTower:
@@ -470,7 +474,7 @@ class Enemy:
                     if self.tier != 6:
                         self.kill(coinMultiplier=projectile.coinMultiplier)
 
-        if self.tier != 6:
+        if self.tier not in [6, 'A']:
             for projectile in info.piercingProjectiles:
                 if abs(self.x - projectile.x) ** 2 + abs(self.y - projectile.y) ** 2 < 100:
                     if self not in projectile.ignore:
@@ -484,20 +488,27 @@ class Enemy:
                             projectile.pierce -= 1
 
     def draw(self):
-        pygame.draw.circle(screen, enemyColors[self.tier], (self.x, self.y), 10)
+        pygame.draw.circle(screen, enemyColors[str(self.tier)], (self.x, self.y), 20 if type(self.tier) is str else 10)
 
-    def kill(self, *, spawnNew: bool = True, coinMultiplier: int = 1):
-        try:
-            info.enemies.remove(self)
-        except ValueError:
-            pass
-        if spawnNew:
-            if self.tier == 0:
-                info.coins += 2 * coinMultiplier
-            else:
-                info.coins += 1 * coinMultiplier
-                info.enemies.append(Enemy(self.tier - 1, (self.x, self.y), self.lineIndex))
-                return info.enemies[-1]
+    def kill(self, *, spawnNew: bool = True, coinMultiplier: int = 1, ignoreBoss: bool = False):
+        if type(self.tier) is int or ignoreBoss:
+            try:
+                info.enemies.remove(self)
+            except ValueError:
+                pass
+            if spawnNew:
+                if self.tier == 0:
+                    info.coins += 2 * coinMultiplier
+                elif self.tier == 'A':
+                    info.coins += 150
+                else:
+                    info.coins += 1 * coinMultiplier
+                    info.enemies.append(Enemy(self.tier - 1, (self.x, self.y), self.lineIndex))
+                    return info.enemies[-1]
+        else:
+            self.HP -= 1
+            if self.HP == 0:
+                self.kill(spawnNew=spawnNew, coinMultiplier=coinMultiplier, ignoreBoss=True)
 
 
 def getSellPrice(tower: Towers) -> float:
@@ -639,8 +650,7 @@ def draw():
 
 def move():
     for enemy in info.enemies:
-        for i in range(speed[enemy.tier]):
-            enemy.update()
+        for i in range(speed[str(enemy.tier)]):
             enemy.move()
             enemy.update()
 
@@ -657,7 +667,10 @@ def move():
 
 def iterate():
     if info.spawndelay == 0 and len(info.spawnleft) > 0:
-        info.enemies.append(Enemy(int(info.spawnleft[0]), info.Map.path[0], 0))
+        if info.spawnleft[0] == 'A':
+            info.enemies.append(Enemy(info.spawnleft[0], info.Map.path[0], 0))
+        else:
+            info.enemies.append(Enemy(int(info.spawnleft[0]), info.Map.path[0], 0))
         info.spawnleft = info.spawnleft[1:]
         info.spawndelay = 15
     else:
@@ -789,6 +802,7 @@ def app():
 
     Maps = [POND, LAVA_SPIRAL, PLAINS, DESERT, THE_END]
     waves = [
+        'A',
         '000',
         '11100000',
         '11111222000',
@@ -797,11 +811,42 @@ def app():
         '22222222222222222222222223333333333333333333333333',
         '444444444444444444444',
         '5555555555555555555554444444444',
-        '666666666666666666666'
+        '666666666666666666666',
+        'A'
     ]
-    enemyColors = [(255, 0, 0), (0, 0, 221), (0, 255, 0), (255, 255, 0), (255, 20, 147), (68, 68, 68), (16, 16, 16)]
-    damages = [1, 2, 3, 4, 5, 6, 8]
-    speed = [1, 1, 2, 2, 3, 4, 2]
+    enemyColors = {
+        '0': (255, 0, 0),
+        '1': (0, 0, 221),
+        '2': (0, 255, 0),
+        '3': (255, 255, 0),
+        '4': (255, 20, 147),
+        '5': (68, 68, 68),
+        '6': (16, 16, 16),
+        'A': (146, 43, 62)
+    }
+
+    damages = {
+        '0': 1,
+        '1': 2,
+        '2': 3,
+        '3': 4,
+        '4': 5,
+        '5': 6,
+        '6': 8,
+        'A': 25
+    }
+
+    speed = {
+        '0': 1,
+        '1': 1,
+        '2': 2,
+        '3': 2,
+        '4': 3,
+        '5': 4,
+        '6': 2,
+        'A': 1
+    }
+
     info = data()
 
     load()
