@@ -59,7 +59,7 @@ class data:
             if attr in ['PBs', 'FinalHP']:
                 continue
 
-            setattr(self, attr, default)
+            setattr(self, attr, default if type(default) is not list else [])
 
 
 class Towers:
@@ -76,6 +76,7 @@ class Turret(Towers):
     req = 0
     price = 50
     upgradePrices = [30, 20, 75]
+    upgradeNames = ['Longer Range', 'More Bullets', 'Explosive Shots']
     range = 100
 
     def __init__(self, x: int, y: int):
@@ -98,16 +99,6 @@ class Turret(Towers):
     def update(self):
         if self.upgrades[0]:
             self.range = 150
-
-    def GUIUpgrades(self):
-        for n in range(3):
-            if self.upgrades[n]:
-                pygame.draw.rect(screen, (255, 255, 191), (295, 485 + 30 * n, 300, 30))
-            pygame.draw.rect(screen, (128, 128, 128), (295, 485 + 30 * n, 300, 30), 5)
-        screen.blit(font.render('Upgrades:', True, 0), (200, 475))
-        screen.blit(font.render(f'Longer Range      [${self.upgradePrices[0]}]', True, (32, 32, 32)), (300, 485))
-        screen.blit(font.render(f'More Bullets      [${self.upgradePrices[1]}]', True, (32, 32, 32)), (300, 515))
-        screen.blit(font.render(f'Explosive Shots   [${self.upgradePrices[2]}]', True, (32, 32, 32)), (300, 545))
 
 
 class IceTower(Towers):
@@ -136,6 +127,7 @@ class IceTower(Towers):
     req = 2
     price = 30
     upgradePrices = [15, 25, 35]
+    upgradeNames = ['Longer Range', 'Snowstorm Circle', 'Longer Freeze']
     range = 125
 
     def __init__(self, x: int, y: int):
@@ -165,16 +157,6 @@ class IceTower(Towers):
         if self.upgrades[0]:
             self.range = 175
 
-    def GUIUpgrades(self):
-        for n in range(3):
-            if self.upgrades[n]:
-                pygame.draw.rect(screen, (255, 255, 191), (295, 485 + 30 * n, 300, 30))
-            pygame.draw.rect(screen, (128, 128, 128), (295, 485 + 30 * n, 300, 30), 5)
-        screen.blit(font.render('Upgrades:', True, 0), (200, 475))
-        screen.blit(font.render(f'Longer Range      [${self.upgradePrices[0]}]', True, (32, 32, 32)), (300, 485))
-        screen.blit(font.render(f'Snowstorm Circle  [${self.upgradePrices[1]}]', True, (32, 32, 32)), (300, 515))
-        screen.blit(font.render(f'Longer Freeze     [${self.upgradePrices[2]}]', True, (32, 32, 32)), (300, 545))
-
 
 class BombTower(Towers):
     name = 'Bomb Tower'
@@ -182,6 +164,7 @@ class BombTower(Towers):
     req = 4
     price = 100
     upgradePrices = [30, 20, 75]
+    upgradeNames = ['Longer Range', 'More Bombs', 'Larger Explosions']
     range = 50
 
     def __init__(self, x: int, y: int):
@@ -205,16 +188,6 @@ class BombTower(Towers):
         if self.upgrades[0]:
             self.range = 100
 
-    def GUIUpgrades(self):
-        for n in range(3):
-            if self.upgrades[n]:
-                pygame.draw.rect(screen, (255, 255, 191), (295, 485 + 30 * n, 300, 30))
-            pygame.draw.rect(screen, (128, 128, 128), (295, 485 + 30 * n, 300, 30), 5)
-        screen.blit(font.render('Upgrades:', True, 0), (200, 475))
-        screen.blit(font.render(f'Longer Range      [${self.upgradePrices[0]}]', True, (32, 32, 32)), (300, 485))
-        screen.blit(font.render(f'More Bombs        [${self.upgradePrices[1]}]', True, (32, 32, 32)), (300, 515))
-        screen.blit(font.render(f'Bigger Explosions [${self.upgradePrices[2]}]', True, (32, 32, 32)), (300, 545))
-
 
 class BananaFarm(Towers):
     name = 'Banana Farm'
@@ -222,6 +195,7 @@ class BananaFarm(Towers):
     req = 4
     price = 150
     upgradePrices = [30, 30, 40]
+    upgradeNames = ['Banana Cannon', 'Increased Income', 'Double Coin Drop']
     range = 100
 
     def __init__(self, x: int, y: int):
@@ -245,16 +219,6 @@ class BananaFarm(Towers):
     def update(self):
         pass
 
-    def GUIUpgrades(self):
-        for n in range(3):
-            if self.upgrades[n]:
-                pygame.draw.rect(screen, (255, 255, 191), (295, 485 + 30 * n, 300, 30))
-            pygame.draw.rect(screen, (128, 128, 128), (295, 485 + 30 * n, 300, 30), 5)
-        screen.blit(font.render('Upgrades:', True, 0), (200, 475))
-        screen.blit(font.render(f'Banana Cannon     [${self.upgradePrices[0]}]', True, (32, 32, 32)), (300, 485))
-        screen.blit(font.render(f'Increased Income  [${self.upgradePrices[1]}]', True, (32, 32, 32)), (300, 515))
-        screen.blit(font.render(f'Double Coin Drop  [${self.upgradePrices[2]}]', True, (32, 32, 32)), (300, 545))
-
 
 class Bowler(Towers):
     name = 'Bowler'
@@ -262,6 +226,7 @@ class Bowler(Towers):
     req = 5
     price = 175
     upgradePrices = [30, 20, 50]
+    upgradeNames = ['Double Damage', 'More Rocks', '10 Enemies Pierce']
     range = 0
 
     def __init__(self, x: int, y: int):
@@ -283,16 +248,6 @@ class Bowler(Towers):
 
     def update(self):
         pass
-
-    def GUIUpgrades(self):
-        for n in range(3):
-            if self.upgrades[n]:
-                pygame.draw.rect(screen, (255, 255, 191), (295, 485 + 30 * n, 300, 30))
-            pygame.draw.rect(screen, (128, 128, 128), (295, 485 + 30 * n, 300, 30), 5)
-        screen.blit(font.render('Upgrades:', True, 0), (200, 475))
-        screen.blit(font.render(f'Double Damage     [${self.upgradePrices[0]}]', True, (32, 32, 32)), (300, 485))
-        screen.blit(font.render(f'More Rocks        [${self.upgradePrices[1]}]', True, (32, 32, 32)), (300, 515))
-        screen.blit(font.render(f'10 Enemies Pierce [${self.upgradePrices[2]}]', True, (32, 32, 32)), (300, 545))
 
 
 class Wizard(Towers):
@@ -343,6 +298,7 @@ class Wizard(Towers):
     req = 7
     price = 250
     upgradePrices = [30, 75, 50]
+    upgradeNames = ['Longer Range', 'Lightning Zap', 'Big Blast Radius']
     range = 125
 
     def __init__(self, x: int, y: int):
@@ -373,16 +329,6 @@ class Wizard(Towers):
     def update(self):
         if self.upgrades[0]:
             self.range = 200
-
-    def GUIUpgrades(self):
-        for n in range(3):
-            if self.upgrades[n]:
-                pygame.draw.rect(screen, (255, 255, 191), (295, 485 + 30 * n, 300, 30))
-            pygame.draw.rect(screen, (128, 128, 128), (295, 485 + 30 * n, 300, 30), 5)
-        screen.blit(font.render('Upgrades:', True, 0), (200, 475))
-        screen.blit(font.render(f'Longer Range      [${self.upgradePrices[0]}]', True, (32, 32, 32)), (300, 485))
-        screen.blit(font.render(f'Lightning Zap     [${self.upgradePrices[1]}]', True, (32, 32, 32)), (300, 515))
-        screen.blit(font.render(f'Big Blast Radius  [${self.upgradePrices[2]}]', True, (32, 32, 32)), (300, 545))
 
 
 class Projectile:
@@ -554,6 +500,15 @@ class Enemy:
                 return info.enemies[-1]
 
 
+def getSellPrice(tower: Towers) -> float:
+    price = tower.price
+    for n in range(len(tower.upgrades)):
+        if tower.upgrades[n]:
+            price += tower.upgradePrices[n]
+
+    return price * 0.5
+
+
 def centredBlit(font: pygame.font.Font, text: str, color: (int, int, int), pos: (int, int)):
     textObj = font.render(text, True, color)
     screen.blit(textObj, textObj.get_rect(center=pos))
@@ -662,7 +617,22 @@ def draw():
         projectile.draw()
 
     if issubclass(type(info.selected), Towers):
-        info.selected.GUIUpgrades()
+        screen.blit(font.render('Upgrades:', True, 0), (200, 475))
+
+        for n in range(3):
+            if info.selected.upgrades[n]:
+                pygame.draw.rect(screen, (255, 255, 191), (295, 485 + 30 * n, 300, 30))
+            pygame.draw.rect(screen, (128, 128, 128), (295, 485 + 30 * n, 300, 30), 5)
+
+            nameWithSpace = ''
+            for m in range(18):
+                nameWithSpace += info.selected.upgradeNames[n][m] if m < len(info.selected.upgradeNames[n]) else ' '
+
+            screen.blit(font.render(f'{nameWithSpace} [${info.selected.upgradePrices[n]}]', True, (32, 32, 32)), (300, 485 + n * 30))
+
+        pygame.draw.rect(screen, (128, 128, 128), (620, 545, 200, 25))
+        pygame.draw.rect(screen, (200, 200, 200) if 620 < mx < 820 and 545 < my < 570 else (0, 0, 0), (620, 545, 200, 25), 3)
+        screen.blit(font.render(f'Sell for [${round(getSellPrice(info.selected))}]', True, 0), (625, 545))
 
     pygame.display.update()
 
@@ -750,16 +720,22 @@ def iterate():
                 if 775 <= mx <= 975 and 500 <= my <= 530:
                     info.reset()
 
-                if 295 <= mx <= 595 and 485 <= my <= 570:
-                    if issubclass(type(info.selected), Towers):
+                if issubclass(type(info.selected), Towers):
+                    if 295 <= mx <= 595 and 485 <= my <= 570:
                         n = (my - 485) // 30
                         cost = type(info.selected).upgradePrices[n]
                         if info.coins >= cost and info.wave >= info.selected.req and not info.selected.upgrades[n]:
                             info.coins -= cost
                             info.selected.upgrades[n] = True
+                    elif 620 <= mx < 820 and 545 <= my < 570:
+                        info.towers.remove(info.selected)
+                        info.coins += getSellPrice(info.selected)
+                        info.selected = None
+
             elif event.button == 4:
                 if mx > 800 and my < 450:
                     info.shopScroll = min(0, info.shopScroll + 10)
+
             elif event.button == 5:
                 if mx > 800 and my < 450:
                     maxScroll = len([tower for tower in Towers.__subclasses__() if info.wave >= tower.req]) * 80 - 450
@@ -793,7 +769,7 @@ def load():
 
 
 def app():
-    global screen, clock, font, largeFont, smallIceCircle, largeIceCircle, Maps, waves, enemyColors, speed, damages, info
+    global screen, clock, font, largeFont, smallIceCircle, largeIceCircle, Maps, waves, enemyColors, speed, damages, info, defaults
 
     screen = pygame.display.set_mode((1000, 600))
     pygame.init()
@@ -877,6 +853,7 @@ def app():
                     info.PBs[info.Map.name] = info.HP
                 info.FinalHP = info.HP
                 info.reset()
+                save()
 
                 while True:
                     screen.fill((32, 32, 32))
@@ -899,6 +876,7 @@ def app():
             elif info.lose:
                 cont = False
                 info.reset()
+                save()
 
                 while True:
                     screen.fill((32, 32, 32))
