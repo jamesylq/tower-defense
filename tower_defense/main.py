@@ -397,15 +397,15 @@ class PiercingProjectile:
         self.direction = direction
         self.ignore = []
 
-    def move(self):
+    def move(self, speed=2):
         if self.direction == 'left':
-            self.x -= 1
+            self.x -= speed
         elif self.direction == 'right':
-            self.x += 1
+            self.x += speed
         elif self.direction == 'up':
-            self.y -= 1
+            self.y -= speed
         elif self.direction == 'down':
-            self.y += 1
+            self.y += speed
 
         if self.x < 0 or self.x > 800 or self.y < 0 or self.y > 450:
             info.piercingProjectiles.remove(self)
@@ -421,14 +421,15 @@ class Enemy:
         self.lineIndex = lineIndex
         self.totalMovement = 0
         self.freezeTimer = 0
+        self.HP = 1000 if self.tier == 'A' else 1
 
     def move(self):
         if self.freezeTimer > 0:
             self.freezeTimer -= 1
         else:
             if len(info.Map.path) - 1 == self.lineIndex:
-                self.kill(spawnNew=False)
-                info.HP -= damages[self.tier]
+                self.kill(spawnNew=False, ignoreBoss=True)
+                info.HP -= damages[str(self.tier)]
             else:
                 current = info.Map.path[self.lineIndex]
                 new = info.Map.path[self.lineIndex + 1]
@@ -450,13 +451,16 @@ class Enemy:
                     if self.y <= new[1]:
                         self.lineIndex += 1
                 else:
-                    self.kill(spawnNew=False)
+                    self.kill(spawnNew=False, ignoreBoss=True)
 
                 self.totalMovement += 1
 
+            if type(self.tier) is str:
+                self.freezeTimer = 5
+
     def update(self):
         for projectile in info.projectiles:
-            if abs(self.x - projectile.x) ** 2 + abs(self.y - projectile.y) ** 2 < 100:
+            if abs(self.x - projectile.x) ** 2 + abs(self.y - projectile.y) ** 2 < 625 if type(self.tier) is str else 100:
                 if projectile.freeze:
                     info.projectiles.remove(projectile)
                     if type(projectile.parent) is IceTower:
@@ -470,7 +474,7 @@ class Enemy:
                     if self.tier != 6:
                         self.kill(coinMultiplier=projectile.coinMultiplier)
 
-        if self.tier != 6:
+        if self.tier not in [6, 'A']:
             for projectile in info.piercingProjectiles:
                 if abs(self.x - projectile.x) ** 2 + abs(self.y - projectile.y) ** 2 < 100:
                     if self not in projectile.ignore:
@@ -484,20 +488,43 @@ class Enemy:
                             projectile.pierce -= 1
 
     def draw(self):
-        pygame.draw.circle(screen, enemyColors[self.tier], (self.x, self.y), 10)
-
-    def kill(self, *, spawnNew: bool = True, coinMultiplier: int = 1):
-        try:
-            info.enemies.remove(self)
-        except ValueError:
-            pass
-        if spawnNew:
-            if self.tier == 0:
-                info.coins += 2 * coinMultiplier
+        if type(self.tier) is str:
+            if self.HP > 800:
+                color = (191, 255, 0)
+            elif self.HP > 600:
+                color = (196, 211, 0)
+            elif self.HP > 400:
+                color = (255, 255, 0)
+            elif self.HP > 200:
+                color = (255, 69, 0)
             else:
-                info.coins += 1 * coinMultiplier
-                info.enemies.append(Enemy(self.tier - 1, (self.x, self.y), self.lineIndex))
-                return info.enemies[-1]
+                color = (255, 0, 0)
+
+            pygame.draw.rect(screen, (128, 128, 128), (self.x - 50, self.y - 25, 100, 5))
+            pygame.draw.rect(screen, (0, 0, 0), (self.x - 50, self.y - 25, 100, 5), 1)
+            pygame.draw.rect(screen, color, (self.x - 50, self.y - 25, self.HP / 10, 5))
+
+        pygame.draw.circle(screen, enemyColors[str(self.tier)], (self.x, self.y), 20 if type(self.tier) is str else 10)
+
+    def kill(self, *, spawnNew: bool = True, coinMultiplier: int = 1, ignoreBoss: bool = False):
+        if type(self.tier) is int or ignoreBoss:
+            try:
+                info.enemies.remove(self)
+            except ValueError:
+                pass
+            if spawnNew:
+                if self.tier == 0:
+                    info.coins += 2 * coinMultiplier
+                elif self.tier == 'A':
+                    info.coins += 150
+                else:
+                    info.coins += 1 * coinMultiplier
+                    info.enemies.append(Enemy(self.tier - 1, (self.x, self.y), self.lineIndex))
+                    return info.enemies[-1]
+        else:
+            self.HP -= 1
+            if self.HP == 0:
+                self.kill(spawnNew=spawnNew, coinMultiplier=coinMultiplier, ignoreBoss=True)
 
 
 def getSellPrice(tower: Towers) -> float:
@@ -545,10 +572,8 @@ def getTarget(x: int, y: int, radius: int, ignore: [Enemy] = None) -> Enemy:
             if currMaxValue < enemy.totalMovement:
                 currMaxEnemy = enemy
                 currMaxValue = enemy.totalMovement
-    try:
-        return currMaxEnemy
-    except AttributeError:
-        return None
+
+    return currMaxEnemy
 
 
 def draw():
@@ -559,6 +584,18 @@ def draw():
     for i in range(len(info.Map.path) - 1):
         pygame.draw.line(screen, info.Map.pathColor, info.Map.path[i], info.Map.path[i + 1], 10)
     pygame.draw.circle(screen, info.Map.pathColor, info.Map.path[0], 10)
+
+    for tower in info.towers:
+        tower.draw()
+
+    for enemy in info.enemies:
+        enemy.draw()
+
+    for projectile in info.projectiles:
+        projectile.draw()
+
+    for projectile in info.piercingProjectiles:
+        projectile.draw()
 
     if info.placing != '':
         screen.blit(font.render(f'Click anywhere on the map to place the {info.placing}!', True, 0), (250, 400))
@@ -573,9 +610,6 @@ def draw():
             modified = original.copy()
             modified.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
             screen.blit(modified, (mx - classObj.range, my - classObj.range))
-
-    for enemy in info.enemies:
-        enemy.draw()
 
     pygame.draw.rect(screen, (221, 221, 221), (800, 0, 200, 450))
 
@@ -601,20 +635,11 @@ def draw():
     pygame.draw.rect(screen, (128, 128, 128), (775, 500, 200, 30))
     screen.blit(font.render('Map Selection', True, (0, 0, 0)), (800, 505))
 
-    for tower in info.towers:
-        tower.draw()
-
     if info.selected is not None:
         original = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'range.png')), (info.selected.range * 2, info.selected.range * 2))
         modified = original.copy()
         modified.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
         screen.blit(modified, (info.selected.x - info.selected.range, info.selected.y - info.selected.range))
-
-    for projectile in info.projectiles:
-        projectile.draw()
-
-    for projectile in info.piercingProjectiles:
-        projectile.draw()
 
     if issubclass(type(info.selected), Towers):
         screen.blit(font.render('Upgrades:', True, 0), (200, 475))
@@ -639,8 +664,7 @@ def draw():
 
 def move():
     for enemy in info.enemies:
-        for i in range(speed[enemy.tier]):
-            enemy.update()
+        for i in range(speed[str(enemy.tier)]):
             enemy.move()
             enemy.update()
 
@@ -652,12 +676,15 @@ def move():
         projectile.move()
 
     for projectile in info.piercingProjectiles:
-        projectile.move()
+        projectile.move(2)
 
 
 def iterate():
     if info.spawndelay == 0 and len(info.spawnleft) > 0:
-        info.enemies.append(Enemy(int(info.spawnleft[0]), info.Map.path[0], 0))
+        if info.spawnleft[0] == 'A':
+            info.enemies.append(Enemy(info.spawnleft[0], info.Map.path[0], 0))
+        else:
+            info.enemies.append(Enemy(int(info.spawnleft[0]), info.Map.path[0], 0))
         info.spawnleft = info.spawnleft[1:]
         info.spawndelay = 15
     else:
@@ -797,11 +824,42 @@ def app():
         '22222222222222222222222223333333333333333333333333',
         '444444444444444444444',
         '5555555555555555555554444444444',
-        '666666666666666666666'
+        '666666666666666666666',
+        'A'
     ]
-    enemyColors = [(255, 0, 0), (0, 0, 221), (0, 255, 0), (255, 255, 0), (255, 20, 147), (68, 68, 68), (16, 16, 16)]
-    damages = [1, 2, 3, 4, 5, 6, 8]
-    speed = [1, 1, 2, 2, 3, 4, 2]
+    enemyColors = {
+        '0': (255, 0, 0),
+        '1': (0, 0, 221),
+        '2': (0, 255, 0),
+        '3': (255, 255, 0),
+        '4': (255, 20, 147),
+        '5': (68, 68, 68),
+        '6': (16, 16, 16),
+        'A': (146, 43, 62)
+    }
+
+    damages = {
+        '0': 1,
+        '1': 2,
+        '2': 3,
+        '3': 4,
+        '4': 5,
+        '5': 6,
+        '6': 8,
+        'A': 25
+    }
+
+    speed = {
+        '0': 1,
+        '1': 1,
+        '2': 2,
+        '3': 2,
+        '4': 3,
+        '5': 4,
+        '6': 2,
+        'A': 1
+    }
+
     info = data()
 
     load()
