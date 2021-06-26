@@ -120,7 +120,7 @@ class IceTower(Towers):
 
             for enemy in info.enemies:
                 if abs(enemy.x - self.x) ** 2 + abs(enemy.y - self.y) ** 2 <= self.parent.range ** 2:
-                    enemy.freezeTimer = self.freezeDuration
+                    enemy.freezeTimer = (self.freezeDuration // 2) if type(enemy.tier) is str else self.freezeDuration
 
     name = 'Ice Tower'
     color = (32, 32, 200)
@@ -464,7 +464,7 @@ class Enemy:
                 if projectile.freeze:
                     info.projectiles.remove(projectile)
                     if type(projectile.parent) is IceTower:
-                        self.freezeTimer = 99 if projectile.parent.upgrades[2] else 50
+                        self.freezeTimer = (99 if projectile.parent.upgrades[2] else 50) // 2 if type(self.tier) is str else 1
                 else:
                     info.projectiles.remove(projectile)
                     if projectile.explosiveRadius > 0:
@@ -816,15 +816,15 @@ def app():
 
     Maps = [POND, LAVA_SPIRAL, PLAINS, DESERT, THE_END]
     waves = [
-        '000',
-        '11100000',
-        '11111222000',
-        '1111100022222333',
-        '333333333333333333333',
-        '22222222222222222222222223333333333333333333333333',
-        '444444444444444444444',
-        '5555555555555555555554444444444',
-        '666666666666666666666',
+        '0' * 3,
+        '0' * 5 + '1' * 3,
+        '0' * 3 + '1' * 5 + '2' * 3,
+        '0' * 3 + '1' * 5 + '2' * 5 + '3' * 3,
+        '3' * 30,
+        '2' * 30 + '3' * 30,
+        '4' * 30,
+        '4' * 15 + '5' * 15,
+        '6' * 25,
         'A'
     ]
     enemyColors = {
