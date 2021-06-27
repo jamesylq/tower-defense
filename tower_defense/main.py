@@ -11,6 +11,7 @@ resource_path = os.path.join(current_path, 'resources')
 
 screen, clock, font, largeFont, smallIceCircle, largeIceCircle, Maps, waves, enemyColors, speed, damages, info = [None] * 12
 MaxFPS = 100
+cheats = False
 
 
 class Map:
@@ -33,7 +34,7 @@ defaults = {
     'towers': [],
     'HP': 100,
     'FinalHP': None,
-    'coins': 50,
+    'coins': 100000 if cheats else 50,
     'selected': None,
     'placing': '',
     'nextWave': 299,
@@ -50,7 +51,7 @@ defaults = {
 
 class data:
     def __init__(self):
-        self.PBs = {Map.name: None for Map in Maps}
+        self.PBs = {Map.name: 100 for Map in Maps}
         for attr, default in defaults.items():
             setattr(self, attr, default)
 
@@ -311,7 +312,7 @@ class Wizard(Towers):
         self.lightning.draw()
 
     def attack(self):
-        if self.timer >= (80 if self.upgrades[2] else 160):
+        if self.timer >= (50 if self.upgrades[2] else 100):
             try:
                 closest = getTarget(self.x, self.y, self.range)
                 info.projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=60 if self.upgrades[2] else 30))
@@ -325,6 +326,62 @@ class Wizard(Towers):
             self.lightning.attack()
         elif self.upgrades[1]:
             self.lightningTimer += 1
+
+    def update(self):
+        if self.upgrades[0]:
+            self.range = 200
+
+
+class InfernoTower(Towers):
+    class AttackRender:
+        def __init__(self, parent, target):
+            self.parent = parent
+            self.target = target
+            self.visibleTicks = 50
+
+        def draw(self):
+            pygame.draw.line(screen, (255, 69, 0), (self.parent.x, self.parent.y), (self.target.x, self.target.y), 2)
+            self.visibleTicks -= 1
+            if self.visibleTicks == 0:
+                self.parent.inferno.renders.remove(self)
+
+    class Inferno:
+        def __init__(self, parent):
+            self.parent = parent
+            self.renders = []
+
+        def attack(self):
+            for enemy in info.enemies:
+                if abs(enemy.x - self.parent.x) ** 2 + abs(enemy.y - self.parent.y) ** 2 <= self.parent.range ** 2:
+                    enemy.fireTicks = (500 if self.parent.upgrades[2] else 300) if type(enemy.tier) is int else (5 if self.parent.upgrades[2] else 3)
+                    self.renders.append(InfernoTower.AttackRender(self.parent, enemy))
+
+        def draw(self):
+            for render in self.renders:
+                render.draw()
+
+    name = 'Inferno'
+    color = (255, 69, 0)
+    req = 8
+    price = 500
+    upgradePrices = [100, 120, 150]
+    upgradeNames = ['Longer Range', 'Shortened Cooldown', 'Longer Burning']
+    range = 100
+
+    def __init__(self, x: int, y: int):
+        super().__init__(x, y)
+        self.inferno = self.Inferno(self)
+
+    def draw(self):
+        pygame.draw.circle(screen, self.color, (self.x, self.y), 15)
+        self.inferno.draw()
+
+    def attack(self):
+        if self.timer >= (250 if self.upgrades[1] else 500):
+            self.inferno.attack()
+            self.timer = 0
+        else:
+            self.timer += 1
 
     def update(self):
         if self.upgrades[0]:
@@ -422,6 +479,7 @@ class Enemy:
         self.totalMovement = 0
         self.freezeTimer = 0
         self.HP = 1000 if self.tier == 'A' else 1
+        self.fireTicks = 0
 
     def move(self):
         if self.freezeTimer > 0:
@@ -459,6 +517,14 @@ class Enemy:
                 self.freezeTimer = 5
 
     def update(self):
+        if self.fireTicks > 0:
+            if self.fireTicks % 100 == 0:
+                new = self.kill()
+                if new is not None:
+                    new.fireTicks -= 1
+            else:
+                self.fireTicks -= 1
+
         for projectile in info.projectiles:
             if abs(self.x - projectile.x) ** 2 + abs(self.y - projectile.y) ** 2 < 625 if type(self.tier) is str else 100:
                 if projectile.freeze:
@@ -512,6 +578,7 @@ class Enemy:
                 info.enemies.remove(self)
             except ValueError:
                 pass
+
             if spawnNew:
                 if self.tier == 0:
                     info.coins += 2 * coinMultiplier
@@ -519,8 +586,10 @@ class Enemy:
                     info.coins += 150
                 else:
                     info.coins += 1 * coinMultiplier
-                    info.enemies.append(Enemy(self.tier - 1, (self.x, self.y), self.lineIndex))
-                    return info.enemies[-1]
+                    new = Enemy(self.tier - 1, (self.x, self.y), self.lineIndex)
+                    new.fireTicks = self.fireTicks
+                    info.enemies.append(new)
+                    return new
         else:
             self.HP -= 1
             if self.HP == 0:
@@ -548,6 +617,7 @@ def income() -> float:
             total += 0.001
             if tower.upgrades[1]:
                 total += 0.003
+
     return total
 
 
@@ -615,7 +685,7 @@ def draw():
 
     n = 0
     for towerType in Towers.__subclasses__():
-        if info.wave >= towerType.req:
+        if info.wave >= towerType.req or cheats:
             screen.blit(font.render(f'{towerType.name} (${towerType.price})', True, 0), (810, 10 + 80 * n + info.shopScroll))
             pygame.draw.rect(screen, (187, 187, 187), (945, 30 + 80 * n + info.shopScroll, 42, 42))
             pygame.draw.circle(screen, towerType.color, (966, 51 + 80 * n + info.shopScroll), 15)
@@ -699,8 +769,10 @@ def iterate():
             info.spawndelay = 15
             info.nextWave = 300
         else:
-            if info.nextWave == 300:
+            if info.nextWave == 284 and info.wave > 0:
                 info.coins += 100
+
+            if info.nextWave == 300:
                 info.wave += 1
             info.nextWave -= 1
 
@@ -738,7 +810,7 @@ def iterate():
                 if 810 <= mx <= 910:
                     n = 0
                     for tower in Towers.__subclasses__():
-                        if 40 + n * 80 + info.shopScroll <= my <= 70 + n * 80 + info.shopScroll <= 450 and info.coins >= tower.price and info.placing == '' and info.wave >= tower.req:
+                        if 40 + n * 80 + info.shopScroll <= my <= 70 + n * 80 + info.shopScroll <= 450 and info.coins >= tower.price and info.placing == '' and (info.wave >= tower.req or cheats):
                             info.coins -= tower.price
                             info.placing = tower.name
                             info.selected = None
@@ -751,7 +823,7 @@ def iterate():
                     if 295 <= mx <= 595 and 485 <= my <= 570:
                         n = (my - 485) // 30
                         cost = type(info.selected).upgradePrices[n]
-                        if info.coins >= cost and info.wave >= info.selected.req and not info.selected.upgrades[n]:
+                        if info.coins >= cost and (info.wave >= info.selected.req or cheats) and not info.selected.upgrades[n]:
                             info.coins -= cost
                             info.selected.upgrades[n] = True
                     elif 620 <= mx < 820 and 545 <= my < 570:
@@ -765,7 +837,7 @@ def iterate():
 
             elif event.button == 5:
                 if mx > 800 and my < 450:
-                    maxScroll = len([tower for tower in Towers.__subclasses__() if info.wave >= tower.req]) * 80 - 450
+                    maxScroll = len([tower for tower in Towers.__subclasses__() if (info.wave >= tower.req or cheats)]) * 80 - 450
                     if maxScroll > 0:
                         info.shopScroll = max(-maxScroll, info.shopScroll - 10)
 
