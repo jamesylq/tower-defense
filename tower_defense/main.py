@@ -51,7 +51,7 @@ defaults = {
 
 class data:
     def __init__(self):
-        self.PBs = {Map.name: 100 for Map in Maps}
+        self.PBs = {Map.name: None for Map in Maps}
         for attr, default in defaults.items():
             setattr(self, attr, default)
 
