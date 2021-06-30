@@ -47,6 +47,15 @@ defaults = {
     'spawndelay': 9,
     'Map': None
 }
+onlyExplosiveTiers = [6, 7]
+trueHP = {
+    'A': 1000,
+    'B': 1500
+}
+bossCoins = {
+    'A': 150,
+    'B': 250
+}
 
 
 class data:
@@ -353,7 +362,7 @@ class InfernoTower(Towers):
         def attack(self):
             for enemy in info.enemies:
                 if abs(enemy.x - self.parent.x) ** 2 + abs(enemy.y - self.parent.y) ** 2 <= self.parent.range ** 2:
-                    enemy.fireTicks = (500 if self.parent.upgrades[2] else 300) if type(enemy.tier) is int else (5 if self.parent.upgrades[2] else 3)
+                    enemy.fireTicks = (500 if self.parent.upgrades[2] else 300)
                     self.renders.append(InfernoTower.AttackRender(self.parent, enemy))
 
         def draw(self):
@@ -472,16 +481,30 @@ class PiercingProjectile:
 
 
 class Enemy:
-    def __init__(self, tier: int, spawn: [int, int], lineIndex: int):
-        self.tier = tier
+    def __init__(self, tier: str, spawn: [int, int], lineIndex: int):
+        try:
+            self.tier = int(tier)
+        except ValueError:
+            self.tier = tier
+
         self.x, self.y = spawn
         self.lineIndex = lineIndex
         self.totalMovement = 0
         self.freezeTimer = 0
-        self.HP = 1000 if self.tier == 'A' else 1
+        if self.tier in trueHP.keys():
+            self.HP = self.MaxHP = trueHP[self.tier]
+        else:
+            self.HP = self.MaxHP = 1
         self.fireTicks = 0
+        self.timer = 0
 
     def move(self):
+        if self.timer > 0:
+            self.timer -= 1
+        elif self.tier == 'B':
+            self.timer = 250
+            info.enemies.append(Enemy(3, [self.x, self.y], self.lineIndex))
+
         if self.freezeTimer > 0:
             self.freezeTimer -= 1
         else:
@@ -513,8 +536,13 @@ class Enemy:
 
                 self.totalMovement += 1
 
-            if type(self.tier) is str:
-                self.freezeTimer = 5
+            try:
+                self.freezeTimer = {
+                    'A': 5,
+                    'B': 8
+                }[self.tier]
+            except KeyError:
+                pass
 
     def update(self):
         if self.fireTicks > 0:
@@ -522,6 +550,8 @@ class Enemy:
                 new = self.kill()
                 if new is not None:
                     new.fireTicks -= 1
+                else:
+                    self.fireTicks -= 1
             else:
                 self.fireTicks -= 1
 
@@ -530,14 +560,14 @@ class Enemy:
                 if projectile.freeze:
                     info.projectiles.remove(projectile)
                     if type(projectile.parent) is IceTower:
-                        self.freezeTimer = (99 if projectile.parent.upgrades[2] else 50) // 2 if type(self.tier) is str else 1
+                        self.freezeTimer = (99 if projectile.parent.upgrades[2] else 50) // (2 if type(self.tier) is str else 1)
                 else:
                     info.projectiles.remove(projectile)
                     if projectile.explosiveRadius > 0:
                         projectile.explode(self)
-                        if self.tier == 6:
+                        if self.tier in onlyExplosiveTiers:
                             self.kill(coinMultiplier=projectile.coinMultiplier)
-                    if self.tier != 6:
+                    if self.tier not in onlyExplosiveTiers:
                         self.kill(coinMultiplier=projectile.coinMultiplier)
 
         if self.tier not in [6, 'A']:
@@ -568,7 +598,7 @@ class Enemy:
 
             pygame.draw.rect(screen, (128, 128, 128), (self.x - 50, self.y - 25, 100, 5))
             pygame.draw.rect(screen, (0, 0, 0), (self.x - 50, self.y - 25, 100, 5), 1)
-            pygame.draw.rect(screen, color, (self.x - 50, self.y - 25, self.HP / 10, 5))
+            pygame.draw.rect(screen, color, (self.x - 50, self.y - 25, self.HP / self.MaxHP * 100, 5))
 
         pygame.draw.circle(screen, enemyColors[str(self.tier)], (self.x, self.y), 20 if type(self.tier) is str else 10)
 
@@ -582,8 +612,8 @@ class Enemy:
             if spawnNew:
                 if self.tier == 0:
                     info.coins += 2 * coinMultiplier
-                elif self.tier == 'A':
-                    info.coins += 150
+                elif self.tier in bossCoins.keys():
+                    info.coins += bossCoins[self.tier]
                 else:
                     info.coins += 1 * coinMultiplier
                     new = Enemy(self.tier - 1, (self.x, self.y), self.lineIndex)
@@ -591,7 +621,7 @@ class Enemy:
                     info.enemies.append(new)
                     return new
         else:
-            self.HP -= 1
+            self.HP -= max(math.floor(self.MaxHP / 100), 1)
             if self.HP == 0:
                 self.kill(spawnNew=spawnNew, coinMultiplier=coinMultiplier, ignoreBoss=True)
 
@@ -751,7 +781,7 @@ def move():
 
 def iterate():
     if info.spawndelay == 0 and len(info.spawnleft) > 0:
-        if info.spawnleft[0] == 'A':
+        if type(info.spawnleft[0]) is str:
             info.enemies.append(Enemy(info.spawnleft[0], info.Map.path[0], 0))
         else:
             info.enemies.append(Enemy(int(info.spawnleft[0]), info.Map.path[0], 0))
@@ -897,7 +927,10 @@ def app():
         '4' * 30,
         '4' * 15 + '5' * 15,
         '6' * 25,
-        'A'
+        'A',
+        '6' * 30,
+        '7' * 25,
+        'B'
     ]
     enemyColors = {
         '0': (255, 0, 0),
@@ -907,7 +940,9 @@ def app():
         '4': (255, 20, 147),
         '5': (68, 68, 68),
         '6': (16, 16, 16),
-        'A': (146, 43, 62)
+        '7': (110, 38, 14),
+        'A': (146, 43, 62),
+        'B': (191, 64, 191)
     }
 
     damages = {
@@ -918,7 +953,9 @@ def app():
         '4': 5,
         '5': 6,
         '6': 8,
-        'A': 25
+        '7': 9,
+        'A': 30,
+        'B': 69
     }
 
     speed = {
@@ -929,7 +966,9 @@ def app():
         '4': 3,
         '5': 4,
         '6': 2,
-        'A': 1
+        '7': 2,
+        'A': 1,
+        'B': 1
     }
 
     info = data()
