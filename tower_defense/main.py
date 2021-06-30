@@ -621,7 +621,7 @@ class Enemy:
                     info.enemies.append(new)
                     return new
         else:
-            self.HP -= max(math.floor(self.MaxHP / 100), 1)
+            self.HP -= max(math.floor(self.MaxHP / 250), 1)
             if self.HP == 0:
                 self.kill(spawnNew=spawnNew, coinMultiplier=coinMultiplier, ignoreBoss=True)
 
