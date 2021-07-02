@@ -11,7 +11,7 @@ resource_path = os.path.join(current_path, 'resources')
 
 screen, clock, font, largeFont, smallIceCircle, largeIceCircle, Maps, waves, enemyColors, speed, damages, info = [None] * 12
 MaxFPS = 100
-cheats = True
+cheats = False
 
 
 class Map:
