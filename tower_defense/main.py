@@ -130,7 +130,8 @@ class IceTower(Towers):
 
             for enemy in info.enemies:
                 if abs(enemy.x - self.x) ** 2 + abs(enemy.y - self.y) ** 2 <= self.parent.range ** 2:
-                    enemy.freezeTimer = (self.freezeDuration // 2) if type(enemy.tier) is str else self.freezeDuration
+                    if type(enemy.tier) is int:
+                        enemy.freezeTimer = self.freezeDuration
 
     name = 'Ice Tower'
     color = (32, 32, 200)
