@@ -459,7 +459,7 @@ class PiercingProjectile:
         self.parent = parent
         self.x = x
         self.y = y
-        self.pierce = pierceLimit
+        self.pierce = pierceLimit * (2 if type(self.parent) is Bowler and self.parent.upgrades[2] else 1)
         self.direction = direction
         self.ignore = []
 
