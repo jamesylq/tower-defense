@@ -9,7 +9,6 @@ from _pickle import UnpicklingError
 current_path = os.path.dirname(__file__)
 resource_path = os.path.join(current_path, 'resources')
 
-screen, clock, font, largeFont, smallIceCircle, largeIceCircle, Maps, waves, enemyColors, speed, damages, info = [None] * 12
 MaxFPS = 100
 cheats = False
 
@@ -22,11 +21,89 @@ class Map:
         self.pathColor = pathColor
 
 
+screen = pygame.display.set_mode((1000, 600))
+pygame.init()
+pygame.font.init()
+clock = pygame.time.Clock()
+font = pygame.font.SysFont('Ubuntu Mono', 20)
+largeFont = pygame.font.SysFont('Ubuntu Mono', 75)
+pygame.display.set_caption('Tower Defense')
+
 POND = Map([[0, 25], [700, 25], [700, 375], [100, 375], [100, 75], [800, 75]], "Pond", (6, 50, 98), (0, 0, 255))
 LAVA_SPIRAL = Map([[300, 225], [575, 225], [575, 325], [125, 325], [125, 125], [675, 125], [675, 425], [25, 425], [25, 0]], "Lava Spiral", (207, 16, 32), (255, 140, 0))
 PLAINS = Map([[25, 0], [25, 375], [500, 375], [500, 25], [350, 25], [350, 175], [750, 175], [750, 0]], "Plains", (19, 109, 21), (155, 118, 83))
 DESERT = Map([[0, 25], [750, 25], [750, 200], [25, 200], [25, 375], [800, 375]], "Desert", (170, 108, 35), (178, 151, 5))
 THE_END = Map([[0, 225], [800, 225]], "The End", (100, 100, 100), (200, 200, 200))
+Maps = [POND, LAVA_SPIRAL, PLAINS, DESERT, THE_END]
+
+waves = [
+    '0' * 3,
+    '0' * 5 + '1' * 3,
+    '0' * 3 + '1' * 5 + '2' * 3,
+    '0' * 3 + '1' * 5 + '2' * 5 + '3' * 3,
+    '3' * 30,
+    '2' * 30 + '3' * 30,
+    '4' * 30,
+    '4' * 15 + '5' * 15,
+    '6' * 25,
+    'A',
+    '6' * 30,
+    '7' * 25,
+    'B',
+    '7' * 50
+]
+
+enemyColors = {
+    '0': (255, 0, 0),
+    '1': (0, 0, 221),
+    '2': (0, 255, 0),
+    '3': (255, 255, 0),
+    '4': (255, 20, 147),
+    '5': (68, 68, 68),
+    '6': (16, 16, 16),
+    '7': (110, 38, 14),
+    'A': (146, 43, 62),
+    'B': (191, 64, 191)
+}
+
+damages = {
+    '0': 1,
+    '1': 2,
+    '2': 3,
+    '3': 4,
+    '4': 5,
+    '5': 6,
+    '6': 8,
+    '7': 9,
+    'A': 30,
+    'B': 69
+}
+
+speed = {
+    '0': 1,
+    '1': 1,
+    '2': 2,
+    '3': 2,
+    '4': 3,
+    '5': 4,
+    '6': 2,
+    '7': 2,
+    'A': 1,
+    'B': 1
+}
+
+onlyExplosiveTiers = [6, 7]
+
+trueHP = {
+    'A': 1000,
+    'B': 1500
+}
+
+bossCoins = {
+    'A': 150,
+    'B': 250
+}
+
 defaults = {
     'enemies': [],
     'projectiles': [],
@@ -45,28 +122,29 @@ defaults = {
     'shopScroll': 0,
     'spawnleft': '',
     'spawndelay': 9,
-    'Map': None
+    'Map': None,
+    'totalWaves': len(waves)
 }
-onlyExplosiveTiers = [6, 7]
-trueHP = {
-    'A': 1000,
-    'B': 1500
-}
-bossCoins = {
-    'A': 150,
-    'B': 250
-}
+LOCKED = 'LOCKED'
+
+IceCircle = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'ice_circle.png')), (250, 250))
+smallIceCircle = IceCircle.copy()
+smallIceCircle.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
+
+IceCircle = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'ice_circle.png')), (350, 350))
+largeIceCircle = IceCircle.copy()
+largeIceCircle.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
 
 
 class data:
     def __init__(self):
-        self.PBs = {Map.name: None for Map in Maps}
+        self.PBs = {Map.name: (LOCKED if Map.name != 'Pond' else None) for Map in Maps}
         for attr, default in defaults.items():
             setattr(self, attr, default)
 
     def reset(self):
         for attr, default in defaults.items():
-            if attr in ['PBs', 'FinalHP']:
+            if attr in ['PBs', 'FinalHP', 'totalWaves']:
                 continue
 
             setattr(self, attr, default if type(default) is not list else [])
@@ -96,7 +174,7 @@ class Turret(Towers):
         pygame.draw.circle(screen, self.color, (self.x, self.y), 15)
 
     def attack(self):
-        if self.timer >= (50 if self.upgrades[1] else 100):
+        if self.timer >= (35 if self.upgrades[1] else 75):
             try:
                 closest = getTarget(self.x, self.y, self.range)
                 info.projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=30 if self.upgrades[2] else 0))
@@ -420,27 +498,22 @@ class Projectile:
             self.color = (187, 187, 187)
 
     def move(self):
-        if self.dx is None:
-            try:
-                dx = self.tx - self.x
-                dy = self.ty - self.y
-                self.dx = abs(dx / (dx + dy)) * 5
-                self.dy = abs(dy / (dx + dy)) * 5
+        try:
+            if self.dx is None:
+                dx, dy = self.x - self.tx, self.y - self.ty
+                self.dx = abs(dx / (dx + dy)) * (-1 if self.tx < self.x else 1) * 5
+                self.dy = abs(dy / (dx + dy)) * (-1 if self.ty < self.y else 1) * 5
 
-                if self.tx > self.x:
-                    self.dx = -self.dx
-                if self.ty > self.y:
-                    self.dy = -self.dy
+                self.x += self.dx
+                self.y += self.dy
+            else:
+                self.x += self.dx
+                self.y += self.dy
 
-                self.x -= self.dx
-                self.y -= self.dy
-            except ZeroDivisionError:
-                info.projectiles.remove(self)
-        else:
-            self.x -= self.dx
-            self.y -= self.dy
+            if self.x < 0 or self.x > 800 or self.y < 0 or self.y > 450:
+                raise ZeroDivisionError
 
-        if self.x < 0 or self.x > 800 or self.y < 0 or self.y > 450:
+        except ZeroDivisionError:
             info.projectiles.remove(self)
 
     def draw(self):
@@ -557,7 +630,7 @@ class Enemy:
                 self.fireTicks -= 1
 
         for projectile in info.projectiles:
-            if abs(self.x - projectile.x) ** 2 + abs(self.y - projectile.y) ** 2 < 625 if type(self.tier) is str else 100:
+            if abs(self.x - projectile.x) ** 2 + abs(self.y - projectile.y) ** 2 < (625 if type(self.tier) is str else 100):
                 if projectile.freeze:
                     info.projectiles.remove(projectile)
                     if type(projectile.parent) is IceTower:
@@ -661,20 +734,18 @@ def getCoinMultiplier(Tower: Towers) -> int:
 
 
 def getTarget(x: int, y: int, radius: int, ignore: [Enemy] = None) -> Enemy:
-    currMaxEnemy, currMaxValue = None, 0
     if ignore is None:
         ignore = []
 
-    for enemy in info.enemies:
-        if enemy in ignore:
-            continue
+    try:
+        maxDistance = max([enemy.totalMovement for enemy in info.enemies if abs(enemy.x - x) ** 2 + abs(enemy.y - y) ** 2 <= radius ** 2 and enemy not in ignore])
 
-        if abs(enemy.x - x) ** 2 + abs(enemy.y - y) ** 2 <= radius ** 2:
-            if currMaxValue < enemy.totalMovement:
-                currMaxEnemy = enemy
-                currMaxValue = enemy.totalMovement
+        for enemy in info.enemies:
+            if enemy.totalMovement == maxDistance:
+                return enemy
 
-    return currMaxEnemy
+    except ValueError:
+        return None
 
 
 def draw():
@@ -892,6 +963,11 @@ def load():
             if Map.name not in info.PBs.keys():
                 info.PBs[Map.name] = None
                 print(f'Updated Savefile: Added map {Map.name}')
+
+        if info.totalWaves != len(waves):
+            info.totalWaves = len(waves)
+            info.PBs = {Map.name: (LOCKED if Map.name != 'Pond' else None) for Map in Maps}
+
     except FileNotFoundError:
         open('save.txt', 'w')
     except (EOFError, ValueError, UnpicklingError):
@@ -899,80 +975,7 @@ def load():
 
 
 def app():
-    global screen, clock, font, largeFont, smallIceCircle, largeIceCircle, Maps, waves, enemyColors, speed, damages, info, defaults
-
-    screen = pygame.display.set_mode((1000, 600))
-    pygame.init()
-    pygame.font.init()
-    clock = pygame.time.Clock()
-    font = pygame.font.SysFont('Ubuntu Mono', 20)
-    largeFont = pygame.font.SysFont('Ubuntu Mono', 75)
-    pygame.display.set_caption('Tower Defense')
-
-    IceCircle = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'ice_circle.png')), (250, 250))
-    smallIceCircle = IceCircle.copy()
-    smallIceCircle.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
-
-    IceCircle = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'ice_circle.png')), (350, 350))
-    largeIceCircle = IceCircle.copy()
-    largeIceCircle.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
-
-    Maps = [POND, LAVA_SPIRAL, PLAINS, DESERT, THE_END]
-    waves = [
-        '0' * 3,
-        '0' * 5 + '1' * 3,
-        '0' * 3 + '1' * 5 + '2' * 3,
-        '0' * 3 + '1' * 5 + '2' * 5 + '3' * 3,
-        '3' * 30,
-        '2' * 30 + '3' * 30,
-        '4' * 30,
-        '4' * 15 + '5' * 15,
-        '6' * 25,
-        'A',
-        '6' * 30,
-        '7' * 25,
-        'B'
-    ]
-    enemyColors = {
-        '0': (255, 0, 0),
-        '1': (0, 0, 221),
-        '2': (0, 255, 0),
-        '3': (255, 255, 0),
-        '4': (255, 20, 147),
-        '5': (68, 68, 68),
-        '6': (16, 16, 16),
-        '7': (110, 38, 14),
-        'A': (146, 43, 62),
-        'B': (191, 64, 191)
-    }
-
-    damages = {
-        '0': 1,
-        '1': 2,
-        '2': 3,
-        '3': 4,
-        '4': 5,
-        '5': 6,
-        '6': 8,
-        '7': 9,
-        'A': 30,
-        'B': 69
-    }
-
-    speed = {
-        '0': 1,
-        '1': 1,
-        '2': 2,
-        '3': 2,
-        '4': 3,
-        '5': 4,
-        '6': 2,
-        '7': 2,
-        'A': 1,
-        'B': 1
-    }
-
-    info = data()
+    global screen, clock, font, largeFont, smallIceCircle, largeIceCircle, Maps, waves, enemyColors, speed, damages, defaults
 
     load()
     while True:
@@ -990,13 +993,19 @@ def app():
                 pygame.draw.rect(screen, (0, 0, 0), (850, 550, 125, 30), 3)
 
             for n in range(len(Maps)):
-                pygame.draw.rect(screen, Maps[n].backgroundColor, (10, 40 * n + 60, 980, 30))
-                if 10 <= mx <= 980 and 40 * n + 60 < my <= 40 * n + 90:
-                    pygame.draw.rect(screen, (128, 128, 128), (10, 40 * n + 60, 980, 30), 5)
+                if info.PBs[Maps[n].name] != 'LOCKED':
+                    pygame.draw.rect(screen, Maps[n].backgroundColor, (10, 40 * n + 60, 980, 30))
+                    if 10 <= mx <= 980 and 40 * n + 60 < my <= 40 * n + 90:
+                        pygame.draw.rect(screen, (128, 128, 128), (10, 40 * n + 60, 980, 30), 5)
+                    else:
+                        pygame.draw.rect(screen, (0, 0, 0), (10, 40 * n + 60, 980, 30), 3)
+                    screen.blit(font.render(Maps[n].name.upper(), True, (0, 0, 0)), (20, 62 + n * 40))
+                    screen.blit(font.render(f'(Best: {info.PBs[Maps[n].name]})', True, (225, 255, 0) if info.PBs[Maps[n].name] == 100 else (0, 0, 0)), (800, 62 + n * 40))
                 else:
+                    pygame.draw.rect(screen, (32, 32, 32), (10, 40 * n + 60, 980, 30))
                     pygame.draw.rect(screen, (0, 0, 0), (10, 40 * n + 60, 980, 30), 3)
-                screen.blit(font.render(Maps[n].name.upper(), True, (0, 0, 0)), (20, 62 + n * 40))
-                screen.blit(font.render(f'(Best: {info.PBs[Maps[n].name]})', True, (225, 255, 0) if info.PBs[Maps[n].name] == 100 else (0, 0, 0)), (800, 62 + n * 40))
+                    screen.blit(font.render(Maps[n].name.upper(), True, (0, 0, 0)), (20, 62 + n * 40))
+                    screen.blit(font.render(f'LOCKED', True, (0, 0, 0)), (830, 62 + n * 40))
 
             pygame.display.update()
 
@@ -1008,14 +1017,23 @@ def app():
                     if event.button == 1:
                         if 10 <= mx <= 980:
                             for n in range(len(Maps)):
-                                if 40 * n + 60 <= my <= 40 * n + 90:
+                                if 40 * n + 60 <= my <= 40 * n + 90 and list(info.PBs.values())[n] != 'LOCKED':
                                     info.Map = Maps[n]
                                     info.MapSelect = False
-                        if 850 <= mx <= 975 and 550 <= my <= 580:
+                        if 850 <= mx <= 975 and 550 <= my <= 580 and 'LOCKED' not in info.PBs.values():
                             info.Map = random.choice(Maps)
                             info.MapSelect = False
         else:
             if info.win:
+                n = False
+                for Map in Maps:
+                    if n and info.PBs[Map.name] == 'LOCKED':
+                        info.PBs[Map.name] = None
+                        break
+
+                    if Map.name == info.Map.name:
+                        n = True
+
                 cont = False
                 if info.PBs[info.Map.name] is None:
                     info.PBs[info.Map.name] = info.HP
@@ -1069,5 +1087,6 @@ def app():
                 iterate()
 
 
+info = data()
 if __name__ == '__main__':
     app()
