@@ -506,7 +506,7 @@ class Enemy:
             self.timer = 250
             info.enemies.append(Enemy(3, [self.x, self.y], self.lineIndex))
 
-        if self.freezeTimer > 0 and not type(self.tier) is str:
+        if self.freezeTimer > 0:
             self.freezeTimer -= 1
         else:
             if len(info.Map.path) - 1 == self.lineIndex:
@@ -576,7 +576,7 @@ class Enemy:
                 if abs(self.x - projectile.x) ** 2 + abs(self.y - projectile.y) ** 2 < 100:
                     if self not in projectile.ignore:
                         new = self.kill()
-                        if projectile.parent.upgrades[0] and new is not None:
+                        if projectile.parent.upgrades[0] and new is not None and type(self.tier) is int:
                             new = new.kill()
                         projectile.ignore.append(new)
                         if projectile.pierce == 1:
