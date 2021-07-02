@@ -11,7 +11,7 @@ resource_path = os.path.join(current_path, 'resources')
 
 screen, clock, font, largeFont, smallIceCircle, largeIceCircle, Maps, waves, enemyColors, speed, damages, info = [None] * 12
 MaxFPS = 100
-cheats = False
+cheats = True
 
 
 class Map:
@@ -96,7 +96,7 @@ class Turret(Towers):
         pygame.draw.circle(screen, self.color, (self.x, self.y), 15)
 
     def attack(self):
-        if self.timer >= (100 if self.upgrades[1] else 200):
+        if self.timer >= (50 if self.upgrades[1] else 100):
             try:
                 closest = getTarget(self.x, self.y, self.range)
                 info.projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=30 if self.upgrades[2] else 0))
