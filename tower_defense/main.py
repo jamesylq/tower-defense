@@ -96,7 +96,7 @@ class Turret(Towers):
         pygame.draw.circle(screen, self.color, (self.x, self.y), 15)
 
     def attack(self):
-        if self.timer >= (25 if self.upgrades[1] else 50):
+        if self.timer >= (100 if self.upgrades[1] else 200):
             try:
                 closest = getTarget(self.x, self.y, self.range)
                 info.projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=30 if self.upgrades[2] else 0))
@@ -149,7 +149,7 @@ class IceTower(Towers):
         self.snowCircle.draw()
 
     def attack(self):
-        if self.timer >= (500 if self.upgrades[1] else 100):
+        if self.timer >= (2500 if self.upgrades[1] else 500):
             if self.upgrades[1]:
                 self.snowCircle.freeze()
                 self.timer = 0
@@ -184,7 +184,7 @@ class BombTower(Towers):
         pygame.draw.circle(screen, self.color, (self.x, self.y), 15)
 
     def attack(self):
-        if self.timer >= (125 if self.upgrades[1] else 250):
+        if self.timer >= (100 if self.upgrades[1] else 200):
             try:
                 closest = getTarget(self.x, self.y, self.range)
                 info.projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=50))
@@ -505,7 +505,7 @@ class Enemy:
             self.timer = 250
             info.enemies.append(Enemy(3, [self.x, self.y], self.lineIndex))
 
-        if self.freezeTimer > 0:
+        if self.freezeTimer > 0 and not type(self.tier) is str:
             self.freezeTimer -= 1
         else:
             if len(info.Map.path) - 1 == self.lineIndex:
