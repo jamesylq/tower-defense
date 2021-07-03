@@ -10,7 +10,8 @@ current_path = os.path.dirname(__file__)
 resource_path = os.path.join(current_path, 'resources')
 
 MaxFPS = 100
-cheats = False
+cheats = True
+ticks = 0
 
 
 class Map:
@@ -49,8 +50,9 @@ waves = [
     'A',
     '6' * 30,
     '7' * 25,
-    'B',
-    '7' * 50
+    '7' * 50,
+    '8' * 25,
+    'B'
 ]
 
 enemyColors = {
@@ -60,8 +62,8 @@ enemyColors = {
     '3': (255, 255, 0),
     '4': (255, 20, 147),
     '5': (68, 68, 68),
-    '6': (16, 16, 16),
-    '7': (110, 38, 14),
+    '7': (16, 16, 16),
+    '8': (110, 38, 14),
     'A': (146, 43, 62),
     'B': (191, 64, 191)
 }
@@ -73,8 +75,9 @@ damages = {
     '3': 4,
     '4': 5,
     '5': 6,
-    '6': 8,
-    '7': 9,
+    '6': 7,
+    '7': 8,
+    '8': 9,
     'A': 30,
     'B': 69
 }
@@ -86,13 +89,14 @@ speed = {
     '3': 2,
     '4': 3,
     '5': 4,
-    '6': 2,
+    '6': 3,
     '7': 2,
+    '8': 2,
     'A': 1,
     'B': 1
 }
 
-onlyExplosiveTiers = [6, 7]
+onlyExplosiveTiers = [7, 8]
 
 trueHP = {
     'A': 1000,
@@ -134,6 +138,9 @@ smallIceCircle.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
 IceCircle = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'ice_circle.png')), (350, 350))
 largeIceCircle = IceCircle.copy()
 largeIceCircle.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
+
+rainbowColors = [(255, 0, 0), (255, 127, 0), (255, 255, 0), (0, 255, 0), (0, 0, 255), (46, 43, 95), (139, 0, 255)]
+rainbowIndex = 0
 
 
 class data:
@@ -705,7 +712,10 @@ class Enemy:
             pygame.draw.rect(screen, (0, 0, 0), (self.x - 50, self.y - 25, 100, 5), 1)
             pygame.draw.rect(screen, color, (self.x - 50, self.y - 25, self.HP / self.MaxHP * 100, 5))
 
-        pygame.draw.circle(screen, enemyColors[str(self.tier)], (self.x, self.y), 20 if type(self.tier) is str else 10)
+        if str(self.tier) in enemyColors:
+            pygame.draw.circle(screen, enemyColors[str(self.tier)], (self.x, self.y), 20 if type(self.tier) is str else 10)
+        else:
+            pygame.draw.circle(screen, rainbowColors[rainbowIndex], (self.x, self.y), 10)
 
     def kill(self, *, spawnNew: bool = True, coinMultiplier: int = 1, ignoreBoss: bool = False, burn: bool = False):
         if type(self.tier) is int or ignoreBoss:
@@ -1006,11 +1016,15 @@ def load():
 
 
 def app():
-    global screen, clock, font, largeFont, smallIceCircle, largeIceCircle, Maps, waves, enemyColors, speed, damages, defaults
+    global rainbowIndex, ticks
 
     load()
     while True:
         mx, my = pygame.mouse.get_pos()
+
+        ticks += 1
+        if ticks % 25 == 0:
+            rainbowIndex = (rainbowIndex + 1) % 7
 
         if info.MapSelect:
             screen.fill((68, 68, 68))
@@ -1024,7 +1038,7 @@ def app():
                 pygame.draw.rect(screen, (0, 0, 0), (850, 550, 125, 30), 3)
 
             for n in range(len(Maps)):
-                if info.PBs[Maps[n].name] != LOCKED:
+                if info.PBs[Maps[n].name] != LOCKED or cheats:
                     pygame.draw.rect(screen, Maps[n].backgroundColor, (10, 40 * n + 60, 980, 30))
                     if 10 <= mx <= 980 and 40 * n + 60 < my <= 40 * n + 90:
                         pygame.draw.rect(screen, (128, 128, 128), (10, 40 * n + 60, 980, 30), 5)
@@ -1048,10 +1062,10 @@ def app():
                     if event.button == 1:
                         if 10 <= mx <= 980:
                             for n in range(len(Maps)):
-                                if 40 * n + 60 <= my <= 40 * n + 90 and list(info.PBs.values())[n] != LOCKED:
+                                if 40 * n + 60 <= my <= 40 * n + 90 and (list(info.PBs.values())[n] != LOCKED or cheats):
                                     info.Map = Maps[n]
                                     info.MapSelect = False
-                        if 850 <= mx <= 975 and 550 <= my <= 580 and LOCKED not in info.PBs.values():
+                        if 850 <= mx <= 975 and 550 <= my <= 580 and (LOCKED not in info.PBs.values() or cheats):
                             info.Map = random.choice(Maps)
                             info.MapSelect = False
         else:
