@@ -156,6 +156,7 @@ class Towers:
         self.y = y
         self.timer = 0
         self.upgrades = [False, False, False]
+        self.stun = 0
 
 
 class Turret(Towers):
@@ -174,6 +175,10 @@ class Turret(Towers):
         pygame.draw.circle(screen, self.color, (self.x, self.y), 15)
 
     def attack(self):
+        if self.stun > 0:
+            self.stun -= 1
+            return
+
         if self.timer >= (35 if self.upgrades[1] else 75):
             try:
                 closest = getTarget(self.x, self.y, self.range)
@@ -228,7 +233,11 @@ class IceTower(Towers):
         self.snowCircle.draw()
 
     def attack(self):
-        if self.timer >= (2500 if self.upgrades[1] else 500):
+        if self.stun > 0:
+            self.stun -= 1
+            return
+
+        if self.timer >= (2500 if self.upgrades[1] else 50):
             if self.upgrades[1]:
                 self.snowCircle.freeze()
                 self.timer = 0
@@ -263,6 +272,10 @@ class BombTower(Towers):
         pygame.draw.circle(screen, self.color, (self.x, self.y), 15)
 
     def attack(self):
+        if self.stun > 0:
+            self.stun -= 1
+            return
+
         if self.timer >= (100 if self.upgrades[1] else 200):
             try:
                 closest = getTarget(self.x, self.y, self.range)
@@ -294,6 +307,10 @@ class BananaFarm(Towers):
         pygame.draw.circle(screen, self.color, (self.x, self.y), 15)
 
     def attack(self):
+        if self.stun > 0:
+            self.stun -= 1
+            return
+
         if self.upgrades[0]:
             if self.timer >= 100:
                 try:
@@ -325,6 +342,10 @@ class Bowler(Towers):
         pygame.draw.circle(screen, self.color, (self.x, self.y), 15)
 
     def attack(self):
+        if self.stun > 0:
+            self.stun -= 1
+            return
+
         if self.timer >= (200 if self.upgrades[1] else 300):
             try:
                 for direction in ['left', 'right', 'up', 'down']:
@@ -400,6 +421,10 @@ class Wizard(Towers):
         self.lightning.draw()
 
     def attack(self):
+        if self.stun > 0:
+            self.stun -= 1
+            return
+
         if self.timer >= (50 if self.upgrades[2] else 100):
             try:
                 closest = getTarget(self.x, self.y, self.range)
@@ -439,10 +464,15 @@ class InfernoTower(Towers):
             self.renders = []
 
         def attack(self):
+            found = False
             for enemy in info.enemies:
                 if abs(enemy.x - self.parent.x) ** 2 + abs(enemy.y - self.parent.y) ** 2 <= self.parent.range ** 2:
                     enemy.fireTicks = (500 if self.parent.upgrades[2] else 300)
                     self.renders.append(InfernoTower.AttackRender(self.parent, enemy))
+                    found = True
+
+            if not found:
+                self.parent.timer = 500
 
         def draw(self):
             for render in self.renders:
@@ -465,6 +495,10 @@ class InfernoTower(Towers):
         self.inferno.draw()
 
     def attack(self):
+        if self.stun > 0:
+            self.stun -= 1
+            return
+
         if self.timer >= (250 if self.upgrades[1] else 500):
             self.inferno.attack()
             self.timer = 0
@@ -611,17 +645,14 @@ class Enemy:
                 self.totalMovement += 1
 
             try:
-                self.freezeTimer = {
-                    'A': 5,
-                    'B': 8
-                }[self.tier]
+                self.freezeTimer = max({'A': 5, 'B': 8}[self.tier], self.freezeTimer)
             except KeyError:
                 pass
 
     def update(self):
         if self.fireTicks > 0:
             if self.fireTicks % 100 == 0:
-                new = self.kill()
+                new = self.kill(burn=True)
                 if new is not None:
                     new.fireTicks -= 1
                 else:
@@ -634,7 +665,7 @@ class Enemy:
                 if projectile.freeze:
                     info.projectiles.remove(projectile)
                     if type(projectile.parent) is IceTower:
-                        self.freezeTimer = (99 if projectile.parent.upgrades[2] else 50) // (2 if type(self.tier) is str else 1)
+                        self.freezeTimer = (50 if projectile.parent.upgrades[2] else 25) // (2 if type(self.tier) is str else 1)
                 else:
                     info.projectiles.remove(projectile)
                     if projectile.explosiveRadius > 0:
@@ -676,7 +707,7 @@ class Enemy:
 
         pygame.draw.circle(screen, enemyColors[str(self.tier)], (self.x, self.y), 20 if type(self.tier) is str else 10)
 
-    def kill(self, *, spawnNew: bool = True, coinMultiplier: int = 1, ignoreBoss: bool = False):
+    def kill(self, *, spawnNew: bool = True, coinMultiplier: int = 1, ignoreBoss: bool = False, burn: bool = False):
         if type(self.tier) is int or ignoreBoss:
             try:
                 info.enemies.remove(self)
@@ -695,8 +726,8 @@ class Enemy:
                     info.enemies.append(new)
                     return new
         else:
-            self.HP -= max(math.floor(self.MaxHP / 250), 1)
-            if self.HP == 0:
+            self.HP -= 10 if burn else 1
+            if self.HP <= 0:
                 self.kill(spawnNew=spawnNew, coinMultiplier=coinMultiplier, ignoreBoss=True)
 
 
@@ -993,7 +1024,7 @@ def app():
                 pygame.draw.rect(screen, (0, 0, 0), (850, 550, 125, 30), 3)
 
             for n in range(len(Maps)):
-                if info.PBs[Maps[n].name] != 'LOCKED':
+                if info.PBs[Maps[n].name] != LOCKED:
                     pygame.draw.rect(screen, Maps[n].backgroundColor, (10, 40 * n + 60, 980, 30))
                     if 10 <= mx <= 980 and 40 * n + 60 < my <= 40 * n + 90:
                         pygame.draw.rect(screen, (128, 128, 128), (10, 40 * n + 60, 980, 30), 5)
@@ -1005,7 +1036,7 @@ def app():
                     pygame.draw.rect(screen, (32, 32, 32), (10, 40 * n + 60, 980, 30))
                     pygame.draw.rect(screen, (0, 0, 0), (10, 40 * n + 60, 980, 30), 3)
                     screen.blit(font.render(Maps[n].name.upper(), True, (0, 0, 0)), (20, 62 + n * 40))
-                    screen.blit(font.render(f'LOCKED', True, (0, 0, 0)), (830, 62 + n * 40))
+                    screen.blit(font.render(LOCKED, True, (0, 0, 0)), (830, 62 + n * 40))
 
             pygame.display.update()
 
@@ -1017,17 +1048,17 @@ def app():
                     if event.button == 1:
                         if 10 <= mx <= 980:
                             for n in range(len(Maps)):
-                                if 40 * n + 60 <= my <= 40 * n + 90 and list(info.PBs.values())[n] != 'LOCKED':
+                                if 40 * n + 60 <= my <= 40 * n + 90 and list(info.PBs.values())[n] != LOCKED:
                                     info.Map = Maps[n]
                                     info.MapSelect = False
-                        if 850 <= mx <= 975 and 550 <= my <= 580 and 'LOCKED' not in info.PBs.values():
+                        if 850 <= mx <= 975 and 550 <= my <= 580 and LOCKED not in info.PBs.values():
                             info.Map = random.choice(Maps)
                             info.MapSelect = False
         else:
             if info.win:
                 n = False
                 for Map in Maps:
-                    if n and info.PBs[Map.name] == 'LOCKED':
+                    if n and info.PBs[Map.name] == LOCKED:
                         info.PBs[Map.name] = None
                         break
 
