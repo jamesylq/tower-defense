@@ -10,7 +10,7 @@ current_path = os.path.dirname(__file__)
 resource_path = os.path.join(current_path, 'resources')
 
 MaxFPS = 100
-cheats = True
+cheats = False
 ticks = 0
 
 
@@ -164,6 +164,7 @@ class Towers:
         self.timer = 0
         self.upgrades = [False, False, False]
         self.stun = 0
+        self.hits = 0
 
 
 class Turret(Towers):
@@ -382,12 +383,15 @@ class Wizard(Towers):
             self.t1 = getTarget(self.pos0[0], self.pos0[1], 1000)
             if type(self.t1) is Enemy:
                 self.t1.kill()
+                self.parent.hits += 1
                 self.t2 = getTarget(self.t1.x, self.t1.y, 1000, [self.t1])
                 if type(self.t2) is Enemy:
                     self.t2.kill()
+                    self.parent.hits += 1
                     self.t3 = getTarget(self.t2.x, self.t2.y, 1000, [self.t1, self.t2])
                     if type(self.t3) is Enemy:
                         self.t3.kill()
+                        self.parent.hits += 1
                 else:
                     self.t3 = None
             else:
@@ -475,6 +479,7 @@ class InfernoTower(Towers):
             for enemy in info.enemies:
                 if abs(enemy.x - self.parent.x) ** 2 + abs(enemy.y - self.parent.y) ** 2 <= self.parent.range ** 2:
                     enemy.fireTicks = (500 if self.parent.upgrades[2] else 300)
+                    enemy.fireIgnitedBy = self.parent
                     self.renders.append(InfernoTower.AttackRender(self.parent, enemy))
                     found = True
 
@@ -567,6 +572,7 @@ class Projectile:
 
             if abs(enemy.x - self.x) ** 2 + abs(enemy.y - self.y) ** 2 < self.explosiveRadius ** 2:
                 enemy.kill()
+                self.parent.hits += 1
 
 
 class PiercingProjectile:
@@ -611,6 +617,7 @@ class Enemy:
         else:
             self.HP = self.MaxHP = 1
         self.fireTicks = 0
+        self.fireIgnitedBy = None
         self.timer = 0
 
     def move(self):
@@ -660,6 +667,7 @@ class Enemy:
         if self.fireTicks > 0:
             if self.fireTicks % 100 == 0:
                 new = self.kill(burn=True)
+                self.fireIgnitedBy.hits += 1
                 if new is not None:
                     new.fireTicks -= 1
                 else:
@@ -679,14 +687,17 @@ class Enemy:
                         projectile.explode(self)
                         if self.tier in onlyExplosiveTiers:
                             self.kill(coinMultiplier=projectile.coinMultiplier)
+                            projectile.parent.hits += 1
                     if self.tier not in onlyExplosiveTiers:
                         self.kill(coinMultiplier=projectile.coinMultiplier)
+                        projectile.parent.hits += 1
 
-        if self.tier not in [6, 'A']:
+        if self.tier not in onlyExplosiveTiers:
             for projectile in info.piercingProjectiles:
                 if abs(self.x - projectile.x) ** 2 + abs(self.y - projectile.y) ** 2 < 100:
                     if self not in projectile.ignore:
                         new = self.kill()
+                        projectile.parent.hits += 1
                         if projectile.parent.upgrades[0] and new is not None and type(self.tier) is int:
                             new = new.kill()
                         projectile.ignore.append(new)
@@ -733,12 +744,14 @@ class Enemy:
                     info.coins += 1 * coinMultiplier
                     new = Enemy(self.tier - 1, (self.x, self.y), self.lineIndex)
                     new.fireTicks = self.fireTicks
+                    new.fireIgnitedBy = self.fireIgnitedBy
                     info.enemies.append(new)
                     return new
         else:
             self.HP -= 10 if burn else 1
             if self.HP <= 0:
                 self.kill(spawnNew=spawnNew, coinMultiplier=coinMultiplier, ignoreBoss=True)
+                self.fireIgnitedBy.hits += 1
 
 
 def getSellPrice(tower: Towers) -> float:
@@ -856,6 +869,7 @@ def draw():
 
     if issubclass(type(info.selected), Towers):
         screen.blit(font.render('Upgrades:', True, 0), (200, 475))
+        screen.blit(font.render(f'Pops: {info.selected.hits}', True, 0), (200, 550))
 
         for n in range(3):
             if info.selected.upgrades[n]:
@@ -1030,12 +1044,14 @@ def app():
             screen.fill((68, 68, 68))
 
             screen.blit(font.render('Map Select', True, (255, 255, 255)), (450, 25))
-            pygame.draw.rect(screen, (200, 200, 200), (850, 550, 125, 30))
-            screen.blit(font.render('Random Map', True, (0, 0, 0)), (860, 555))
-            if 850 <= mx <= 975 and 550 < my <= 580:
-                pygame.draw.rect(screen, (128, 128, 128), (850, 550, 125, 30), 5)
-            else:
-                pygame.draw.rect(screen, (0, 0, 0), (850, 550, 125, 30), 3)
+
+            if LOCKED not in list(info.PBs.values()) or cheats:
+                pygame.draw.rect(screen, (200, 200, 200), (850, 550, 125, 30))
+                screen.blit(font.render('Random Map', True, (0, 0, 0)), (860, 555))
+                if 850 <= mx <= 975 and 550 < my <= 580:
+                    pygame.draw.rect(screen, (128, 128, 128), (850, 550, 125, 30), 5)
+                else:
+                    pygame.draw.rect(screen, (0, 0, 0), (850, 550, 125, 30), 3)
 
             for n in range(len(Maps)):
                 if info.PBs[Maps[n].name] != LOCKED or cheats:
