@@ -1089,6 +1089,15 @@ def iterate():
                     if maxScroll > 0:
                         info.shopScroll = max(-maxScroll, info.shopScroll - 10)
 
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_UP:
+                info.shopScroll = min(0, info.shopScroll + 10)
+
+            elif event.key == pygame.K_DOWN:
+                maxScroll = len([tower for tower in Towers.__subclasses__() if (info.wave >= tower.req or cheats)]) * 80 - 450
+                if maxScroll > 0:
+                    info.shopScroll = max(-maxScroll, info.shopScroll - 10)
+
 
 def save():
     pickle.dump(info, open('save.txt', 'wb'))
