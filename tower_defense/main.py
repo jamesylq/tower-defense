@@ -321,7 +321,7 @@ class SpikeTower(Towers):
     color = (224, 17, 95)
     req = 2
     price = 125
-    upgradePrices = [100, 120, 150]
+    upgradePrices = [75, 50, 100]
     upgradeNames = ['Hyperspeed Spikes', 'Shorter Cooldown', 'Double Damage']
     range = 50
 
