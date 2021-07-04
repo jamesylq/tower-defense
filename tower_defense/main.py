@@ -338,7 +338,7 @@ class SpikeTower(Towers):
             self.stun -= 1
             return
 
-        if self.spikes.spikes[0].visible:
+        if True in [s.visible for s in self.spikes.spikes]:
             self.spikes.moveSpikes()
         elif self.timer >= (0 if self.upgrades[1] else 100):
             for spike in self.spikes.spikes:
