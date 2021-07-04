@@ -279,16 +279,18 @@ class SpikeTower(Towers):
             if not self.visible:
                 return
 
-            self.x += self.dx
-            self.y += self.dy
+            self.x += self.dx * (3 if self.parent.upgrades[0] else 1)
+            self.y += self.dy * (3 if self.parent.upgrades[0] else 1)
 
             for enemy in info.enemies:
                 if enemy in self.ignore:
                     continue
 
-                if abs(enemy.x - self.x) ** 2 + abs(enemy.y - self.y) ** 2 < 144 if type(enemy.tier) is int else 484:
+                if abs(enemy.x - self.x) ** 2 + abs(enemy.y - self.y) ** 2 < (144 if type(enemy.tier) is int else 484):
                     self.visible = False
                     new = enemy.kill(coinMultiplier=getCoinMultiplier(self.parent))
+                    if self.parent.upgrades[2] and new is not None:
+                        new = new.kill(coinMultiplier=getCoinMultiplier(self.parent))
                     self.ignore.append(new if type(enemy.tier) is int else enemy)
                     self.parent.hits += 1
 
@@ -309,8 +311,7 @@ class SpikeTower(Towers):
             for spike in self.spikes:
                 spike.move()
 
-            if abs(self.spikes[0].x - self.parent.x) ** 2 + abs(self.spikes[0].y - self.parent.y) ** 2 > self.parent.range ** 2:
-                for spike in self.spikes:
+                if abs(spike.x - self.parent.x) ** 2 + abs(spike.y - self.parent.y) ** 2 >= self.parent.range ** 2:
                     spike.visible = False
 
         def drawSpikes(self):
@@ -340,7 +341,7 @@ class SpikeTower(Towers):
 
         if True in [s.visible for s in self.spikes.spikes]:
             self.spikes.moveSpikes()
-        elif self.timer >= (0 if self.upgrades[1] else 100):
+        elif self.timer >= (25 if self.upgrades[1] else 100):
             for spike in self.spikes.spikes:
                 spike.visible = True
                 spike.x = self.x
