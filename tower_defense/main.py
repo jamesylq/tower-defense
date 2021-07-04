@@ -10,7 +10,7 @@ current_path = os.path.dirname(__file__)
 resource_path = os.path.join(current_path, 'resources')
 
 MaxFPS = 100
-cheats = False
+cheats = True
 
 
 class Map:
@@ -139,6 +139,8 @@ IceCircle = pygame.transform.scale(pygame.image.load(os.path.join(resource_path,
 largeIceCircle = IceCircle.copy()
 largeIceCircle.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
 
+SIN45 = COS45 = math.sqrt(2) / 2
+
 
 class data:
     def __init__(self):
@@ -261,6 +263,97 @@ class IceTower(Towers):
             self.range = 175
 
 
+class SpikeTower(Towers):
+    class Spike:
+        def __init__(self, parent, angle: int):
+            self.parent = parent
+            self.x = self.parent.x
+            self.y = self.parent.y
+            self.angle = angle
+            self.dx = {0: 0, 45: SIN45, 90: 1, 135: SIN45, 180: 0, 225: -SIN45, 270: -1, 315: -SIN45, 360: 0}[angle]
+            self.dy = {0: -1, 45: -COS45, 90: 0, 135: COS45, 180: 1, 225: COS45, 270: 0, 315: -COS45, 360: -1}[angle]
+            self.visible = False
+            self.ignore = []
+
+        def move(self):
+            if not self.visible:
+                return
+
+            self.x += self.dx
+            self.y += self.dy
+
+            for enemy in info.enemies:
+                if enemy in self.ignore:
+                    continue
+
+                if abs(enemy.x - self.x) ** 2 + abs(enemy.y - self.y) ** 2 < 144 if type(enemy.tier) is int else 484:
+                    self.visible = False
+                    new = enemy.kill(coinMultiplier=getCoinMultiplier(self.parent))
+                    self.ignore.append(new if type(enemy.tier) is int else enemy)
+                    self.parent.hits += 1
+
+        def draw(self):
+            if not self.visible:
+                return
+
+            pygame.draw.circle(screen, (0, 0, 0), (self.x, self.y), 2)
+
+    class Spikes:
+        def __init__(self, parent):
+            self.parent = parent
+            self.spikes = []
+            for n in range(8):
+                self.spikes.append(SpikeTower.Spike(self.parent, n * 45))
+
+        def moveSpikes(self):
+            for spike in self.spikes:
+                spike.move()
+
+            if abs(self.spikes[0].x - self.parent.x) ** 2 + abs(self.spikes[0].y - self.parent.y) ** 2 > self.parent.range ** 2:
+                for spike in self.spikes:
+                    spike.visible = False
+
+        def drawSpikes(self):
+            for spike in self.spikes:
+                spike.draw()
+
+    name = 'Spike Tower'
+    color = (224, 17, 95)
+    req = 2
+    price = 125
+    upgradePrices = [100, 120, 150]
+    upgradeNames = ['Hyperspeed Spikes', 'Shorter Cooldown', 'Double Damage']
+    range = 50
+
+    def __init__(self, x: int, y: int):
+        super().__init__(x, y)
+        self.spikes = SpikeTower.Spikes(self)
+
+    def draw(self):
+        pygame.draw.circle(screen, self.color, (self.x, self.y), 15)
+        self.spikes.drawSpikes()
+
+    def attack(self):
+        if self.stun > 0:
+            self.stun -= 1
+            return
+
+        if self.spikes.spikes[0].visible:
+            self.spikes.moveSpikes()
+        elif self.timer >= (0 if self.upgrades[1] else 100):
+            for spike in self.spikes.spikes:
+                spike.visible = True
+                spike.x = self.x
+                spike.y = self.y
+                spike.ignore = []
+            self.timer = 0
+        else:
+            self.timer += 1
+
+    def update(self):
+        pass
+
+
 class BombTower(Towers):
     name = 'Bomb Tower'
     color = (0, 0, 0)
@@ -379,15 +472,15 @@ class Wizard(Towers):
             self.visibleTicks = 50
             self.t1 = getTarget(self.pos0[0], self.pos0[1], 1000)
             if type(self.t1) is Enemy:
-                self.t1.kill()
+                self.t1.kill(coinMultiplier=getCoinMultiplier(self.parent))
                 self.parent.hits += 1
                 self.t2 = getTarget(self.t1.x, self.t1.y, 1000, [self.t1])
                 if type(self.t2) is Enemy:
-                    self.t2.kill()
+                    self.t2.kill(coinMultiplier=getCoinMultiplier(self.parent))
                     self.parent.hits += 1
                     self.t3 = getTarget(self.t2.x, self.t2.y, 1000, [self.t1, self.t2])
                     if type(self.t3) is Enemy:
-                        self.t3.kill()
+                        self.t3.kill(coinMultiplier=getCoinMultiplier(self.parent))
                         self.parent.hits += 1
                 else:
                     self.t3 = None
@@ -568,13 +661,14 @@ class Projectile:
                 continue
 
             if abs(enemy.x - self.x) ** 2 + abs(enemy.y - self.y) ** 2 < self.explosiveRadius ** 2:
-                enemy.kill()
+                enemy.kill(coinMultiplier=getCoinMultiplier(self.parent))
                 self.parent.hits += 1
 
 
 class PiercingProjectile:
     def __init__(self, parent: Towers, x: int, y: int, pierceLimit: int, direction: str):
         self.parent = parent
+        self.coinMultiplier = getCoinMultiplier(self.parent)
         self.x = x
         self.y = y
         self.pierce = pierceLimit * (2 if type(self.parent) is Bowler and self.parent.upgrades[2] else 1)
@@ -693,10 +787,10 @@ class Enemy:
             for projectile in info.piercingProjectiles:
                 if abs(self.x - projectile.x) ** 2 + abs(self.y - projectile.y) ** 2 < 100:
                     if self not in projectile.ignore:
-                        new = self.kill()
+                        new = self.kill(coinMultiplier=projectile.coinMultiplier)
                         projectile.parent.hits += 1
                         if projectile.parent.upgrades[0] and new is not None and type(self.tier) is int:
-                            new = new.kill()
+                            new = new.kill(coinMultiplier=projectile.coinMultiplier)
                         projectile.ignore.append(new)
                         if projectile.pierce == 1:
                             info.piercingProjectiles.remove(projectile)
@@ -741,11 +835,14 @@ class Enemy:
                     new.fireIgnitedBy = self.fireIgnitedBy
                     info.enemies.append(new)
                     return new
-        else:
+        elif type(self.tier) is str:
             self.HP -= 10 if burn else 1
             if self.HP <= 0:
                 self.kill(spawnNew=spawnNew, coinMultiplier=coinMultiplier, ignoreBoss=True)
-                self.fireIgnitedBy.hits += 1
+                try:
+                    self.fireIgnitedBy.hits += 1
+                except AttributeError:
+                    pass
 
 
 def getSellPrice(tower: Towers) -> float:
