@@ -21,8 +21,7 @@ class Map:
         self.pathColor = pathColor
 
 
-screen = pygame.display.set_mode((1000, 600))
-pygame.init()
+screen = None
 pygame.font.init()
 clock = pygame.time.Clock()
 font = pygame.font.SysFont('Ubuntu Mono', 20)
@@ -1133,6 +1132,20 @@ def load():
 
 
 def app():
+    global screen
+
+    try:
+        open('save.txt', 'r')
+    except FileNotFoundError:
+        pass
+    else:
+        response = input('Load savefile? [Y/n]: ').lower()
+        if response in ['no', 'n']:
+            open('save.txt', 'w').write('')
+
+    screen = pygame.display.set_mode((1000, 600))
+    pygame.init()
+
     load()
     while True:
         mx, my = pygame.mouse.get_pos()
