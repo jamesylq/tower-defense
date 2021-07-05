@@ -1143,7 +1143,7 @@ def app():
             pygame.draw.rect(screen, (255, 0, 0), (225, 375, 175, 50))
             pygame.draw.rect(screen, (124, 252, 0), (600, 375, 175, 50))
             centredBlit(mediumFont, 'Do you want to load saved game?', (0, 0, 0), (500, 150))
-            centredBlit(font, 'If you encounter an error, you can choose \"No\" because', (0, 0, 0), (500, 200))
+            centredBlit(font, 'If you encounter an error, you should choose \"No\" because', (0, 0, 0), (500, 200))
             centredBlit(font, 'tower-defense might not be compatible with earlier versions.', (0, 0, 0), (500, 230))
             centredBlit(mediumFont, 'Yes', (0, 0, 0), (687, 400))
             centredBlit(mediumFont, 'No', (0, 0, 0), (313, 400))
@@ -1163,7 +1163,6 @@ def app():
                 if event.type == pygame.QUIT:
                     quit()
                 elif event.type == pygame.MOUSEBUTTONDOWN:
-                    print(mx, my)
                     if event.button == 1:
                         if 375 < my < 425:
                             if 225 < mx < 400:
