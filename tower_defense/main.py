@@ -21,10 +21,12 @@ class Map:
         self.pathColor = pathColor
 
 
-screen = None
+screen = pygame.display.set_mode((1000, 600))
+pygame.init()
 pygame.font.init()
 clock = pygame.time.Clock()
 font = pygame.font.SysFont('Ubuntu Mono', 20)
+mediumFont = pygame.font.SysFont('Ubuntu Mono', 30)
 largeFont = pygame.font.SysFont('Ubuntu Mono', 75)
 pygame.display.set_caption('Tower Defense')
 
@@ -825,11 +827,10 @@ class Enemy:
 
             if spawnNew:
                 if self.tier == 0:
-                    info.coins += 2 * coinMultiplier
+                    info.coins += 3 * coinMultiplier
                 elif self.tier in bossCoins.keys():
                     info.coins += bossCoins[self.tier]
                 else:
-                    info.coins += 1 * coinMultiplier
                     new = Enemy(self.tier - 1, (self.x, self.y), self.lineIndex)
                     new.fireTicks = self.fireTicks
                     new.fireIgnitedBy = self.fireIgnitedBy
@@ -1112,12 +1113,10 @@ def load():
         for attr, default in defaults.items():
             if not hasattr(info, attr):
                 setattr(info, attr, default)
-                print(f'Updated Savefile: Added attribute {attr}')
 
         for Map in Maps:
             if Map.name not in info.PBs.keys():
                 info.PBs[Map.name] = None
-                print(f'Updated Savefile: Added map {Map.name}')
 
         if info.totalWaves != len(waves):
             info.totalWaves = len(waves)
@@ -1132,21 +1131,50 @@ def load():
 
 
 def app():
-    global screen
-
-    try:
-        open('save.txt', 'r')
-    except FileNotFoundError:
-        pass
-    else:
-        response = input('Load savefile? [Y/n]: ').lower()
-        if response in ['no', 'n']:
-            open('save.txt', 'w').write('')
-
-    screen = pygame.display.set_mode((1000, 600))
-    pygame.init()
-
     load()
+
+    if info.Map is not None:
+        cont = False
+
+        while True:
+            mx, my = pygame.mouse.get_pos()
+
+            screen.fill((64, 64, 64))
+            pygame.draw.rect(screen, (255, 0, 0), (225, 375, 175, 50))
+            pygame.draw.rect(screen, (124, 252, 0), (600, 375, 175, 50))
+            centredBlit(mediumFont, 'Do you want to load saved game?', (0, 0, 0), (500, 150))
+            centredBlit(font, 'If you encounter an error, you can choose \"No\" because', (0, 0, 0), (500, 200))
+            centredBlit(font, 'tower-defense might not be compatible with earlier versions.', (0, 0, 0), (500, 230))
+            centredBlit(mediumFont, 'Yes', (0, 0, 0), (687, 400))
+            centredBlit(mediumFont, 'No', (0, 0, 0), (313, 400))
+            pygame.draw.rect(screen, (128, 128, 128), (225, 375, 175, 50), 3)
+            pygame.draw.rect(screen, (128, 128, 128), (600, 375, 175, 50), 3)
+
+            if 375 < my < 425:
+                if 225 < mx < 400:
+                    pygame.draw.rect(screen, (0, 0, 0), (225, 375, 175, 50), 5)
+
+                if 600 < mx < 775:
+                    pygame.draw.rect(screen, (0, 0, 0), (600, 375, 175, 50), 5)
+
+            pygame.display.update()
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    quit()
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    print(mx, my)
+                    if event.button == 1:
+                        if 375 < my < 425:
+                            if 225 < mx < 400:
+                                info.reset()
+                                cont = True
+                            elif 600 < mx < 775:
+                                cont = True
+
+            if cont:
+                break
+
     while True:
         mx, my = pygame.mouse.get_pos()
 
