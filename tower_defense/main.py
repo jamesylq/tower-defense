@@ -10,7 +10,7 @@ current_path = os.path.dirname(__file__)
 resource_path = os.path.join(current_path, 'resources')
 
 MaxFPS = 100
-cheats = False
+cheats = True
 
 
 class Map:
@@ -38,21 +38,26 @@ THE_END = Map([[0, 225], [800, 225]], "The End", (100, 100, 100), (200, 200, 200
 Maps = [POND, LAVA_SPIRAL, PLAINS, DESERT, THE_END]
 
 waves = [
-    '0' * 3,
-    '0' * 5 + '1' * 3,
-    '0' * 3 + '1' * 5 + '2' * 3,
-    '0' * 3 + '1' * 5 + '2' * 5 + '3' * 3,
-    '3' * 30,
-    '2' * 30 + '3' * 30,
-    '4' * 30,
-    '4' * 15 + '5' * 15,
-    '6' * 25,
-    'A',
-    '6' * 30,
-    '7' * 25,
-    '7' * 50,
-    '8' * 25,
-    'B'
+    '00' * 3,
+    '00' * 5 + '01' * 3,
+    '00' * 3 + '01' * 5 + '02' * 3,
+    '00' * 3 + '01' * 5 + '02' * 5 + '03' * 3,
+    '03' * 30,
+    '02' * 30 + '03' * 30,
+    '04' * 30,
+    '04' * 15 + '05' * 15,
+    '16' * 25,
+    '0A',
+    '06' * 30,
+    '07' * 25,
+    '07' * 50,
+    '08' * 25,
+    '0B',
+    '08' * 50,
+    '10' * 3,
+    '10' * 5 + '11' * 3,
+    '10' * 3 + '11' * 5 + '12' * 3,
+    '1A',
 ]
 
 enemyColors = {
@@ -166,6 +171,15 @@ class Towers:
         self.stun = 0
         self.hits = 0
 
+    def draw(self):
+        pygame.draw.circle(screen, self.color, (self.x, self.y), 15)
+
+    def attack(self):
+        pass
+
+    def update(self):
+        pass
+
 
 class Turret(Towers):
     name = 'Turret'
@@ -179,9 +193,6 @@ class Turret(Towers):
     def __init__(self, x: int, y: int):
         super().__init__(x, y)
 
-    def draw(self):
-        pygame.draw.circle(screen, self.color, (self.x, self.y), 15)
-
     def attack(self):
         if self.stun > 0:
             self.stun -= 1
@@ -189,7 +200,7 @@ class Turret(Towers):
 
         if self.timer >= (35 if self.upgrades[1] else 75):
             try:
-                closest = getTarget(self.x, self.y, self.range)
+                closest = getTarget(self)
                 info.projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=30 if self.upgrades[2] else 0))
                 self.timer = 0
             except AttributeError:
@@ -237,7 +248,7 @@ class IceTower(Towers):
         self.snowCircle = self.SnowStormCircle(self, self.x, self.y)
 
     def draw(self):
-        pygame.draw.circle(screen, self.color, (self.x, self.y), 15)
+        super().draw()
         self.snowCircle.draw()
 
     def attack(self):
@@ -251,7 +262,7 @@ class IceTower(Towers):
                 self.timer = 0
             else:
                 try:
-                    closest = getTarget(self.x, self.y, self.range)
+                    closest = getTarget(self)
                     info.projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, freeze=True))
                     self.timer = 0
                 except AttributeError:
@@ -332,7 +343,7 @@ class SpikeTower(Towers):
         self.spikes = SpikeTower.Spikes(self)
 
     def draw(self):
-        pygame.draw.circle(screen, self.color, (self.x, self.y), 15)
+        super().draw()
         self.spikes.drawSpikes()
 
     def attack(self):
@@ -352,9 +363,6 @@ class SpikeTower(Towers):
         else:
             self.timer += 1
 
-    def update(self):
-        pass
-
 
 class BombTower(Towers):
     name = 'Bomb Tower'
@@ -368,9 +376,6 @@ class BombTower(Towers):
     def __init__(self, x: int, y: int):
         super().__init__(x, y)
 
-    def draw(self):
-        pygame.draw.circle(screen, self.color, (self.x, self.y), 15)
-
     def attack(self):
         if self.stun > 0:
             self.stun -= 1
@@ -378,7 +383,7 @@ class BombTower(Towers):
 
         if self.timer >= (100 if self.upgrades[1] else 200):
             try:
-                closest = getTarget(self.x, self.y, self.range)
+                closest = getTarget(self)
                 info.projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=50))
                 self.timer = 0
             except AttributeError:
@@ -403,9 +408,6 @@ class BananaFarm(Towers):
     def __init__(self, x: int, y: int):
         super().__init__(x, y)
 
-    def draw(self):
-        pygame.draw.circle(screen, self.color, (self.x, self.y), 15)
-
     def attack(self):
         if self.stun > 0:
             self.stun -= 1
@@ -414,7 +416,7 @@ class BananaFarm(Towers):
         if self.upgrades[0]:
             if self.timer >= 100:
                 try:
-                    closest = getTarget(self.x, self.y, self.range)
+                    closest = getTarget(self)
                     info.projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y))
                     self.timer = 0
                 except AttributeError:
@@ -422,8 +424,103 @@ class BananaFarm(Towers):
             else:
                 self.timer += 1
 
+
+class Village(Towers):
+    class Villager:
+        def __init__(self, parent):
+            self.parent = parent
+            self.x = self.parent.x
+            self.y = self.parent.y
+            self.tx = None
+            self.ty = None
+            self.dx = None
+            self.dy = None
+            self.visible = False
+            self.cooldown = 0
+
+        def attack(self):
+            closest = getTarget(Towers(self.x, self.y), overrideRange=self.parent.range)
+            if closest is None:
+                self.parent.timer = 100
+            else:
+                info.projectiles.append(Projectile(self.parent, self.x, self.y, closest.x, closest.y))
+
+        def draw(self):
+            if self.visible:
+                pygame.draw.circle(screen, (184, 134, 69), (self.x, self.y), 10)
+
+        def move(self):
+            try:
+                pygame.draw.line(screen, (0, 0, 0), (self.x, self.y), (self.tx, self.ty), 3)
+                pygame.display.update()
+            except:
+                pass
+
+            if self.dx is None:
+                if self.tx is None:
+                    if self.cooldown >= 1000:
+                        self.tx = self.parent.x
+                        self.ty = self.parent.y
+                    else:
+                        closest = getTarget(Towers(self.x, self.y), overrideRange=self.parent.range)
+                        if closest is None:
+                            self.cooldown += 1
+                        else:
+                            self.tx = closest.x
+                            self.ty = closest.y
+                            self.cooldown = 0
+                else:
+                    dx, dy = abs(self.x - self.tx), abs(self.y - self.ty)
+                    try:
+                        self.dx = abs(dx / (dx + dy)) * (-1 if self.tx < self.x else 1) * 2
+                        self.dy = abs(dy / (dx + dy)) * (-1 if self.ty < self.y else 1) * 2
+                    except ZeroDivisionError:
+                        self.dx = None
+                        self.dy = None
+
+                    self.x += self.dx
+                    self.y += self.dy
+            else:
+                self.x += self.dx
+                self.y += self.dy
+
+                if abs(self.x - self.tx) ** 2 + abs(self.y - self.ty) < 100:
+                    self.dx = None
+                    self.dy = None
+                    self.tx = None
+                    self.ty = None
+                    self.cooldown = 0
+
+    name = 'Village'
+    color = (202, 164, 114)
+    req = 5
+    price = 200
+    upgradePrices = [120, 100, 150]
+    upgradeNames = ['Anti-Camo', 'Longer Range', 'Spawn Villager']
+    range = 100
+
+    def __init__(self, x: int, y: int):
+        super().__init__(x, y)
+        self.villager = self.Villager(self)
+
+    def draw(self):
+        super().draw()
+        self.villager.draw()
+
+    def attack(self):
+        if self.upgrades[2]:
+            if self.timer >= 100:
+                self.timer = 0
+                self.villager.attack()
+            else:
+                self.timer += 1
+
     def update(self):
-        pass
+        if self.upgrades[1]:
+            self.range = 150
+        if self.upgrades[2]:
+            self.villager.visible = True
+            self.villager.move()
 
 
 class Bowler(Towers):
@@ -437,9 +534,6 @@ class Bowler(Towers):
 
     def __init__(self, x: int, y: int):
         super().__init__(x, y)
-
-    def draw(self):
-        pygame.draw.circle(screen, self.color, (self.x, self.y), 15)
 
     def attack(self):
         if self.stun > 0:
@@ -456,9 +550,6 @@ class Bowler(Towers):
         else:
             self.timer += 1
 
-    def update(self):
-        pass
-
 
 class Wizard(Towers):
     class LightningBolt:
@@ -472,15 +563,15 @@ class Wizard(Towers):
 
         def attack(self):
             self.visibleTicks = 50
-            self.t1 = getTarget(self.pos0[0], self.pos0[1], 1000)
+            self.t1 = getTarget(Towers(self.pos0[0], self.pos0[1]), overrideRange=1000)
             if type(self.t1) is Enemy:
                 self.t1.kill(coinMultiplier=getCoinMultiplier(self.parent))
                 self.parent.hits += 1
-                self.t2 = getTarget(self.t1.x, self.t1.y, 1000, [self.t1])
+                self.t2 = getTarget(Towers(self.t1.x, self.t1.y), ignore=[self.t1], overrideRange=1000)
                 if type(self.t2) is Enemy:
                     self.t2.kill(coinMultiplier=getCoinMultiplier(self.parent))
                     self.parent.hits += 1
-                    self.t3 = getTarget(self.t2.x, self.t2.y, 1000, [self.t1, self.t2])
+                    self.t3 = getTarget(Towers(self.t2.x, self.t2.y), ignore=[self.t1, self.t2], overrideRange=1000)
                     if type(self.t3) is Enemy:
                         self.t3.kill(coinMultiplier=getCoinMultiplier(self.parent))
                         self.parent.hits += 1
@@ -520,7 +611,7 @@ class Wizard(Towers):
         self.lightningTimer = 0
 
     def draw(self):
-        pygame.draw.circle(screen, self.color, (self.x, self.y), 15)
+        super().draw()
         self.lightning.draw()
 
     def attack(self):
@@ -530,7 +621,7 @@ class Wizard(Towers):
 
         if self.timer >= (50 if self.upgrades[2] else 100):
             try:
-                closest = getTarget(self.x, self.y, self.range)
+                closest = getTarget(self)
                 info.projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=60 if self.upgrades[2] else 30))
                 self.timer = 0
             except AttributeError:
@@ -595,7 +686,7 @@ class InfernoTower(Towers):
         self.inferno = self.Inferno(self)
 
     def draw(self):
-        pygame.draw.circle(screen, self.color, (self.x, self.y), 15)
+        super().draw()
         self.inferno.draw()
 
     def attack(self):
@@ -695,7 +786,7 @@ class PiercingProjectile:
 
 
 class Enemy:
-    def __init__(self, tier: str, spawn: [int, int], lineIndex: int):
+    def __init__(self, camo: bool, tier: str, spawn: [int, int], lineIndex: int):
         try:
             self.tier = int(tier)
         except ValueError:
@@ -712,13 +803,14 @@ class Enemy:
         self.fireTicks = 0
         self.fireIgnitedBy = None
         self.timer = 0
+        self.camo = camo
 
     def move(self):
         if self.timer > 0:
             self.timer -= 1
         elif self.tier == 'B':
             self.timer = 250
-            info.enemies.append(Enemy(3, [self.x, self.y], self.lineIndex))
+            info.enemies.append(Enemy(False, 3, [self.x, self.y], self.lineIndex))
 
         if self.freezeTimer > 0:
             self.freezeTimer -= 1
@@ -817,6 +909,8 @@ class Enemy:
             pygame.draw.rect(screen, color, (self.x - 50, self.y - 25, self.HP / self.MaxHP * 100, 5))
 
         pygame.draw.circle(screen, enemyColors[str(self.tier)], (self.x, self.y), 20 if type(self.tier) is str else 10)
+        if self.camo:
+            pygame.draw.circle(screen, (0, 0, 0), (self.x, self.y), 20 if type(self.tier) is str else 10, 2)
 
     def kill(self, *, spawnNew: bool = True, coinMultiplier: int = 1, ignoreBoss: bool = False, burn: bool = False):
         if type(self.tier) is int or ignoreBoss:
@@ -831,7 +925,7 @@ class Enemy:
                 elif self.tier in bossCoins.keys():
                     info.coins += bossCoins[self.tier]
                 else:
-                    new = Enemy(self.tier - 1, (self.x, self.y), self.lineIndex)
+                    new = Enemy(self.camo, self.tier - 1, (self.x, self.y), self.lineIndex)
                     new.fireTicks = self.fireTicks
                     new.fireIgnitedBy = self.fireIgnitedBy
                     info.enemies.append(new)
@@ -879,12 +973,28 @@ def getCoinMultiplier(Tower: Towers) -> int:
     return 1
 
 
-def getTarget(x: int, y: int, radius: int, ignore: [Enemy] = None) -> Enemy:
+def canSeeCamo(Tower: Towers) -> bool:
+    villages = [tower for tower in info.towers if type(tower) is Village and tower.upgrades[0]]
+    for village in villages:
+        if abs(Tower.x - village.x) ** 2 + abs(Tower.y - village.y) ** 2 < village.range ** 2:
+            return True
+    return False
+
+
+def getTarget(tower: Towers, *, ignore: [Enemy] = None, overrideRange: int = None) -> Enemy:
     if ignore is None:
         ignore = []
 
+    rangeRadius = tower.range if overrideRange is None else overrideRange
+
     try:
-        maxDistance = max([enemy.totalMovement for enemy in info.enemies if abs(enemy.x - x) ** 2 + abs(enemy.y - y) ** 2 <= radius ** 2 and enemy not in ignore])
+        maxDistance = 0
+
+        for enemy in info.enemies:
+            if abs(enemy.x - tower.x) ** 2 + abs(enemy.y - tower.y) ** 2 <= rangeRadius ** 2 and enemy not in ignore:
+                if (enemy.camo and canSeeCamo(tower)) or not enemy.camo:
+                    if enemy.totalMovement > maxDistance:
+                        maxDistance = enemy.totalMovement
 
         for enemy in info.enemies:
             if enemy.totalMovement == maxDistance:
@@ -1000,12 +1110,12 @@ def move():
 
 def iterate():
     if info.spawndelay == 0 and len(info.spawnleft) > 0:
-        if type(info.spawnleft[0]) is str:
-            info.enemies.append(Enemy(info.spawnleft[0], info.Map.path[0], 0))
+        if type(info.spawnleft[1]) is str:
+            info.enemies.append(Enemy(True if info.spawnleft[0] == '1' else False, info.spawnleft[1], info.Map.path[0], 0))
         else:
-            info.enemies.append(Enemy(int(info.spawnleft[0]), info.Map.path[0], 0))
-        info.spawnleft = info.spawnleft[1:]
-        info.spawndelay = 15
+            info.enemies.append(Enemy(True if info.spawnleft[0] == '1' else False, int(info.spawnleft[1]), info.Map.path[0], 0))
+        info.spawnleft = info.spawnleft[2:]
+        info.spawndelay = 20
     else:
         info.spawndelay -= 1
 
@@ -1015,7 +1125,7 @@ def iterate():
                 info.spawnleft = waves[info.wave]
             except IndexError:
                 info.win = True
-            info.spawndelay = 15
+            info.spawndelay = 20
             info.nextWave = 300
         else:
             if info.nextWave == 284 and info.wave > 0:
