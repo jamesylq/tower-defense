@@ -10,7 +10,7 @@ current_path = os.path.dirname(__file__)
 resource_path = os.path.join(current_path, 'resources')
 
 MaxFPS = 100
-cheats = True
+cheats = False
 
 
 class Map:
@@ -46,7 +46,7 @@ waves = [
     '02' * 30 + '03' * 30,
     '04' * 30,
     '04' * 15 + '05' * 15,
-    '16' * 25,
+    '06' * 25,
     '0A',
     '06' * 30,
     '07' * 25,
@@ -288,7 +288,7 @@ class SpikeTower(Towers):
             self.ignore = []
 
         def move(self):
-            if not self.visible:
+            if not self.visible or (getTarget(self.parent) is None and [self.x, self.y] == [self.parent.x, self.parent.y]):
                 return
 
             self.x += self.dx * (3 if self.parent.upgrades[0] else 1)
@@ -343,8 +343,8 @@ class SpikeTower(Towers):
         self.spikes = SpikeTower.Spikes(self)
 
     def draw(self):
-        super().draw()
         self.spikes.drawSpikes()
+        super().draw()
 
     def attack(self):
         if self.stun > 0:
@@ -423,104 +423,6 @@ class BananaFarm(Towers):
                     pass
             else:
                 self.timer += 1
-
-
-class Village(Towers):
-    class Villager:
-        def __init__(self, parent):
-            self.parent = parent
-            self.x = self.parent.x
-            self.y = self.parent.y
-            self.tx = None
-            self.ty = None
-            self.dx = None
-            self.dy = None
-            self.visible = False
-            self.cooldown = 0
-
-        def attack(self):
-            closest = getTarget(Towers(self.x, self.y), overrideRange=self.parent.range)
-            if closest is None:
-                self.parent.timer = 100
-            else:
-                info.projectiles.append(Projectile(self.parent, self.x, self.y, closest.x, closest.y))
-
-        def draw(self):
-            if self.visible:
-                pygame.draw.circle(screen, (184, 134, 69), (self.x, self.y), 10)
-
-        def move(self):
-            try:
-                pygame.draw.line(screen, (0, 0, 0), (self.x, self.y), (self.tx, self.ty), 3)
-                pygame.display.update()
-            except:
-                pass
-
-            if self.dx is None:
-                if self.tx is None:
-                    if self.cooldown >= 1000:
-                        self.tx = self.parent.x
-                        self.ty = self.parent.y
-                    else:
-                        closest = getTarget(Towers(self.x, self.y), overrideRange=self.parent.range)
-                        if closest is None:
-                            self.cooldown += 1
-                        else:
-                            self.tx = closest.x
-                            self.ty = closest.y
-                            self.cooldown = 0
-                else:
-                    dx, dy = abs(self.x - self.tx), abs(self.y - self.ty)
-                    try:
-                        self.dx = abs(dx / (dx + dy)) * (-1 if self.tx < self.x else 1) * 2
-                        self.dy = abs(dy / (dx + dy)) * (-1 if self.ty < self.y else 1) * 2
-                    except ZeroDivisionError:
-                        self.dx = None
-                        self.dy = None
-
-                    self.x += self.dx
-                    self.y += self.dy
-            else:
-                self.x += self.dx
-                self.y += self.dy
-
-                if abs(self.x - self.tx) ** 2 + abs(self.y - self.ty) < 100:
-                    self.dx = None
-                    self.dy = None
-                    self.tx = None
-                    self.ty = None
-                    self.cooldown = 0
-
-    name = 'Village'
-    color = (202, 164, 114)
-    req = 5
-    price = 200
-    upgradePrices = [120, 100, 150]
-    upgradeNames = ['Anti-Camo', 'Longer Range', 'Spawn Villager']
-    range = 100
-
-    def __init__(self, x: int, y: int):
-        super().__init__(x, y)
-        self.villager = self.Villager(self)
-
-    def draw(self):
-        super().draw()
-        self.villager.draw()
-
-    def attack(self):
-        if self.upgrades[2]:
-            if self.timer >= 100:
-                self.timer = 0
-                self.villager.attack()
-            else:
-                self.timer += 1
-
-    def update(self):
-        if self.upgrades[1]:
-            self.range = 150
-        if self.upgrades[2]:
-            self.villager.visible = True
-            self.villager.move()
 
 
 class Bowler(Towers):
@@ -660,7 +562,7 @@ class InfernoTower(Towers):
         def attack(self):
             found = False
             for enemy in info.enemies:
-                if abs(enemy.x - self.parent.x) ** 2 + abs(enemy.y - self.parent.y) ** 2 <= self.parent.range ** 2:
+                if (abs(enemy.x - self.parent.x) ** 2 + abs(enemy.y - self.parent.y) ** 2 <= self.parent.range ** 2) and (not enemy.camo or canSeeCamo(self.parent)):
                     enemy.fireTicks = (500 if self.parent.upgrades[2] else 300)
                     enemy.fireIgnitedBy = self.parent
                     self.renders.append(InfernoTower.AttackRender(self.parent, enemy))
@@ -703,6 +605,106 @@ class InfernoTower(Towers):
     def update(self):
         if self.upgrades[0]:
             self.range = 200
+
+
+class Village(Towers):
+    class Villager:
+        def __init__(self, parent):
+            self.parent = parent
+            self.x = self.parent.x
+            self.y = self.parent.y
+            self.tx = None
+            self.ty = None
+            self.dx = None
+            self.dy = None
+            self.visible = False
+            self.cooldown = 250
+
+        def attack(self):
+            closest = getTarget(Towers(self.x, self.y), overrideRange=self.parent.range)
+            if closest is None:
+                self.parent.timer = 100
+            else:
+                info.projectiles.append(Projectile(self.parent, self.x, self.y, closest.x, closest.y))
+
+        def draw(self):
+            if self.visible:
+                pygame.draw.circle(screen, (184, 134, 69), (self.x, self.y), 10)
+
+        def move(self):
+            try:
+                pygame.display.update()
+            except:
+                pass
+
+            if self.dx is None:
+                if self.tx is None:
+                    if self.cooldown >= 250:
+                        closest = getTarget(Towers(self.x, self.y), overrideRange=self.parent.range)
+                        if closest is None:
+                            self.tx = self.parent.x
+                            self.ty = self.parent.y
+                        else:
+                            self.tx = closest.x
+                            self.ty = closest.y
+                            self.cooldown = 0
+                    elif getTarget(Towers(self.x, self.y), overrideRange=self.parent.range) is None or (
+                            self.x - self.parent.x) ** 2 + (self.y - self.parent.y) ** 2 < 625:
+                        self.cooldown += 1
+                else:
+                    dx, dy = abs(self.x - self.tx), abs(self.y - self.ty)
+                    try:
+                        self.dx = abs(dx / (dx + dy)) * (-1 if self.tx < self.x else 1) * 2
+                        self.dy = abs(dy / (dx + dy)) * (-1 if self.ty < self.y else 1) * 2
+                    except ZeroDivisionError:
+                        self.dx = None
+                        self.dy = None
+                        self.tx = None
+                        self.ty = None
+                    else:
+                        self.x += self.dx
+                        self.y += self.dy
+            else:
+                self.x += self.dx
+                self.y += self.dy
+
+                if abs(self.x - self.tx) ** 2 + abs(self.y - self.ty) ** 2 < 100:
+                    self.dx = None
+                    self.dy = None
+                    self.tx = None
+                    self.ty = None
+                    self.cooldown = 0
+
+    name = 'Village'
+    color = (202, 164, 114)
+    req = 10
+    price = 400
+    upgradePrices = [120, 100, 50]
+    upgradeNames = ['Anti-Camo', 'Longer Range', 'Spawn Villager']
+    range = 100
+
+    def __init__(self, x: int, y: int):
+        super().__init__(x, y)
+        self.villager = self.Villager(self)
+
+    def draw(self):
+        super().draw()
+        self.villager.draw()
+
+    def attack(self):
+        if self.upgrades[2]:
+            if self.timer >= 100:
+                self.timer = 0
+                self.villager.attack()
+            else:
+                self.timer += 1
+
+    def update(self):
+        if self.upgrades[1]:
+            self.range = 150
+        if self.upgrades[2]:
+            self.villager.visible = True
+            self.villager.move()
 
 
 class Projectile:
@@ -880,7 +882,7 @@ class Enemy:
         if self.tier not in onlyExplosiveTiers:
             for projectile in info.piercingProjectiles:
                 if abs(self.x - projectile.x) ** 2 + abs(self.y - projectile.y) ** 2 < 100:
-                    if self not in projectile.ignore:
+                    if self not in projectile.ignore and not self.camo:
                         new = self.kill(coinMultiplier=projectile.coinMultiplier)
                         projectile.parent.hits += 1
                         if projectile.parent.upgrades[0] and new is not None and type(self.tier) is int:
@@ -987,21 +989,23 @@ def getTarget(tower: Towers, *, ignore: [Enemy] = None, overrideRange: int = Non
 
     rangeRadius = tower.range if overrideRange is None else overrideRange
 
-    try:
-        maxDistance = 0
+    maxDistance = None
 
-        for enemy in info.enemies:
-            if abs(enemy.x - tower.x) ** 2 + abs(enemy.y - tower.y) ** 2 <= rangeRadius ** 2 and enemy not in ignore:
-                if (enemy.camo and canSeeCamo(tower)) or not enemy.camo:
+    for enemy in info.enemies:
+        if (abs(enemy.x - tower.x) ** 2 + abs(enemy.y - tower.y) ** 2 <= rangeRadius ** 2) and (enemy not in ignore):
+            if (enemy.camo and canSeeCamo(tower)) or not enemy.camo:
+                try:
                     if enemy.totalMovement > maxDistance:
                         maxDistance = enemy.totalMovement
+                except TypeError:
+                    maxDistance = enemy.totalMovement
 
-        for enemy in info.enemies:
-            if enemy.totalMovement == maxDistance:
-                return enemy
+    if maxDistance is None:
+        return
 
-    except ValueError:
-        return None
+    for enemy in info.enemies:
+        if enemy.totalMovement == maxDistance:
+            return enemy
 
 
 def draw():
@@ -1024,6 +1028,12 @@ def draw():
 
     for projectile in info.piercingProjectiles:
         projectile.draw()
+
+    if info.selected is not None:
+        original = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'range.png')), (info.selected.range * 2, info.selected.range * 2))
+        modified = original.copy()
+        modified.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
+        screen.blit(modified, (info.selected.x - info.selected.range, info.selected.y - info.selected.range))
 
     if info.placing != '':
         screen.blit(font.render(f'Click anywhere on the map to place the {info.placing}!', True, 0), (250, 400))
@@ -1062,12 +1072,6 @@ def draw():
 
     pygame.draw.rect(screen, (128, 128, 128), (775, 500, 200, 30))
     screen.blit(font.render('Map Selection', True, (0, 0, 0)), (800, 505))
-
-    if info.selected is not None:
-        original = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'range.png')), (info.selected.range * 2, info.selected.range * 2))
-        modified = original.copy()
-        modified.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
-        screen.blit(modified, (info.selected.x - info.selected.range, info.selected.y - info.selected.range))
 
     if issubclass(type(info.selected), Towers):
         screen.blit(font.render('Upgrades:', True, 0), (200, 487))
@@ -1128,7 +1132,7 @@ def iterate():
             info.spawndelay = 20
             info.nextWave = 300
         else:
-            if info.nextWave == 284 and info.wave > 0:
+            if info.nextWave == 279 and info.wave > 0:
                 info.coins += 100
 
             if info.nextWave == 300:
