@@ -53,10 +53,10 @@ waves = [
     '07' * 50,
     '08' * 25,
     '0B',
-    '08' * 50,
-    '10' * 3,
-    '10' * 5 + '11' * 3,
-    '10' * 3 + '11' * 5 + '12' * 3,
+    '16' * 25,
+    '17' * 25,
+    '17' * 50,
+    '18' * 25,
     '1A',
 ]
 
@@ -1201,6 +1201,29 @@ def iterate():
                     maxScroll = len([tower for tower in Towers.__subclasses__() if (info.wave >= tower.req or cheats)]) * 80 - 450
                     if maxScroll > 0:
                         info.shopScroll = max(-maxScroll, info.shopScroll - 10)
+
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_F3:
+                d = info.__dict__.copy()
+                d['towers'] = [t.__dict__.copy() for t in d['towers']]
+                d['enemies'] = [e.__dict__.copy() for e in d['enemies']]
+                d['projectiles'] = [p.__dict__.copy() for p in d['projectiles']]
+                d['piercingProjectiles'] = [p.__dict__.copy() for p in d['piercingProjectiles']]
+                for n in range(len(d['towers'])):
+                    if type(d['towers'][n]) is Village:
+                        d['towers'][n]['villager'] = d['towers'][n].villager.__dict__.copy()
+                    elif type(d['towers'][n]) is InfernoTower:
+                        d['towers'][n]['inferno'] = d['towers'][n].inferno.__dict__.copy()
+                        d['towers'][n]['inferno']['renders'] = [render.__dict__.copy() for render in d['towers'][n]['inferno']['renders']]
+                    elif type(d['towers'][n]) is IceTower:
+                        d['towers'][n]['snowCircle'] = d['towers'][n].snowCircle.__dict__.copy()
+                    elif type(d['towers'][n]) is SpikeTower:
+                        d['towers'][n]['spikes'] = d['towers'][n].spikes.__dict__.copy()
+                        d['towers'][n]['spikes']['spikes'] = [spike.__dict__.copy() for spike in d['towers'][n]['spikes']['spikes']]
+                    elif type(d['towers'][n]) is Wizard:
+                        d['towers'][n]['lightning'] = d['towers'][n].lightning.__dict__.copy()
+
+                print(str(d) + '\n')
 
     pressed = pygame.key.get_pressed()
     if pressed[pygame.K_UP]:
