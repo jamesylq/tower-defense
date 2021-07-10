@@ -14,7 +14,7 @@ cheats = False
 
 
 class Map:
-    def __init__(self, path: list, name: str, backgroundColor: int, pathColor: int):
+    def __init__(self, path: list, name: str, backgroundColor: (int, int, int), pathColor: (int, int, int)):
         self.name = name
         self.path = path
         self.backgroundColor = backgroundColor
@@ -788,7 +788,7 @@ class PiercingProjectile:
 
 
 class Enemy:
-    def __init__(self, camo: bool, tier: str, spawn: [int, int], lineIndex: int):
+    def __init__(self, camo: bool, tier: str or int, spawn: [int, int], lineIndex: int):
         try:
             self.tier = int(tier)
         except ValueError:
@@ -908,7 +908,7 @@ class Enemy:
 
             pygame.draw.rect(screen, (128, 128, 128), (self.x - 50, self.y - 25, 100, 5))
             pygame.draw.rect(screen, (0, 0, 0), (self.x - 50, self.y - 25, 100, 5), 1)
-            pygame.draw.rect(screen, color, (self.x - 50, self.y - 25, self.HP / self.MaxHP * 100, 5))
+            pygame.draw.rect(screen, color, (self.x - 50, self.y - 25, round(self.HP / self.MaxHP * 100), 5))
 
         pygame.draw.circle(screen, enemyColors[str(self.tier)], (self.x, self.y), 20 if type(self.tier) is str else 10)
         if self.camo:
@@ -1000,12 +1000,10 @@ def getTarget(tower: Towers, *, ignore: [Enemy] = None, overrideRange: int = Non
                 except TypeError:
                     maxDistance = enemy.totalMovement
 
-    if maxDistance is None:
-        return
-
-    for enemy in info.enemies:
-        if enemy.totalMovement == maxDistance:
-            return enemy
+    if maxDistance is not None:
+        for enemy in info.enemies:
+            if enemy.totalMovement == maxDistance:
+                return enemy
 
 
 def draw():
