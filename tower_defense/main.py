@@ -10,7 +10,7 @@ current_path = os.path.dirname(__file__)
 resource_path = os.path.join(current_path, 'resources')
 
 MaxFPS = 100
-cheats = False
+cheats = True
 
 
 class Map:
@@ -167,7 +167,7 @@ class Towers:
         self.x = x
         self.y = y
         self.timer = 0
-        self.upgrades = [False, False, False]
+        self.upgrades = [0, 0, 0]
         self.stun = 0
         self.hits = 0
 
@@ -186,9 +186,21 @@ class Turret(Towers):
     color = (128, 128, 128)
     req = 0
     price = 50
-    upgradePrices = [30, 20, 75]
-    upgradeNames = ['Longer Range', 'More Bullets', 'Explosive Shots']
+
+    upgradePrices = [
+        [30, 60, 100],
+        [20, 45, 75],
+        [75, 125, 175]
+    ]
+
+    upgradeNames = [
+        ['Longer Range', 'Extreme Range', 'Ultra Range'],
+        ['More Bullets', 'Bullet Rain', 'Double Bullets'],
+        ['Explosive Shots', 'Camo Detection', 'Boss Shred']
+    ]
+
     range = 100
+    cooldown = 75
 
     def __init__(self, x: int, y: int):
         super().__init__(x, y)
@@ -198,10 +210,11 @@ class Turret(Towers):
             self.stun -= 1
             return
 
-        if self.timer >= (35 if self.upgrades[1] else 75):
+        if self.timer >= self.cooldown:
             try:
                 closest = getTarget(self)
-                info.projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=30 if self.upgrades[2] else 0))
+                explosiveRadius = 30 if self.upgrades[2] >= 1 else 0
+                info.projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=explosiveRadius))
                 self.timer = 0
             except AttributeError:
                 pass
@@ -209,8 +222,8 @@ class Turret(Towers):
             self.timer += 1
 
     def update(self):
-        if self.upgrades[0]:
-            self.range = 150
+        self.range = [100, 130, 165, 200][self.upgrades[0]]
+        self.cooldown = [100, 50, 25, 10][self.upgrades[1]]
 
 
 class IceTower(Towers):
@@ -219,13 +232,13 @@ class IceTower(Towers):
             self.x = x
             self.y = y
             self.parent = parent
-            self.freezeDuration = 199 if self.parent.upgrades[2] else 100
+            self.freezeDuration = [100, 150, 150, 199][self.parent.upgrades[2]]
             self.visibleTicks = 0
 
         def draw(self):
             if self.visibleTicks > 0:
                 self.visibleTicks -= 1
-                screen.blit(largeIceCircle if self.parent.upgrades[0] else smallIceCircle, (self.x - self.parent.range, self.y - self.parent.range))
+                screen.blit(largeIceCircle if self.parent.upgrades[0] >= 1 else smallIceCircle, (self.x - self.parent.range, self.y - self.parent.range))
 
         def freeze(self):
             self.visibleTicks = 50
@@ -235,13 +248,26 @@ class IceTower(Towers):
                     if type(enemy.tier) is int:
                         enemy.freezeTimer = self.freezeDuration
 
+        def update(self):
+            self.freezeDuration = [100, 150, 150, 199][self.parent.upgrades[2]]
+
     name = 'Ice Tower'
     color = (32, 32, 200)
     req = 2
     price = 30
-    upgradePrices = [15, 25, 35]
-    upgradeNames = ['Longer Range', 'Snowstorm Circle', 'Longer Freeze']
+    upgradePrices = [
+        [15, 30, 75],
+        [25, 50, 85],
+        [30, 45, 75]
+    ]
+    upgradeNames = [
+        ['Longer Range', 'Extreme Range', 'Ultra Range'],
+        ['Lesser Cooldown', 'Snowball Shower', 'Quartered Cooldown'],
+        ['Longer Freeze', 'Snowstorm Circle', 'Ultra Freeze']
+    ]
     range = 125
+    cooldown = 100
+    freezeDuration = 20
 
     def __init__(self, x: int, y: int):
         super().__init__(x, y)
@@ -256,14 +282,14 @@ class IceTower(Towers):
             self.stun -= 1
             return
 
-        if self.timer >= (2500 if self.upgrades[1] else 50):
-            if self.upgrades[1]:
+        if self.timer >= self.cooldown:
+            if self.upgrades[2] >= 2:
                 self.snowCircle.freeze()
                 self.timer = 0
             else:
                 try:
                     closest = getTarget(self)
-                    info.projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, freeze=True))
+                    info.projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, freezeDuration=self.freezeDuration))
                     self.timer = 0
                 except AttributeError:
                     pass
@@ -271,8 +297,14 @@ class IceTower(Towers):
             self.timer += 1
 
     def update(self):
-        if self.upgrades[0]:
-            self.range = 175
+        self.snowCircle.update()
+
+        self.range = [150, 180, 200, 250][self.upgrades[0]]
+        self.cooldown = [1, 0.75, 0.55, 0.3][self.upgrades[1]] * (50 if self.upgrades[2] < 2 else 1000)
+        if self.upgrades[2] >= 1:
+            self.freezeDuration = 45
+        if self.upgrades[2] == 3:
+            self.freezeDuration = 75
 
 
 class SpikeTower(Towers):
@@ -291,17 +323,21 @@ class SpikeTower(Towers):
             if not self.visible or (getTarget(self.parent) is None and [self.x, self.y] == [self.parent.x, self.parent.y]):
                 return
 
-            self.x += self.dx * (3 if self.parent.upgrades[0] else 1)
-            self.y += self.dy * (3 if self.parent.upgrades[0] else 1)
+            self.x += self.dx * self.parent.projectileSpeed
+            self.y += self.dy * self.parent.projectileSpeed
 
             for enemy in info.enemies:
-                if enemy in self.ignore:
+                if enemy in self.ignore or (enemy.tier in onlyExplosiveTiers and self.upgrades[2] < 2):
                     continue
 
                 if abs(enemy.x - self.x) ** 2 + abs(enemy.y - self.y) ** 2 < (144 if type(enemy.tier) is int else 484):
                     self.visible = False
+                    if self.upgrades[2] == 3:
+                        enemy.fireTicks = 300
+                        enemy.fireIgnitedBy = self
+
                     new = enemy.kill(coinMultiplier=getCoinMultiplier(self.parent))
-                    if self.parent.upgrades[2] and new is not None:
+                    if self.parent.upgrades[2] >= 1 and new is not None:
                         new = new.kill(coinMultiplier=getCoinMultiplier(self.parent))
                     self.ignore.append(new if type(enemy.tier) is int else enemy)
                     self.parent.hits += 1
@@ -334,9 +370,19 @@ class SpikeTower(Towers):
     color = (224, 17, 95)
     req = 2
     price = 125
-    upgradePrices = [75, 50, 100]
-    upgradeNames = ['Hyperspeed Spikes', 'Shorter Cooldown', 'Double Damage']
+    upgradePrices = [
+        [35, 60, 100],
+        [50, 75, 125],
+        [100, 125, 175]
+    ]
+    upgradeNames = [
+        ['Fast Spikes', 'Hyperspeed Spikes', 'Bullet-like Speed'],
+        ['Shorter Cooldown', 'Super Reloading', 'No Cooldown'],
+        ['Double Damage', 'Lead-pierce', 'Burning Spikes']
+    ]
     range = 50
+    projectileSpeed = 1
+    cooldown = 100
 
     def __init__(self, x: int, y: int):
         super().__init__(x, y)
@@ -353,7 +399,7 @@ class SpikeTower(Towers):
 
         if True in [s.visible for s in self.spikes.spikes]:
             self.spikes.moveSpikes()
-        elif self.timer >= (25 if self.upgrades[1] else 100):
+        elif self.timer >= self.cooldown:
             for spike in self.spikes.spikes:
                 spike.visible = True
                 spike.x = self.x
@@ -363,15 +409,28 @@ class SpikeTower(Towers):
         else:
             self.timer += 1
 
+    def update(self):
+        self.projectileSpeed = [1, 1.5, 2.2, 3][self.upgrades[0]]
+        self.cooldown = [100, 50, 25, 0][self.upgrades[1]]
+
 
 class BombTower(Towers):
     name = 'Bomb Tower'
     color = (0, 0, 0)
     req = 4
     price = 100
-    upgradePrices = [30, 20, 75]
-    upgradeNames = ['Longer Range', 'More Bombs', 'Larger Explosions']
+    upgradePrices = [
+        [30, 50, 75],
+        [20, 35, 50],
+        [75, 100, 125]
+    ]
+    upgradeNames = [
+        ['Longer Range', 'Extra Range', 'Ultra Range'],
+        ['More Bombs', 'Heavy Fire', 'Twin-Fire'],
+        ['Larger Explosions', 'Burning Bombs', '2x Impact Damage']
+    ]
     range = 50
+    cooldown = 200
 
     def __init__(self, x: int, y: int):
         super().__init__(x, y)
@@ -381,10 +440,16 @@ class BombTower(Towers):
             self.stun -= 1
             return
 
-        if self.timer >= (100 if self.upgrades[1] else 200):
+        if self.timer >= self.cooldown:
             try:
+                explosionRadius = 60 if self.upgrades[2] >= 1 else 30
                 closest = getTarget(self)
-                info.projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=50))
+                info.projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=explosionRadius))
+                if self.upgrades[2] == 3:
+                    twin = Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=explosionRadius)
+                    for n in range(5):
+                        twin.move()
+                    info.projectiles.append(twin)
                 self.timer = 0
             except AttributeError:
                 pass
@@ -392,8 +457,8 @@ class BombTower(Towers):
             self.timer += 1
 
     def update(self):
-        if self.upgrades[0]:
-            self.range = 100
+        self.range = [50, 100, 150, 200][self.upgrades[0]]
+        self.cooldown = [200, 150, 100, 100][self.upgrades[1]]
 
 
 class BananaFarm(Towers):
@@ -401,9 +466,18 @@ class BananaFarm(Towers):
     color = (255, 255, 0)
     req = 4
     price = 150
-    upgradePrices = [30, 30, 40]
-    upgradeNames = ['Banana Cannon', 'Increased Income', 'Double Coin Drop']
+    upgradePrices = [
+        [30, 50, 65],
+        [30, 45, 60],
+        [40, 75, 115]
+    ]
+    upgradeNames = [
+        ['Banana Cannon', 'More Banana Shots', 'Super Range'],
+        ['Increased Income', 'Money Farm', 'Money Factory'],
+        ['Double Coin Drop', '5x Coin Drop', '10x Coin Drop']
+    ]
     range = 100
+    cooldown = 0
 
     def __init__(self, x: int, y: int):
         super().__init__(x, y)
@@ -413,8 +487,8 @@ class BananaFarm(Towers):
             self.stun -= 1
             return
 
-        if self.upgrades[0]:
-            if self.timer >= 100:
+        if self.upgrades[0] >= 1:
+            if self.timer >= self.cooldown:
                 try:
                     closest = getTarget(self)
                     info.projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y))
@@ -424,15 +498,30 @@ class BananaFarm(Towers):
             else:
                 self.timer += 1
 
+    def update(self):
+        self.cooldown = [0, 100, 50, 50][self.upgrades[0]]
+        if self.upgrades[0] == 3:
+            self.range = 150
+
 
 class Bowler(Towers):
     name = 'Bowler'
     color = (32, 32, 32)
     req = 5
     price = 175
-    upgradePrices = [30, 20, 50]
-    upgradeNames = ['Double Damage', 'More Rocks', '10 Enemies Pierce']
+    upgradePrices = [
+        [20, 40, 60],
+        [20, 50, 100],
+        [50, 100, 175]
+    ]
+    upgradeNames = [
+        ['Faster Rocks', 'Double Damage', 'Snipe'],
+        ['More Rocks', 'Double Rocks', 'Infini-Rocks'],
+        ['5 Enemies Pierce', '10 Enemies Pierce', 'Infini-Pierce']
+    ]
     range = 0
+    cooldown = 300
+    pierce = 3
 
     def __init__(self, x: int, y: int):
         super().__init__(x, y)
@@ -442,30 +531,36 @@ class Bowler(Towers):
             self.stun -= 1
             return
 
-        if self.timer >= (200 if self.upgrades[1] else 300):
+        if self.timer >= self.cooldown:
             try:
                 for direction in ['left', 'right', 'up', 'down']:
-                    info.piercingProjectiles.append(PiercingProjectile(self, self.x, self.y, 10 if self.upgrades[2] else 3, direction))
+                    info.piercingProjectiles.append(PiercingProjectile(self, self.x, self.y, self.pierce, direction))
                 self.timer = 0
             except AttributeError:
                 pass
         else:
             self.timer += 1
 
+    def update(self):
+        self.cooldown = [300, 200, 150, 100][self.upgrades[1]]
+        self.pierce = [3, 5, 10, 1000][self.upgrades[2]]
+
 
 class Wizard(Towers):
     class LightningBolt:
         def __init__(self, parent):
             self.parent = parent
-            self.pos0 = [self.parent.x, self.parent.y]
+            self.pos = [self.parent.x, self.parent.y]
             self.t1 = None
             self.t2 = None
             self.t3 = None
+            self.t4 = None
+            self.t5 = None
             self.visibleTicks = 0
 
         def attack(self):
             self.visibleTicks = 50
-            self.t1 = getTarget(Towers(self.pos0[0], self.pos0[1]), overrideRange=1000)
+            self.t1 = getTarget(Towers(self.pos[0], self.pos[1]), overrideRange=1000)
             if type(self.t1) is Enemy:
                 self.t1.kill(coinMultiplier=getCoinMultiplier(self.parent))
                 self.parent.hits += 1
@@ -477,11 +572,31 @@ class Wizard(Towers):
                     if type(self.t3) is Enemy:
                         self.t3.kill(coinMultiplier=getCoinMultiplier(self.parent))
                         self.parent.hits += 1
+                        if self.parent.upgrades[1] == 3:
+                            self.t4 = getTarget(Towers(self.t3.x, self.t3.y), ignore=[self.t1, self.t2, self.t3], overrideRange=1000)
+                            if type(self.t4) is Enemy:
+                                self.t4.kill(coinMultiplier=getCoinMultiplier(self.parent))
+                                self.parent.hits += 1
+                                self.t5 = getTarget(Towers(self.t4.x, self.t4.y), ignore=[self.t1, self.t2, self.t3, self.t4])
+                                if type(self.t5) is Enemy:
+                                    self.t5.kill(coinMultiplier=getCoinMultiplier(self.parent))
+                            else:
+                                self.t5 = None
+                        else:
+                            self.t4 = None
+                            self.t5 = None
+                    else:
+                        self.t4 = None
+                        self.t5 = None
                 else:
                     self.t3 = None
+                    self.t4 = None
+                    self.t5 = None
             else:
                 self.t2 = None
                 self.t3 = None
+                self.t4 = None
+                self.t5 = None
 
             if self.t1 is None:
                 self.parent.lightningTimer = 500
@@ -493,19 +608,32 @@ class Wizard(Towers):
                 self.visibleTicks -= 1
 
                 if self.t1 is not None:
-                    pygame.draw.line(screen, (191, 0, 255), self.pos0, [self.t1.x, self.t1.y], 3)
+                    pygame.draw.line(screen, (191, 0, 255), self.pos, [self.t1.x, self.t1.y], 3)
                     if self.t2 is not None:
                         pygame.draw.line(screen, (191, 0, 255), [self.t1.x, self.t1.y], [self.t2.x, self.t2.y], 3)
                         if self.t3 is not None:
                             pygame.draw.line(screen, (191, 0, 255), [self.t2.x, self.t2.y], [self.t3.x, self.t3.y], 3)
+                            if self.t4 is not None:
+                                pygame.draw.line(screen, (191, 0, 255), [self.t3.x, self.t3.y], [self.t4.x, self.t4.y], 3)
+                                if self.t5 is not None:
+                                    pygame.draw.line(screen, (191, 0, 255), [self.t4.x, self.t4.y], [self.t5.x, self.t5.y], 3)
 
     name = 'Wizard'
     color = (128, 0, 128)
     req = 7
     price = 250
-    upgradePrices = [30, 75, 50]
-    upgradeNames = ['Longer Range', 'Lightning Zap', 'Big Blast Radius']
+    upgradePrices = [
+        [30, 60, 90],
+        [75, 95],
+        [50, 65]
+    ]
+    upgradeNames = [
+        ['Longer Range', 'Extreme Range', 'Ultra Range'],
+        ['Lighning Zap', 'Wisdom of Camo', '5-hit Lightning'],
+        ['Big Blast Radius', 'Faster Reload', 'Hyper Reload']
+    ]
     range = 125
+    cooldown = 100
 
     def __init__(self, x: int, y: int):
         super().__init__(x, y)
@@ -521,7 +649,7 @@ class Wizard(Towers):
             self.stun -= 1
             return
 
-        if self.timer >= (50 if self.upgrades[2] else 100):
+        if self.timer >= self.cooldown:
             try:
                 closest = getTarget(self)
                 info.projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=60 if self.upgrades[2] else 30))
@@ -537,8 +665,8 @@ class Wizard(Towers):
             self.lightningTimer += 1
 
     def update(self):
-        if self.upgrades[0]:
-            self.range = 200
+        self.range = [125, 175, 250, 400][self.upgrades[0]]
+        self.cooldown = [100, 100, 66, 33][self.upgrades[2]]
 
 
 class InfernoTower(Towers):
@@ -565,6 +693,7 @@ class InfernoTower(Towers):
                 if (abs(enemy.x - self.parent.x) ** 2 + abs(enemy.y - self.parent.y) ** 2 <= self.parent.range ** 2) and (not enemy.camo or canSeeCamo(self.parent)):
                     enemy.fireTicks = (500 if self.parent.upgrades[2] else 300)
                     enemy.fireIgnitedBy = self.parent
+                    enemy.freezeTimer = [0, 0, 25, 75][self.parent.upgrades[1]]
                     self.renders.append(InfernoTower.AttackRender(self.parent, enemy))
                     found = True
 
@@ -579,9 +708,18 @@ class InfernoTower(Towers):
     color = (255, 69, 0)
     req = 8
     price = 500
-    upgradePrices = [100, 120, 150]
-    upgradeNames = ['Longer Range', 'Shortened Cooldown', 'Longer Burning']
+    upgradePrices = [
+        [100, 200, 350],
+        [120, 150, 185],
+        [150, 200, 275]
+    ]
+    upgradeNames = [
+        ['Longer Range', 'Extreme Range', 'Ultra Range'],
+        ['Shortened Cooldown', 'More Infernoes', 'Hyper Infernoes'],
+        ['Longer Burning', 'Firey Stun', 'Longer Stun']
+    ]
     range = 100
+    cooldown = 500
 
     def __init__(self, x: int, y: int):
         super().__init__(x, y)
@@ -596,15 +734,15 @@ class InfernoTower(Towers):
             self.stun -= 1
             return
 
-        if self.timer >= (250 if self.upgrades[1] else 500):
+        if self.timer >= self.cooldown:
             self.inferno.attack()
             self.timer = 0
         else:
             self.timer += 1
 
     def update(self):
-        if self.upgrades[0]:
-            self.range = 200
+        self.range = [100, 150, 250, 400][self.upgrades[0]]
+        self.cooldown = [500, 375, 250, 200][self.upgrades[1]]
 
 
 class Village(Towers):
@@ -617,8 +755,9 @@ class Village(Towers):
             self.ty = None
             self.dx = None
             self.dy = None
-            self.visible = False
-            self.cooldown = 250
+            self.target = None
+            self.moveCooldown = 250
+            self.timer = 0
 
         def attack(self):
             closest = getTarget(Towers(self.x, self.y), overrideRange=self.parent.range)
@@ -628,8 +767,7 @@ class Village(Towers):
                 info.projectiles.append(Projectile(self.parent, self.x, self.y, closest.x, closest.y))
 
         def draw(self):
-            if self.visible:
-                pygame.draw.circle(screen, (184, 134, 69), (self.x, self.y), 10)
+            pygame.draw.circle(screen, (184, 134, 69), (self.x, self.y), 10)
 
         def move(self):
             try:
@@ -639,18 +777,19 @@ class Village(Towers):
 
             if self.dx is None:
                 if self.tx is None:
-                    if self.cooldown >= 250:
-                        closest = getTarget(Towers(self.x, self.y), overrideRange=self.parent.range)
+                    if self.moveCooldown >= 250:
+                        closest = getTarget(Towers(self.x, self.y), overrideRange=self.parent.range, ignore=self.parent.targets)
                         if closest is None:
                             self.tx = self.parent.x
                             self.ty = self.parent.y
                         else:
                             self.tx = closest.x
                             self.ty = closest.y
-                            self.cooldown = 0
-                    elif getTarget(Towers(self.x, self.y), overrideRange=self.parent.range) is None or (
-                            self.x - self.parent.x) ** 2 + (self.y - self.parent.y) ** 2 < 625:
-                        self.cooldown += 1
+                            self.target = closest
+                            self.moveCooldown = 0
+                            self.parent.targets = [villager.target for villager in self.parent.villagers]
+                    elif getTarget(Towers(self.x, self.y), overrideRange=self.parent.range) is None or (self.x - self.parent.x) ** 2 + (self.y - self.parent.y) ** 2 < 625:
+                        self.moveCooldown += 1
                 else:
                     dx, dy = abs(self.x - self.tx), abs(self.y - self.ty)
                     try:
@@ -661,6 +800,7 @@ class Village(Towers):
                         self.dy = None
                         self.tx = None
                         self.ty = None
+                        self.target = None
                     else:
                         self.x += self.dx
                         self.y += self.dy
@@ -673,42 +813,58 @@ class Village(Towers):
                     self.dy = None
                     self.tx = None
                     self.ty = None
-                    self.cooldown = 0
+                    self.target = None
+                    self.moveCooldown = 0
 
     name = 'Village'
     color = (202, 164, 114)
     req = 10
     price = 400
-    upgradePrices = [120, 100, 50]
-    upgradeNames = ['Anti-Camo', 'Longer Range', 'Spawn Villager']
+    upgradePrices = [
+        [120, 150, 200],
+        [100, 125, 175],
+        [50, 75, 100]
+    ]
+    upgradeNames = [
+        ['Anti-Camo', 'Powerful Villagers', 'Turret Villagers'],
+        ['Longer Range', 'Extreme Range', 'Ultra Range'],
+        ['Two Villagers', 'Three Villagers', 'Four Villagers']
+    ]
     range = 100
+    cooldown = 100
 
     def __init__(self, x: int, y: int):
         super().__init__(x, y)
-        self.villager = self.Villager(self)
+        self.villagers = [self.Villager(self)]
+        self.targets = []
 
     def draw(self):
         super().draw()
-        self.villager.draw()
+        for villager in self.villagers:
+            villager.draw()
 
     def attack(self):
-        if self.upgrades[2]:
-            if self.timer >= 100:
-                self.timer = 0
-                self.villager.attack()
+        for villager in self.villagers:
+            if villager.timer >= self.cooldown:
+                villager.attack()
+                villager.timer = 0
             else:
-                self.timer += 1
+                villager.timer += 1
 
     def update(self):
-        if self.upgrades[1]:
-            self.range = 150
-        if self.upgrades[2]:
-            self.villager.visible = True
-            self.villager.move()
+        self.cooldown = [100, 100, 80, 55][self.upgrades[0]]
+        self.range = [100, 125, 150, 175][self.upgrades[1]]
+        self.targets = [villager.target for villager in self.villagers]
+
+        for villager in self.villagers:
+            villager.move()
+
+        if len(self.villagers) < self.upgrades[2]:
+            self.villagers.append(self.Villager(self))
 
 
 class Projectile:
-    def __init__(self, parent: Towers, x: int, y: int, tx: int, ty: int, *, explosiveRadius: int = 0, freeze: bool = False):
+    def __init__(self, parent: Towers, x: int, y: int, tx: int, ty: int, *, explosiveRadius: int = 0, freezeDuration: int = 0, bossDamage: int = 1, impactDamage: int = 1, fireTicks: int = 0):
         self.parent = parent
         self.x = x
         self.y = y
@@ -717,11 +873,15 @@ class Projectile:
         self.dx = None
         self.dy = None
         self.explosiveRadius = explosiveRadius
-        self.freeze = freeze
+        self.freezeDuration = freezeDuration
         self.coinMultiplier = getCoinMultiplier(parent)
+        self.bossDamage = bossDamage
+        self.impactDamage = impactDamage
+        self.fireTicks = fireTicks
+
         if self.explosiveRadius > 0:
             self.color = (0, 0, 0)
-        elif self.freeze:
+        elif self.freezeDuration > 0:
             self.color = (0, 0, 187)
         elif self.coinMultiplier > 1:
             self.color = (255, 255, 0)
@@ -756,29 +916,36 @@ class Projectile:
                 continue
 
             if abs(enemy.x - self.x) ** 2 + abs(enemy.y - self.y) ** 2 < self.explosiveRadius ** 2:
+                if self.fireTicks > 0:
+                    enemy.fireTicks = self.fireTicks
+                    enemy.fireIgnitedBy = self.parent
                 enemy.kill(coinMultiplier=getCoinMultiplier(self.parent))
                 self.parent.hits += 1
 
 
 class PiercingProjectile:
-    def __init__(self, parent: Towers, x: int, y: int, pierceLimit: int, direction: str):
+    def __init__(self, parent: Towers, x: int, y: int, pierceLimit: int, direction: str, *, speed: int = 2):
         self.parent = parent
         self.coinMultiplier = getCoinMultiplier(self.parent)
         self.x = x
         self.y = y
-        self.pierce = pierceLimit * (2 if type(self.parent) is Bowler and self.parent.upgrades[2] else 1)
+        self.pierce = pierceLimit
         self.direction = direction
         self.ignore = []
+        self.movement = 0
+        self.speed = speed
 
-    def move(self, speed=2):
+    def move(self):
+        self.movement += self.speed
+
         if self.direction == 'left':
-            self.x -= speed
+            self.x -= self.speed
         elif self.direction == 'right':
-            self.x += speed
+            self.x += self.speed
         elif self.direction == 'up':
-            self.y -= speed
+            self.y -= self.speed
         elif self.direction == 'down':
-            self.y += speed
+            self.y += self.speed
 
         if self.x < 0 or self.x > 800 or self.y < 0 or self.y > 450:
             info.piercingProjectiles.remove(self)
@@ -864,25 +1031,28 @@ class Enemy:
 
         for projectile in info.projectiles:
             if abs(self.x - projectile.x) ** 2 + abs(self.y - projectile.y) ** 2 < (625 if type(self.tier) is str else 100):
-                if projectile.freeze:
+                if projectile.freezeDuration > 0:
                     info.projectiles.remove(projectile)
-                    if type(projectile.parent) is IceTower:
-                        self.freezeTimer = (50 if projectile.parent.upgrades[2] else 25) // (2 if type(self.tier) is str else 1)
+                    self.freezeTimer = max(self.freezeTimer, projectile.freezeDuration // (2 if type(self.tier) is str else 1))
                 else:
                     info.projectiles.remove(projectile)
                     if projectile.explosiveRadius > 0:
                         projectile.explode(self)
                         if self.tier in onlyExplosiveTiers:
-                            self.kill(coinMultiplier=projectile.coinMultiplier)
-                            projectile.parent.hits += 1
+                            new = self
+                            for n in range(projectile.impactDamage):
+                                new = new.kill(coinMultiplier=projectile.coinMultiplier, bossDamage=projectile.bossDamage)
+                                projectile.parent.hits += 1
                     if self.tier not in onlyExplosiveTiers:
-                        self.kill(coinMultiplier=projectile.coinMultiplier)
-                        projectile.parent.hits += 1
+                        new = self
+                        for n in range(projectile.impactDamage):
+                            new = new.kill(coinMultiplier=projectile.coinMultiplier, bossDamage=projectile.bossDamage)
+                            projectile.parent.hits += 1
 
         if self.tier not in onlyExplosiveTiers:
             for projectile in info.piercingProjectiles:
                 if abs(self.x - projectile.x) ** 2 + abs(self.y - projectile.y) ** 2 < 100:
-                    if self not in projectile.ignore and not self.camo:
+                    if (self not in projectile.ignore) and (not self.camo):
                         new = self.kill(coinMultiplier=projectile.coinMultiplier)
                         projectile.parent.hits += 1
                         if projectile.parent.upgrades[0] and new is not None and type(self.tier) is int:
@@ -914,7 +1084,7 @@ class Enemy:
         if self.camo:
             pygame.draw.circle(screen, (0, 0, 0), (self.x, self.y), 20 if type(self.tier) is str else 10, 2)
 
-    def kill(self, *, spawnNew: bool = True, coinMultiplier: int = 1, ignoreBoss: bool = False, burn: bool = False):
+    def kill(self, *, spawnNew: bool = True, coinMultiplier: int = 1, ignoreBoss: bool = False, burn: bool = False, bossDamage: int = 1):
         if type(self.tier) is int or ignoreBoss:
             try:
                 info.enemies.remove(self)
@@ -933,7 +1103,7 @@ class Enemy:
                     info.enemies.append(new)
                     return new
         elif type(self.tier) is str:
-            self.HP -= 10 if burn else 1
+            self.HP -= 10 if burn else bossDamage
             if self.HP <= 0:
                 self.kill(spawnNew=spawnNew, coinMultiplier=coinMultiplier, ignoreBoss=True)
                 try:
@@ -944,9 +1114,9 @@ class Enemy:
 
 def getSellPrice(tower: Towers) -> float:
     price = tower.price
-    for n in range(len(tower.upgrades)):
-        if tower.upgrades[n]:
-            price += tower.upgradePrices[n]
+    for n in range(3):
+        for m in range(tower.upgrades[n]):
+            price += tower.upgradePrices[n][m]
 
     return price * 0.5
 
@@ -960,23 +1130,29 @@ def income() -> float:
     total = 0.001
     for tower in info.towers:
         if type(tower) is BananaFarm:
-            total += 0.001
-            if tower.upgrades[1]:
-                total += 0.003
+            total += [0.001, 0.003, 0.0075, 0.015][tower.upgrades[1]]
 
     return total
 
 
 def getCoinMultiplier(Tower: Towers) -> int:
-    bananaFarms = [tower for tower in info.towers if type(tower) is BananaFarm and tower.upgrades[2]]
+    bananaFarms = [tower for tower in info.towers if type(tower) is BananaFarm]
+    maxCoinMult = 1
     for bananaFarm in bananaFarms:
         if abs(Tower.x - bananaFarm.x) ** 2 + abs(Tower.y - bananaFarm.y) ** 2 < bananaFarm.range ** 2:
-            return 2
-    return 1
+            maxCoinMult = max(maxCoinMult, [1, 2, 5, 10][bananaFarm.upgrades[2]])
+
+    return maxCoinMult
 
 
 def canSeeCamo(Tower: Towers) -> bool:
-    villages = [tower for tower in info.towers if type(tower) is Village and tower.upgrades[0]]
+    if type(Tower) is Turret and Tower.upgrades[1] >= 2:
+        return True
+
+    if type(Tower) is Wizard and Tower.upgrades[1] >= 2:
+        return True
+
+    villages = [tower for tower in info.towers if type(tower) is Village and tower.upgrades[0] > 0]
     for village in villages:
         if abs(Tower.x - village.x) ** 2 + abs(Tower.y - village.y) ** 2 < village.range ** 2:
             return True
@@ -1076,15 +1252,18 @@ def draw():
         screen.blit(font.render(f'Pops: {info.selected.hits}', True, 0), (200, 460))
 
         for n in range(3):
-            if info.selected.upgrades[n]:
+            if info.selected.upgrades[n] == 3:
                 pygame.draw.rect(screen, (255, 255, 191), (295, 485 + 30 * n, 300, 30))
-            pygame.draw.rect(screen, (128, 128, 128), (295, 485 + 30 * n, 300, 30), 5)
+                pygame.draw.rect(screen, (128, 128, 128), (295, 485 + 30 * n, 300, 30), 5)
+                centredBlit(font, 'MAX', (0, 0, 0), (445, 500 + 30 * n))
+            else:
+                pygame.draw.rect(screen, (128, 128, 128), (295, 485 + 30 * n, 300, 30), 5)
 
-            nameWithSpace = ''
-            for m in range(18):
-                nameWithSpace += info.selected.upgradeNames[n][m] if m < len(info.selected.upgradeNames[n]) else ' '
+                nameWithSpace = ''
+                for m in range(18):
+                    nameWithSpace += info.selected.upgradeNames[n][info.selected.upgrades[n]][m] if m < len(info.selected.upgradeNames[n][info.selected.upgrades[n]]) else ' '
 
-            screen.blit(font.render(f'{nameWithSpace} [${info.selected.upgradePrices[n]}]', True, (32, 32, 32)), (300, 485 + n * 30))
+                screen.blit(font.render(f'{nameWithSpace} [${info.selected.upgradePrices[n][info.selected.upgrades[n]]}]', True, (32, 32, 32)), (300, 485 + n * 30))
 
         pygame.draw.rect(screen, (128, 128, 128), (620, 545, 200, 25))
         pygame.draw.rect(screen, (200, 200, 200) if 620 < mx < 820 and 545 < my < 570 else (0, 0, 0), (620, 545, 200, 25), 3)
@@ -1183,10 +1362,12 @@ def iterate():
                 if issubclass(type(info.selected), Towers):
                     if 295 <= mx <= 595 and 485 <= my <= 570:
                         n = (my - 485) // 30
-                        cost = type(info.selected).upgradePrices[n]
-                        if info.coins >= cost and (info.wave >= info.selected.req or cheats) and not info.selected.upgrades[n]:
-                            info.coins -= cost
-                            info.selected.upgrades[n] = True
+                        if info.selected.upgrades[n] < 3:
+                            cost = type(info.selected).upgradePrices[n][info.selected.upgrades[n]]
+                            if info.coins >= cost and (info.wave >= info.selected.req or cheats):
+                                info.coins -= cost
+                                info.selected.upgrades[n] += 1
+
                     elif 620 <= mx < 820 and 545 <= my < 570:
                         info.towers.remove(info.selected)
                         info.coins += getSellPrice(info.selected)
