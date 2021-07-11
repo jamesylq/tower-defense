@@ -1255,9 +1255,10 @@ def load():
 
         if info.totalWaves != len(waves):
             info.totalWaves = len(waves)
-            for name, PB in info.PBs.items():
-                if type(PB) is int:
-                    info.PBs[name] = None
+            if info.totalWaves < len(waves):
+                for name, PB in info.PBs.items():
+                    if type(PB) is int:
+                        info.PBs[name] = None
 
     except FileNotFoundError:
         open('save.txt', 'w')
