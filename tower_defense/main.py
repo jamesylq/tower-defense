@@ -10,7 +10,7 @@ current_path = os.path.dirname(__file__)
 resource_path = os.path.join(current_path, 'resources')
 
 MaxFPS = 100
-cheats = True
+cheats = False
 
 
 class Map:
@@ -1550,7 +1550,7 @@ def app():
                         n = True
 
                 cont = False
-                if info.PBs[info.Map.name] is None:
+                if info.PBs[info.Map.name] is None or info.PBs[info.Map.name] == LOCKED:
                     info.PBs[info.Map.name] = info.HP
                 elif info.PBs[info.Map.name] < info.HP:
                     info.PBs[info.Map.name] = info.HP
