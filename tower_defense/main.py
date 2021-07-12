@@ -9,8 +9,8 @@ from _pickle import UnpicklingError
 current_path = os.path.dirname(__file__)
 resource_path = os.path.join(current_path, 'resources')
 
-MaxFPS = 100
-cheats = False
+MaxFPS = 0
+cheats = True
 
 
 class Map:
@@ -188,8 +188,8 @@ class Turret(Towers):
     price = 50
 
     upgradePrices = [
-        [30, 60, 100],
-        [20, 45, 75],
+        [30, 75, 125],
+        [20, 60, 275],
         [75, 125, 175]
     ]
 
@@ -214,7 +214,7 @@ class Turret(Towers):
             try:
                 closest = getTarget(self)
                 explosiveRadius = 30 if self.upgrades[2] >= 1 else 0
-                info.projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=explosiveRadius))
+                info.projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, bossDamage= 5 if self.upgrades[2] == 3 else 1, explosiveRadius=explosiveRadius))
                 self.timer = 0
             except AttributeError:
                 pass
@@ -256,13 +256,13 @@ class IceTower(Towers):
     req = 2
     price = 30
     upgradePrices = [
-        [15, 30, 75],
-        [25, 50, 85],
-        [30, 45, 75]
+        [30, 60, 100],
+        [30, 50, 85],
+        [30, 50, 75]
     ]
     upgradeNames = [
         ['Longer Range', 'Extreme Range', 'Ultra Range'],
-        ['Lesser Cooldown', 'Snowball Shower', 'Quartered Cooldown'],
+        ['Lesser Cooldown', 'Snowball Shower', 'Heavy Snowfall'],
         ['Longer Freeze', 'Snowstorm Circle', 'Ultra Freeze']
     ]
     range = 125
@@ -300,7 +300,7 @@ class IceTower(Towers):
         self.snowCircle.update()
 
         self.range = [150, 180, 200, 250][self.upgrades[0]]
-        self.cooldown = [1, 0.75, 0.55, 0.3][self.upgrades[1]] * (50 if self.upgrades[2] < 2 else 1000)
+        self.cooldown = [1, 0.75, 0.55, 0.4][self.upgrades[1]] * (50 if self.upgrades[2] < 2 else 1000)
         if self.upgrades[2] >= 1:
             self.freezeDuration = 45
         if self.upgrades[2] == 3:
@@ -327,14 +327,14 @@ class SpikeTower(Towers):
             self.y += self.dy * self.parent.projectileSpeed
 
             for enemy in info.enemies:
-                if enemy in self.ignore or (enemy.tier in onlyExplosiveTiers and self.upgrades[2] < 2):
+                if enemy in self.ignore or (enemy.tier in onlyExplosiveTiers and self.parent.upgrades[2] < 2):
                     continue
 
                 if abs(enemy.x - self.x) ** 2 + abs(enemy.y - self.y) ** 2 < (144 if type(enemy.tier) is int else 484):
                     self.visible = False
-                    if self.upgrades[2] == 3:
+                    if self.parent.upgrades[2] == 3:
                         enemy.fireTicks = 300
-                        enemy.fireIgnitedBy = self
+                        enemy.fireIgnitedBy = self.parent
 
                     new = enemy.kill(coinMultiplier=getCoinMultiplier(self.parent))
                     if self.parent.upgrades[2] >= 1 and new is not None:
@@ -371,9 +371,9 @@ class SpikeTower(Towers):
     req = 2
     price = 125
     upgradePrices = [
-        [35, 60, 100],
-        [50, 75, 125],
-        [100, 125, 175]
+        [50, 100, 150],
+        [75, 350, 500],
+        [100, 125, 200]
     ]
     upgradeNames = [
         ['Fast Spikes', 'Hyperspeed Spikes', 'Bullet-like Speed'],
@@ -458,7 +458,7 @@ class BombTower(Towers):
 
     def update(self):
         self.range = [50, 100, 150, 200][self.upgrades[0]]
-        self.cooldown = [200, 150, 100, 100][self.upgrades[1]]
+        self.cooldown = [200, 145, 75, 75][self.upgrades[1]]
 
 
 class BananaFarm(Towers):
@@ -499,7 +499,7 @@ class BananaFarm(Towers):
                 self.timer += 1
 
     def update(self):
-        self.cooldown = [0, 100, 50, 50][self.upgrades[0]]
+        self.cooldown = [0, 50, 25, 25][self.upgrades[0]]
         if self.upgrades[0] == 3:
             self.range = 150
 
@@ -517,7 +517,7 @@ class Bowler(Towers):
     upgradeNames = [
         ['Faster Rocks', 'Double Damage', 'Snipe'],
         ['More Rocks', 'Double Rocks', 'Infini-Rocks'],
-        ['5 Enemies Pierce', '10 Enemies Pierce', 'Infini-Pierce']
+        ['5 Enemies Pierce', '10 Enemies Pierce', '20 Enemies Pierce']
     ]
     range = 0
     cooldown = 300
@@ -543,7 +543,7 @@ class Bowler(Towers):
 
     def update(self):
         self.cooldown = [300, 200, 150, 100][self.upgrades[1]]
-        self.pierce = [3, 5, 10, 1000][self.upgrades[2]]
+        self.pierce = [3, 5, 10, 20][self.upgrades[2]]
 
 
 class Wizard(Towers):
@@ -577,7 +577,7 @@ class Wizard(Towers):
                             if type(self.t4) is Enemy:
                                 self.t4.kill(coinMultiplier=getCoinMultiplier(self.parent))
                                 self.parent.hits += 1
-                                self.t5 = getTarget(Towers(self.t4.x, self.t4.y), ignore=[self.t1, self.t2, self.t3, self.t4])
+                                self.t5 = getTarget(Towers(self.t4.x, self.t4.y), ignore=[self.t1, self.t2, self.t3, self.t4], overrideRange=1000)
                                 if type(self.t5) is Enemy:
                                     self.t5.kill(coinMultiplier=getCoinMultiplier(self.parent))
                             else:
@@ -624,8 +624,8 @@ class Wizard(Towers):
     price = 250
     upgradePrices = [
         [30, 60, 90],
-        [75, 95],
-        [50, 65]
+        [75, 95, 150],
+        [50, 65, 90]
     ]
     upgradeNames = [
         ['Longer Range', 'Extreme Range', 'Ultra Range'],
@@ -665,8 +665,8 @@ class Wizard(Towers):
             self.lightningTimer += 1
 
     def update(self):
-        self.range = [125, 175, 250, 400][self.upgrades[0]]
-        self.cooldown = [100, 100, 66, 33][self.upgrades[2]]
+        self.range = [125, 150, 175, 200][self.upgrades[0]]
+        self.cooldown = [50, 50, 33, 16][self.upgrades[2]]
 
 
 class InfernoTower(Towers):
@@ -710,7 +710,7 @@ class InfernoTower(Towers):
     price = 500
     upgradePrices = [
         [100, 200, 350],
-        [120, 150, 185],
+        [120, 175, 250],
         [150, 200, 275]
     ]
     upgradeNames = [
@@ -852,7 +852,7 @@ class Village(Towers):
                 villager.timer += 1
 
     def update(self):
-        self.cooldown = [100, 100, 80, 55][self.upgrades[0]]
+        self.cooldown = [50, 50, 40, 27][self.upgrades[0]]
         self.range = [100, 125, 150, 175][self.upgrades[1]]
         self.targets = [villager.target for villager in self.villagers]
 
@@ -1049,16 +1049,31 @@ class Enemy:
                             new = new.kill(coinMultiplier=projectile.coinMultiplier, bossDamage=projectile.bossDamage)
                             projectile.parent.hits += 1
 
+                            if new is None:
+                                break
+
         if self.tier not in onlyExplosiveTiers:
             for projectile in info.piercingProjectiles:
                 if abs(self.x - projectile.x) ** 2 + abs(self.y - projectile.y) ** 2 < 100:
                     if (self not in projectile.ignore) and (not self.camo):
-                        new = self.kill(coinMultiplier=projectile.coinMultiplier)
-                        projectile.parent.hits += 1
-                        if projectile.parent.upgrades[0] and new is not None and type(self.tier) is int:
+                        damage = 1
+                        if type(projectile.parent) is Bowler:
+                            if projectile.parent.upgrades[0] == 2:
+                                damage = 2
+                            elif projectile.parent.upgrades[0] == 3:
+                                damage = 2 * (projectile.movement // 100 + 1)
+
+                        new = self
+                        for n in range(damage):
                             new = new.kill(coinMultiplier=projectile.coinMultiplier)
+                            projectile.parent.hits += 1
+
+                            if new is None:
+                                break
+
                         projectile.ignore.append(new)
-                        if projectile.pierce == 1:
+
+                        if projectile.pierce <= 1:
                             info.piercingProjectiles.remove(projectile)
                         else:
                             projectile.pierce -= 1
@@ -1146,7 +1161,7 @@ def getCoinMultiplier(Tower: Towers) -> int:
 
 
 def canSeeCamo(Tower: Towers) -> bool:
-    if type(Tower) is Turret and Tower.upgrades[1] >= 2:
+    if type(Tower) is Turret and Tower.upgrades[2] >= 2:
         return True
 
     if type(Tower) is Wizard and Tower.upgrades[1] >= 2:
@@ -1163,7 +1178,10 @@ def getTarget(tower: Towers, *, ignore: [Enemy] = None, overrideRange: int = Non
     if ignore is None:
         ignore = []
 
-    rangeRadius = tower.range if overrideRange is None else overrideRange
+    if overrideRange is None:
+        rangeRadius = tower.range
+    else:
+        rangeRadius = overrideRange
 
     maxDistance = None
 
@@ -1286,7 +1304,7 @@ def move():
         projectile.move()
 
     for projectile in info.piercingProjectiles:
-        projectile.move(2)
+        projectile.move()
 
 
 def iterate():
