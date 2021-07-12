@@ -9,8 +9,8 @@ from _pickle import UnpicklingError
 current_path = os.path.dirname(__file__)
 resource_path = os.path.join(current_path, 'resources')
 
-MaxFPS = 0
-cheats = True
+MaxFPS = 100
+cheats = False
 
 
 class Map:
