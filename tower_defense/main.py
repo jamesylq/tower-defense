@@ -223,7 +223,7 @@ class Turret(Towers):
 
     def update(self):
         self.range = [100, 130, 165, 200][self.upgrades[0]]
-        self.cooldown = [100, 50, 25, 10][self.upgrades[1]]
+        self.cooldown = [60, 35, 20, 10][self.upgrades[1]]
 
 
 class IceTower(Towers):
