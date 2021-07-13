@@ -1274,7 +1274,7 @@ def draw():
     screen.blit(font.render(f'Health: {info.HP} HP', True, 0), (10, 545))
     screen.blit(font.render(f'Coins: {math.floor(info.coins)}', True, 0), (10, 570))
     screen.blit(font.render(f'FPS: {round(clock.get_fps(), 1)}', True, (0, 0, 0)), (10, 520))
-    screen.blit(font.render(f'Wave {max(info.wave, 1)}', True, 0), (900, 570))
+    screen.blit(font.render(f'Wave {max(info.wave, 1)} of {len(waves)}', True, 0), (825, 570))
 
     pygame.draw.rect(screen, (128, 128, 128), (775, 500, 200, 30))
     screen.blit(font.render('Map Selection', True, (0, 0, 0)), (800, 505))
