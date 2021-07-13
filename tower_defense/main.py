@@ -145,6 +145,14 @@ IceCircle = pygame.transform.scale(pygame.image.load(os.path.join(resource_path,
 largeIceCircle = IceCircle.copy()
 largeIceCircle.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
 
+rangeImages = []
+possibleRanges = [50, 100, 125, 130, 150, 165, 175, 180, 200, 250, 400]
+for possibleRange in possibleRanges:
+    rangeImage = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'range.png')), (possibleRange * 2,) * 2)
+    alphaImage = rangeImage.copy()
+    alphaImage.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
+    rangeImages.append(alphaImage)
+
 SIN45 = COS45 = math.sqrt(2) / 2
 
 
@@ -693,7 +701,7 @@ class InfernoTower(Towers):
                 if (abs(enemy.x - self.parent.x) ** 2 + abs(enemy.y - self.parent.y) ** 2 <= self.parent.range ** 2) and (not enemy.camo or canSeeCamo(self.parent)):
                     enemy.fireTicks = (500 if self.parent.upgrades[2] else 300)
                     enemy.fireIgnitedBy = self.parent
-                    enemy.freezeTimer = [0, 0, 25, 75][self.parent.upgrades[1]]
+                    enemy.freezeTimer = max(enemy.freezeTimer, [0, 0, 25, 75][self.parent.upgrades[1]])
                     self.renders.append(InfernoTower.AttackRender(self.parent, enemy))
                     found = True
 
@@ -1033,7 +1041,7 @@ class Enemy:
             if abs(self.x - projectile.x) ** 2 + abs(self.y - projectile.y) ** 2 < (625 if type(self.tier) is str else 100):
                 if projectile.freezeDuration > 0:
                     info.projectiles.remove(projectile)
-                    self.freezeTimer = max(self.freezeTimer, projectile.freezeDuration // (2 if type(self.tier) is str else 1))
+                    self.freezeTimer = max(self.freezeTimer, projectile.freezeDuration // (3 if type(self.tier) is str else 1))
                 else:
                     info.projectiles.remove(projectile)
                     if projectile.explosiveRadius > 0:
@@ -1222,9 +1230,12 @@ def draw():
         projectile.draw()
 
     if info.selected is not None:
-        original = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'range.png')), (info.selected.range * 2, info.selected.range * 2))
-        modified = original.copy()
-        modified.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
+        if info.selected.range in possibleRanges:
+            modified = rangeImages[possibleRanges.index(info.selected.range)]
+        else:
+            original = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'range.png')), (info.selected.range * 2, info.selected.range * 2))
+            modified = original.copy()
+            modified.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
         screen.blit(modified, (info.selected.x - info.selected.range, info.selected.y - info.selected.range))
 
     if info.placing != '':
@@ -1236,9 +1247,12 @@ def draw():
                     classObj = tower
 
             pygame.draw.circle(screen, classObj.color, (mx, my), 15)
-            original = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'range.png')), (classObj.range * 2, classObj.range * 2))
-            modified = original.copy()
-            modified.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
+            if classObj.range in possibleRanges:
+                modified = rangeImages[possibleRanges.index(classObj.range)]
+            else:
+                original = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'range.png')), (classObj.range * 2, classObj.range * 2))
+                modified = original.copy()
+                modified.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
             screen.blit(modified, (mx - classObj.range, my - classObj.range))
 
     pygame.draw.rect(screen, (221, 221, 221), (800, 0, 200, 450))
