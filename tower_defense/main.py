@@ -14,11 +14,12 @@ cheats = False
 
 
 class Map:
-    def __init__(self, path: list, name: str, backgroundColor: (int, int, int), pathColor: (int, int, int)):
+    def __init__(self, path: list, name: str, backgroundColor: (int, int, int), pathColor: (int, int, int), displayColor: (int, int, int) = None):
         self.name = name
         self.path = path
         self.backgroundColor = backgroundColor
         self.pathColor = pathColor
+        self.displayColor = self.backgroundColor if displayColor is None else displayColor
 
 
 screen = pygame.display.set_mode((1000, 600))
@@ -30,12 +31,13 @@ mediumFont = pygame.font.SysFont('Ubuntu Mono', 30)
 largeFont = pygame.font.SysFont('Ubuntu Mono', 75)
 pygame.display.set_caption('Tower Defense')
 
+RACE_TRACK = Map([[25, 0], [25, 375], [775, 375], [775, 25], [40, 25], [40, 360], [760, 360], [760, 40], [55, 40], [55, 345], [745, 345], [745, 55], [0, 55]], "Race Track", (19, 109, 21), (189, 22, 44), (189, 22, 44))
 POND = Map([[0, 25], [700, 25], [700, 375], [100, 375], [100, 75], [800, 75]], "Pond", (6, 50, 98), (0, 0, 255))
-LAVA_SPIRAL = Map([[300, 225], [575, 225], [575, 325], [125, 325], [125, 125], [675, 125], [675, 425], [25, 425], [25, 0]], "Lava Spiral", (207, 16, 32), (255, 140, 0))
+LAVA_SPIRAL = Map([[300, 225], [575, 225], [575, 325], [125, 325], [125, 125], [675, 125], [675, 425], [25, 425], [25, 0]], "Lava Spiral", (207, 16, 32), (255, 140, 0), (178, 66, 0))
 PLAINS = Map([[25, 0], [25, 375], [500, 375], [500, 25], [350, 25], [350, 175], [750, 175], [750, 0]], "Plains", (19, 109, 21), (155, 118, 83))
 DESERT = Map([[0, 25], [750, 25], [750, 200], [25, 200], [25, 375], [800, 375]], "Desert", (170, 108, 35), (178, 151, 5))
 THE_END = Map([[0, 225], [800, 225]], "The End", (100, 100, 100), (200, 200, 200))
-Maps = [POND, LAVA_SPIRAL, PLAINS, DESERT, THE_END]
+Maps = [RACE_TRACK, POND, LAVA_SPIRAL, PLAINS, DESERT, THE_END]
 
 waves = [
     '00' * 3,
@@ -1296,6 +1298,10 @@ def draw():
                     nameWithSpace += info.selected.upgradeNames[n][info.selected.upgrades[n]][m] if m < len(info.selected.upgradeNames[n][info.selected.upgrades[n]]) else ' '
 
                 screen.blit(font.render(f'{nameWithSpace} [${info.selected.upgradePrices[n][info.selected.upgrades[n]]}]', True, (32, 32, 32)), (300, 485 + n * 30))
+            for m in range(3):
+                if info.selected.upgrades[n] > m:
+                    pygame.draw.circle(screen, (0, 255, 0), (560 + 12 * m, 497 + 30 * n), 5)
+                pygame.draw.circle(screen, (0, 0, 0), (560 + 12 * m, 497 + 30 * n), 5, 2)
 
         pygame.draw.rect(screen, (128, 128, 128), (620, 545, 200, 25))
         pygame.draw.rect(screen, (200, 200, 200) if 620 < mx < 820 and 545 < my < 570 else (0, 0, 0), (620, 545, 200, 25), 3)
@@ -1541,7 +1547,7 @@ def app():
 
             for n in range(len(Maps)):
                 if info.PBs[Maps[n].name] != LOCKED or cheats:
-                    pygame.draw.rect(screen, Maps[n].backgroundColor, (10, 40 * n + 60, 980, 30))
+                    pygame.draw.rect(screen, Maps[n].displayColor, (10, 40 * n + 60, 980, 30))
                     if 10 <= mx <= 980 and 40 * n + 60 < my <= 40 * n + 90:
                         pygame.draw.rect(screen, (128, 128, 128), (10, 40 * n + 60, 980, 30), 5)
                     else:
