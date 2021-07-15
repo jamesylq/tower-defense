@@ -1333,8 +1333,14 @@ def load():
             if not hasattr(info, attr):
                 setattr(info, attr, default)
 
+        foundUnlocked = False
         for Map in Maps:
             if Map.name not in info.PBs.keys():
+                info.PBs[Map.name] = LOCKED
+
+            if info.PBs[Map.name] != LOCKED:
+                foundUnlocked = True
+            elif not foundUnlocked:
                 info.PBs[Map.name] = None
 
         if info.totalWaves != len(waves):
