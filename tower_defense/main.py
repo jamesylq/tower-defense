@@ -5,6 +5,7 @@ import random
 import math
 
 from _pickle import UnpicklingError
+from tower_defense import __version__
 
 current_path = os.path.dirname(__file__)
 resource_path = os.path.join(current_path, 'resources')
@@ -20,142 +21,6 @@ class Map:
         self.backgroundColor = backgroundColor
         self.pathColor = pathColor
         self.displayColor = self.backgroundColor if displayColor is None else displayColor
-
-
-screen = pygame.display.set_mode((1000, 600))
-pygame.init()
-pygame.font.init()
-clock = pygame.time.Clock()
-font = pygame.font.SysFont('Ubuntu Mono', 20)
-mediumFont = pygame.font.SysFont('Ubuntu Mono', 30)
-largeFont = pygame.font.SysFont('Ubuntu Mono', 75)
-pygame.display.set_caption('Tower Defense')
-
-RACE_TRACK = Map([[25, 0], [25, 375], [775, 375], [775, 25], [40, 25], [40, 360], [760, 360], [760, 40], [55, 40], [55, 345], [745, 345], [745, 55], [0, 55]], "Race Track", (19, 109, 21), (189, 22, 44), (189, 22, 44))
-POND = Map([[0, 25], [700, 25], [700, 375], [100, 375], [100, 75], [800, 75]], "Pond", (6, 50, 98), (0, 0, 255))
-LAVA_SPIRAL = Map([[300, 225], [575, 225], [575, 325], [125, 325], [125, 125], [675, 125], [675, 425], [25, 425], [25, 0]], "Lava Spiral", (207, 16, 32), (255, 140, 0), (178, 66, 0))
-PLAINS = Map([[25, 0], [25, 375], [500, 375], [500, 25], [350, 25], [350, 175], [750, 175], [750, 0]], "Plains", (19, 109, 21), (155, 118, 83))
-DESERT = Map([[0, 25], [750, 25], [750, 200], [25, 200], [25, 375], [800, 375]], "Desert", (170, 108, 35), (178, 151, 5))
-THE_END = Map([[0, 225], [800, 225]], "The End", (100, 100, 100), (200, 200, 200))
-Maps = [RACE_TRACK, POND, LAVA_SPIRAL, PLAINS, DESERT, THE_END]
-
-waves = [
-    '00' * 3,
-    '00' * 5 + '01' * 3,
-    '00' * 3 + '01' * 5 + '02' * 3,
-    '00' * 3 + '01' * 5 + '02' * 5 + '03' * 3,
-    '03' * 30,
-    '02' * 30 + '03' * 30,
-    '04' * 30,
-    '04' * 15 + '05' * 15,
-    '06' * 25,
-    '0A',
-    '06' * 30,
-    '07' * 25,
-    '07' * 50,
-    '08' * 25,
-    '0B',
-    '16' * 25,
-    '17' * 25,
-    '17' * 50,
-    '18' * 25,
-    '1A',
-]
-
-enemyColors = {
-    '0': (255, 0, 0),
-    '1': (0, 0, 221),
-    '2': (0, 255, 0),
-    '3': (255, 255, 0),
-    '4': (255, 20, 147),
-    '5': (68, 68, 68),
-    '6': (255, 255, 255),
-    '7': (16, 16, 16),
-    '8': (110, 38, 14),
-    'A': (146, 43, 62),
-    'B': (191, 64, 191)
-}
-
-damages = {
-    '0': 1,
-    '1': 2,
-    '2': 3,
-    '3': 4,
-    '4': 5,
-    '5': 6,
-    '6': 7,
-    '7': 8,
-    '8': 9,
-    'A': 30,
-    'B': 69
-}
-
-speed = {
-    '0': 1,
-    '1': 1,
-    '2': 2,
-    '3': 2,
-    '4': 3,
-    '5': 4,
-    '6': 3,
-    '7': 2,
-    '8': 2,
-    'A': 1,
-    'B': 1
-}
-
-onlyExplosiveTiers = [7, 8]
-
-trueHP = {
-    'A': 1000,
-    'B': 1500
-}
-
-bossCoins = {
-    'A': 150,
-    'B': 250
-}
-
-defaults = {
-    'enemies': [],
-    'projectiles': [],
-    'piercingProjectiles': [],
-    'towers': [],
-    'HP': 100,
-    'FinalHP': None,
-    'coins': 100000 if cheats else 50,
-    'selected': None,
-    'placing': '',
-    'nextWave': 299,
-    'wave': 0,
-    'win': False,
-    'lose': False,
-    'MapSelect': True,
-    'shopScroll': 0,
-    'spawnleft': '',
-    'spawndelay': 9,
-    'Map': None,
-    'totalWaves': len(waves)
-}
-LOCKED = 'LOCKED'
-
-IceCircle = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'ice_circle.png')), (250, 250))
-smallIceCircle = IceCircle.copy()
-smallIceCircle.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
-
-IceCircle = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'ice_circle.png')), (350, 350))
-largeIceCircle = IceCircle.copy()
-largeIceCircle.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
-
-rangeImages = []
-possibleRanges = [50, 100, 125, 130, 150, 165, 175, 180, 200, 250, 400]
-for possibleRange in possibleRanges:
-    rangeImage = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'range.png')), (possibleRange * 2,) * 2)
-    alphaImage = rangeImage.copy()
-    alphaImage.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
-    rangeImages.append(alphaImage)
-
-SIN45 = COS45 = math.sqrt(2) / 2
 
 
 class data:
@@ -1639,6 +1504,146 @@ def app():
             else:
                 iterate()
 
+
+screen = pygame.display.set_mode((1000, 600))
+pygame.init()
+pygame.font.init()
+clock = pygame.time.Clock()
+font = pygame.font.SysFont('Ubuntu Mono', 20)
+mediumFont = pygame.font.SysFont('Ubuntu Mono', 30)
+largeFont = pygame.font.SysFont('Ubuntu Mono', 75)
+pygame.display.set_caption('Tower Defense')
+
+screen.fill((200, 200, 200))
+centredBlit(largeFont, f'Tower Defense v{__version__}', (100, 100, 100), (500, 200))
+centredBlit(mediumFont, 'Loading...', (100, 100, 100), (500, 300))
+pygame.display.update()
+
+RACE_TRACK = Map([[25, 0], [25, 375], [775, 375], [775, 25], [40, 25], [40, 360], [760, 360], [760, 40], [55, 40], [55, 345], [745, 345], [745, 55], [0, 55]], "Race Track", (19, 109, 21), (189, 22, 44), (189, 22, 44))
+POND = Map([[0, 25], [700, 25], [700, 375], [100, 375], [100, 75], [800, 75]], "Pond", (6, 50, 98), (0, 0, 255))
+LAVA_SPIRAL = Map([[300, 225], [575, 225], [575, 325], [125, 325], [125, 125], [675, 125], [675, 425], [25, 425], [25, 0]], "Lava Spiral", (207, 16, 32), (255, 140, 0), (178, 66, 0))
+PLAINS = Map([[25, 0], [25, 375], [500, 375], [500, 25], [350, 25], [350, 175], [750, 175], [750, 0]], "Plains", (19, 109, 21), (155, 118, 83))
+DESERT = Map([[0, 25], [750, 25], [750, 200], [25, 200], [25, 375], [800, 375]], "Desert", (170, 108, 35), (178, 151, 5))
+THE_END = Map([[0, 225], [800, 225]], "The End", (100, 100, 100), (200, 200, 200))
+Maps = [RACE_TRACK, POND, LAVA_SPIRAL, PLAINS, DESERT, THE_END]
+
+waves = [
+    '00' * 3,
+    '00' * 5 + '01' * 3,
+    '00' * 3 + '01' * 5 + '02' * 3,
+    '00' * 3 + '01' * 5 + '02' * 5 + '03' * 3,
+    '03' * 30,
+    '02' * 30 + '03' * 30,
+    '04' * 30,
+    '04' * 15 + '05' * 15,
+    '06' * 25,
+    '0A',
+    '06' * 30,
+    '07' * 25,
+    '07' * 50,
+    '08' * 25,
+    '0B',
+    '16' * 25,
+    '17' * 25,
+    '17' * 50,
+    '18' * 25,
+    '1A',
+]
+
+enemyColors = {
+    '0': (255, 0, 0),
+    '1': (0, 0, 221),
+    '2': (0, 255, 0),
+    '3': (255, 255, 0),
+    '4': (255, 20, 147),
+    '5': (68, 68, 68),
+    '6': (255, 255, 255),
+    '7': (16, 16, 16),
+    '8': (110, 38, 14),
+    'A': (146, 43, 62),
+    'B': (191, 64, 191)
+}
+
+damages = {
+    '0': 1,
+    '1': 2,
+    '2': 3,
+    '3': 4,
+    '4': 5,
+    '5': 6,
+    '6': 7,
+    '7': 8,
+    '8': 9,
+    'A': 30,
+    'B': 69
+}
+
+speed = {
+    '0': 1,
+    '1': 1,
+    '2': 2,
+    '3': 2,
+    '4': 3,
+    '5': 4,
+    '6': 3,
+    '7': 2,
+    '8': 2,
+    'A': 1,
+    'B': 1
+}
+
+onlyExplosiveTiers = [7, 8]
+
+trueHP = {
+    'A': 1000,
+    'B': 1500
+}
+
+bossCoins = {
+    'A': 150,
+    'B': 250
+}
+
+defaults = {
+    'enemies': [],
+    'projectiles': [],
+    'piercingProjectiles': [],
+    'towers': [],
+    'HP': 100,
+    'FinalHP': None,
+    'coins': 100000 if cheats else 50,
+    'selected': None,
+    'placing': '',
+    'nextWave': 299,
+    'wave': 0,
+    'win': False,
+    'lose': False,
+    'MapSelect': True,
+    'shopScroll': 0,
+    'spawnleft': '',
+    'spawndelay': 9,
+    'Map': None,
+    'totalWaves': len(waves)
+}
+LOCKED = 'LOCKED'
+
+IceCircle = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'ice_circle.png')), (250, 250))
+smallIceCircle = IceCircle.copy()
+smallIceCircle.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
+
+IceCircle = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'ice_circle.png')), (350, 350))
+largeIceCircle = IceCircle.copy()
+largeIceCircle.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
+
+rangeImages = []
+possibleRanges = [50, 100, 125, 130, 150, 165, 175, 180, 200, 250, 400]
+for possibleRange in possibleRanges:
+    rangeImage = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'range.png')), (possibleRange * 2,) * 2)
+    alphaImage = rangeImage.copy()
+    alphaImage.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
+    rangeImages.append(alphaImage)
+
+SIN45 = COS45 = math.sqrt(2) / 2
 
 info = data()
 if __name__ == '__main__':
