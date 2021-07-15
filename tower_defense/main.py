@@ -25,7 +25,7 @@ class Map:
 
 class data:
     def __init__(self):
-        self.PBs = {Map.name: (LOCKED if Map.name != 'Pond' else None) for Map in Maps}
+        self.PBs = {Map.name: (LOCKED if Map != Maps[0] else None) for Map in Maps}
         for attr, default in defaults.items():
             setattr(self, attr, default)
 
