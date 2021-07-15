@@ -1011,6 +1011,7 @@ def reset() -> None:
         with open('save.txt', 'w') as saveFile:
             saveFile.write('')
         print('Success! Save file cleared')
+        quit()
 
 
 def getSellPrice(tower: Towers) -> float:
