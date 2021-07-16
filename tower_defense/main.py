@@ -855,6 +855,9 @@ class Enemy:
         elif self.tier == 'B':
             self.timer = 250
             info.enemies.append(Enemy(False, 3, [self.x, self.y], self.lineIndex))
+        elif self.tier == 'C':
+            self.timer = 250
+            info.enemies.append(Enemy(False, 7, [self.x, self.y], self.lineIndex))
 
         if self.freezeTimer > 0:
             self.freezeTimer -= 1
@@ -888,7 +891,7 @@ class Enemy:
                 self.totalMovement += 1
 
             try:
-                self.freezeTimer = max({'A': 5, 'B': 8}[self.tier], self.freezeTimer)
+                self.freezeTimer = max(bossFreeze[self.tier], self.freezeTimer)
             except KeyError:
                 pass
 
@@ -969,6 +972,7 @@ class Enemy:
             pygame.draw.rect(screen, (128, 128, 128), (self.x - 50, self.y - 25, 100, 5))
             pygame.draw.rect(screen, (0, 0, 0), (self.x - 50, self.y - 25, 100, 5), 1)
             pygame.draw.rect(screen, color, (self.x - 50, self.y - 25, round(self.HP / self.MaxHP * 100), 5))
+            centredBlit(font, f'{math.ceil(self.HP / self.MaxHP * 100)}%', (0, 0, 0), (self.x, self.y - 35))
 
         pygame.draw.circle(screen, enemyColors[str(self.tier)], (self.x, self.y), 20 if type(self.tier) is str else 10)
         if self.camo:
@@ -1333,10 +1337,10 @@ def load():
 
         if info.totalWaves != len(waves):
             info.totalWaves = len(waves)
-            if info.totalWaves < len(waves):
-                for name, PB in info.PBs.items():
-                    if type(PB) is int:
-                        info.PBs[name] = None
+            # if info.totalWaves < len(waves):
+            #     for name, PB in info.PBs.items():
+            #         if type(PB) is int:
+            #             info.PBs[name] = None
 
     except FileNotFoundError:
         open('save.txt', 'w')
@@ -1541,7 +1545,12 @@ waves = [
     '17' * 25,
     '17' * 50,
     '18' * 25,
-    '1A',
+    '1A' * 2,
+    '18' * 50,
+    '18' * 75,
+    '0A' * 3,
+    '0A' * 5,
+    '0C'
 ]
 
 enemyColors = {
@@ -1555,7 +1564,8 @@ enemyColors = {
     '7': (16, 16, 16),
     '8': (110, 38, 14),
     'A': (146, 43, 62),
-    'B': (191, 64, 191)
+    'B': (191, 64, 191),
+    'C': (64, 64, 64)
 }
 
 damages = {
@@ -1569,7 +1579,8 @@ damages = {
     '7': 8,
     '8': 9,
     'A': 30,
-    'B': 69
+    'B': 69,
+    'C': 100
 }
 
 speed = {
@@ -1583,19 +1594,28 @@ speed = {
     '7': 2,
     '8': 2,
     'A': 1,
-    'B': 1
+    'B': 1,
+    'C': 1
 }
 
-onlyExplosiveTiers = [7, 8]
+onlyExplosiveTiers = [7, 8, 'C']
 
 trueHP = {
     'A': 1000,
-    'B': 1500
+    'B': 1500,
+    'C': 2100
 }
 
 bossCoins = {
     'A': 150,
-    'B': 250
+    'B': 250,
+    'C': 500
+}
+
+bossFreeze = {
+    'A': 3,
+    'B': 5,
+    'C': 8
 }
 
 defaults = {
