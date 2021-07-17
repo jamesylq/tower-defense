@@ -1220,6 +1220,33 @@ def move():
         projectile.move()
 
 
+def getClosestPoint(mx: int, my: int, *, sx: int = None, sy: int = None) -> [int, int]:
+    if sx is None and sy is None:
+        return [round((mx - 100) / 25) * 25 + 100, round((my - 125) / 25) * 25 + 125]
+
+    closestDistance = 100000000
+    closestX = 0
+    closestY = 0
+
+    for x in range(33):
+        distance = abs(x * 25 + 100 - mx) ** 2 + (sy - my) ** 2
+
+        if distance < closestDistance:
+            closestDistance = distance
+            closestX = x * 25 + 100
+            closestY = sy
+
+    for y in range(19):
+        distance = (sx - mx) ** 2 + abs(y * 25 + 125 - my) ** 2
+
+        if distance < closestDistance:
+            closestDistance = distance
+            closestX = sx
+            closestY = y * 25 + 125
+
+    return [closestX, closestY]
+
+
 def save():
     pickle.dump(info, open('save.txt', 'wb'))
 
@@ -1313,9 +1340,16 @@ def app():
 
             screen.blit(font.render('Map Select', True, (255, 255, 255)), (450, 25))
 
+            pygame.draw.rect(screen, (200, 200, 200), (25, 550, 125, 30))
+            centredBlit(font, 'Map Maker', (0, 0, 0), (87, 565))
+            if 25 <= mx <= 150 and 550 < my <= 580:
+                pygame.draw.rect(screen, (128, 128, 128), (25, 550, 125, 30), 5)
+            else:
+                pygame.draw.rect(screen, (0, 0, 0), (25, 550, 125, 30), 3)
+
             if LOCKED not in list(info.PBs.values()) or cheats:
                 pygame.draw.rect(screen, (200, 200, 200), (850, 550, 125, 30))
-                screen.blit(font.render('Random Map', True, (0, 0, 0)), (860, 555))
+                centredBlit(font, 'Random Map', (0, 0, 0), (912, 565))
                 if 850 <= mx <= 975 and 550 < my <= 580:
                     pygame.draw.rect(screen, (128, 128, 128), (850, 550, 125, 30), 5)
                 else:
@@ -1349,74 +1383,77 @@ def app():
                                 if 40 * n + 60 <= my <= 40 * n + 90 and (list(info.PBs.values())[n] != LOCKED or cheats):
                                     info.Map = Maps[n]
                                     info.status = 'game'
+
                         if 850 <= mx <= 975 and 550 <= my <= 580 and (LOCKED not in info.PBs.values() or cheats):
                             info.Map = random.choice(Maps)
                             info.status = 'game'
-        else:
-            info.status = 'mapMaker'
 
-            if info.status == 'win':
-                n = False
-                for Map in Maps:
-                    if n and info.PBs[Map.name] == LOCKED:
-                        info.PBs[Map.name] = None
-                        break
+                        if 25 <= mx <= 150 and 550 <= my <= 580:
+                            info.status = 'mapMaker'
 
-                    if Map.name == info.Map.name:
-                        n = True
+        elif info.status == 'win':
+            n = False
+            for Map in Maps:
+                if n and info.PBs[Map.name] == LOCKED:
+                    info.PBs[Map.name] = None
+                    break
 
-                cont = False
-                if info.PBs[info.Map.name] is None or info.PBs[info.Map.name] == LOCKED:
-                    info.PBs[info.Map.name] = info.HP
-                elif info.PBs[info.Map.name] < info.HP:
-                    info.PBs[info.Map.name] = info.HP
-                info.FinalHP = info.HP
-                info.reset()
-                save()
+                if Map.name == info.Map.name:
+                    n = True
 
-                while True:
-                    screen.fill((32, 32, 32))
-                    centredBlit(largeFont, 'You Win!', (255, 255, 255), (500, 125))
-                    centredBlit(font, f'Your Final Score: {info.FinalHP}', (255, 255, 255), (500, 250))
-                    centredBlit(font, f'Press [SPACE] to continue!', (255, 255, 255), (500, 280))
-                    pygame.display.update()
+            cont = False
+            if info.PBs[info.Map.name] is None or info.PBs[info.Map.name] == LOCKED:
+                info.PBs[info.Map.name] = info.HP
+            elif info.PBs[info.Map.name] < info.HP:
+                info.PBs[info.Map.name] = info.HP
+            info.FinalHP = info.HP
+            info.reset()
+            save()
 
-                    for event in pygame.event.get():
-                        if event.type == pygame.KEYDOWN:
-                            if event.key == pygame.K_SPACE:
-                                cont = True
-                        elif event.type == pygame.QUIT:
-                            save()
-                            quit()
+            while True:
+                screen.fill((32, 32, 32))
+                centredBlit(largeFont, 'You Win!', (255, 255, 255), (500, 125))
+                centredBlit(font, f'Your Final Score: {info.FinalHP}', (255, 255, 255), (500, 250))
+                centredBlit(font, f'Press [SPACE] to continue!', (255, 255, 255), (500, 280))
+                pygame.display.update()
 
-                    clock.tick(MaxFPS)
-                    if cont:
-                        break
+                for event in pygame.event.get():
+                    if event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_SPACE:
+                            cont = True
+                    elif event.type == pygame.QUIT:
+                        save()
+                        quit()
 
-            elif info.status == 'lose':
-                cont = False
-                info.reset()
-                save()
+                clock.tick(MaxFPS)
+                if cont:
+                    break
 
-                while True:
-                    screen.fill((32, 32, 32))
-                    centredBlit(largeFont, 'You Lost!', (255, 255, 255), (500, 125))
-                    centredBlit(font, 'Press [SPACE] to continue!', (255, 255, 255), (500, 250))
-                    pygame.display.update()
+        elif info.status == 'lose':
+            cont = False
+            info.reset()
+            save()
 
-                    for event in pygame.event.get():
-                        if event.type == pygame.KEYDOWN:
-                            if event.key == pygame.K_SPACE:
-                                cont = True
-                        elif event.type == pygame.QUIT:
-                            save()
-                            quit()
+            while True:
+                screen.fill((32, 32, 32))
+                centredBlit(largeFont, 'You Lost!', (255, 255, 255), (500, 125))
+                centredBlit(font, 'Press [SPACE] to continue!', (255, 255, 255), (500, 250))
+                pygame.display.update()
 
-                    clock.tick(MaxFPS)
-                    if cont:
-                        break
+                for event in pygame.event.get():
+                    if event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_SPACE:
+                            cont = True
+                    elif event.type == pygame.QUIT:
+                        save()
+                        quit()
 
-            elif info.status == 'mapMaker':
+                clock.tick(MaxFPS)
+                if cont:
+                    break
+
+        elif info.status == 'mapMaker':
+            if info.mapMakerData['path'] is None:
                 ticks = 0
                 uppercase = False
 
@@ -1479,17 +1516,29 @@ def app():
                         bgColor = [int(n) for n in removeCharset(str(info.mapMakerData['backgroundColor']), ' ()[]').split(',')]
                         pygame.draw.rect(screen, bgColor, (925, 250, 30, 30))
                         pygame.draw.rect(screen, (0, 0, 0), (925, 250, 30, 30), 2)
+                        validBGColor = True
                     except ValueError:
-                        pass
+                        validBGColor = False
 
                     try:
                         pathColor = [int(n) for n in removeCharset(str(info.mapMakerData['pathColor']), ' ()[]').split(',')]
                         pygame.draw.rect(screen, pathColor, (925, 350, 30, 30))
                         pygame.draw.rect(screen, (0, 0, 0), (925, 350, 30, 30), 2)
+                        validPathColor = True
                     except ValueError:
-                        pass
+                        validPathColor = False
+
+                    if validBGColor and validPathColor and info.mapMakerData['name'] != '':
+                        pygame.draw.rect(screen, (44, 255, 44), (800, 450, 100, 30))
+                        centredBlit(font, 'Next Step', (0, 0, 0), (850, 465))
+
+                        if 800 < mx < 900 and 450 < my < 480:
+                            pygame.draw.rect(screen, (32, 32, 32), (800, 450, 100, 30), 3)
+                        else:
+                            pygame.draw.rect(screen, (128, 128, 128), (800, 450, 100, 30), 3)
 
                     field = info.mapMakerData['field']
+                    cont = True
                     for event in pygame.event.get():
                         if field is not None:
                             if event.type == pygame.KEYDOWN:
@@ -1503,17 +1552,31 @@ def app():
 
                         if event.type == pygame.MOUSEBUTTONDOWN:
                             if event.button == 1:
-                                if 225 < mx < 900 and 150 < my < 180:
+                                if validBGColor and validPathColor and info.mapMakerData['name'] != '' and 800 < mx < 900 and 450 < my < 480:
+                                    info.mapMakerData['backgroundColor'] = [int(n) for n in removeCharset(str(info.mapMakerData['backgroundColor']), ' ()[]').split(',')]
+                                    info.mapMakerData['pathColor'] = [int(n) for n in removeCharset(str(info.mapMakerData['pathColor']), ' ()[]').split(',')]
+                                    info.mapMakerData['path'] = []
+                                    cont = False
+                                    break
+
+                                elif 225 < mx < 900 and 150 < my < 180:
                                     info.mapMakerData['field'] = 'name'
+
                                 elif 225 < mx < 900 and 250 < my < 280:
                                     info.mapMakerData['field'] = 'backgroundColor'
+
                                 elif 225 < mx < 900 and 350 < my < 380:
                                     info.mapMakerData['field'] = 'pathColor'
+
                                 else:
                                     info.mapMakerData['field'] = None
 
                         if event.type == pygame.QUIT:
+                            save()
                             quit()
+
+                    if not cont:
+                        break
 
                     if pygame.key.get_pressed()[pygame.K_BACKSPACE] and ticks == 0:
                         try:
@@ -1538,17 +1601,83 @@ def app():
                         screen.blit(font.render(txt, True, (0, 0, 0)), (230, y))
 
                     pygame.display.update()
-                    ticks = (ticks + 1) % 50
+                    ticks = (ticks + 1) % 10
+                    clock.tick(100)
+            else:
+                while True:
+                    mx, my = pygame.mouse.get_pos()
 
-            elif info.status == 'game':
+                    if mx < 100 or mx > 900 or my < 125 or my > 575:
+                        cx = cy = -1
+
+                    else:
+                        try:
+                            cx, cy = getClosestPoint(mx, my, sx=info.mapMakerData['path'][-1][0], sy=info.mapMakerData['path'][-1][1])
+                        except IndexError:
+                            cx, cy = getClosestPoint(mx, my)
+
+                    screen.fill((200, 200, 200))
+                    centredBlit(mediumFont, 'Map Maker (Beta)', (0, 0, 0), (500, 75))
+                    pygame.draw.rect(screen, (0, 0, 0), (100, 125, 800, 450), 5)
+                    pygame.draw.rect(screen, info.mapMakerData['backgroundColor'], (100, 125, 800, 450))
+
+                    if 100 <= cx <= 900 and 125 <= cy <= 575:
+                        pygame.draw.circle(screen, (0, 0, 0), (cx, cy), 3)
+
+                    for i in range(len(info.mapMakerData['path']) - 1):
+                        pygame.draw.line(screen, info.mapMakerData['pathColor'], info.mapMakerData['path'][i], info.mapMakerData['path'][i + 1], 10)
+                    if info.mapMakerData['path']:
+                        pygame.draw.circle(screen, info.mapMakerData['pathColor'], info.mapMakerData['path'][0], 10)
+
+                    pygame.draw.rect(screen, (200, 200, 200), (100, 115, 800, 10))
+                    pygame.draw.rect(screen, (200, 200, 200), (100, 575, 800, 10))
+                    pygame.draw.rect(screen, (200, 200, 200), (90, 125, 10, 450))
+                    pygame.draw.rect(screen, (200, 200, 200), (900, 125, 10, 450))
+
+                    pygame.draw.rect(screen, (100, 100, 100), (0, 570, 60, 30))
+                    centredBlit(font, 'Clear', (0, 0, 0), (30, 585))
+
+                    if len(info.mapMakerData['path']) >= 2:
+                        pygame.draw.rect(screen, (44, 255, 44), (940, 570, 60, 30))
+                        centredBlit(font, 'Done', (0, 0, 0), (970, 585))
+
+                    pygame.display.update()
+
+                    cont = True
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            save()
+                            quit()
+
+                        elif event.type == pygame.MOUSEBUTTONDOWN:
+                            if 100 <= cx <= 900 and 125 <= cy <= 575:
+                                info.mapMakerData['path'].append([cx, cy])
+                            elif 0 < mx < 60 and 570 < my:
+                                info.mapMakerData['path'].clear()
+                            elif 940 < mx and 570 < my:
+                                mapVarName = ''
+                                for char in info.mapMakerData['name']:
+                                    if char.lower() in 'abcdefghijklmnopqrstuvwxyz':
+                                        mapVarName += char.upper()
+                                    elif char in ' _-':
+                                        mapVarName += '_'
+
+                                print(f'This is the map code for your map!\n\n{mapVarName} = Map({info.mapMakerData["path"]}, {tuple(info.mapMakerData["backgroundColor"])}, {tuple(info.mapMakerData["pathColor"])})')
+                                info.status = 'mapSelect'
+                                info.mapMakerData = defaults['mapMakerData']
+                                cont = False
+
+                    if not cont:
+                        break
+
+                    clock.tick(100)
+
+        elif info.status == 'game':
                 if info.spawndelay == 0 and len(info.spawnleft) > 0:
                     if type(info.spawnleft[1]) is str:
-                        info.enemies.append(
-                            Enemy(True if info.spawnleft[0] == '1' else False, info.spawnleft[1], info.Map.path[0], 0))
+                        info.enemies.append(Enemy(True if info.spawnleft[0] == '1' else False, info.spawnleft[1], info.Map.path[0], 0))
                     else:
-                        info.enemies.append(
-                            Enemy(True if info.spawnleft[0] == '1' else False, int(info.spawnleft[1]), info.Map.path[0],
-                                  0))
+                        info.enemies.append(Enemy(True if info.spawnleft[0] == '1' else False, int(info.spawnleft[1]), info.Map.path[0], 0))
                     info.spawnleft = info.spawnleft[2:]
                     info.spawndelay = 20
                 else:
@@ -1782,12 +1911,12 @@ defaults = {
     'spawndelay': 9,
     'Map': None,
     'totalWaves': len(waves),
-    'status': 'mapSelect',        # win | lose | mapSelect | mapMaker | game
+    'status': 'mapSelect',
     'mapMakerData': {
         'name': '',
         'backgroundColor': '(0, 0, 0)',
         'pathColor': '(0, 0, 0)',
-        'path': [],
+        'path': None,
         'field': None
     }
 }
