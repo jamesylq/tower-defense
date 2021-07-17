@@ -6,6 +6,7 @@ import math
 
 from _pickle import UnpicklingError
 from tower_defense import __version__
+from typing import overload
 
 current_path = os.path.dirname(__file__)
 resource_path = os.path.join(current_path, 'resources')
@@ -1017,6 +1018,18 @@ def reset() -> None:
         print('Success! Save file cleared')
 
 
+@overload
+def removeCharset(s: str, charset: []) -> str: ...
+@overload
+def removeCharset(s: str, charset: str) -> str: ...
+
+def removeCharset(s, charset) -> str:
+    for char in charset:
+        s = s.replace(char, '')
+
+    return s
+
+
 def getSellPrice(tower: Towers) -> float:
     price = tower.price
     for n in range(3):
@@ -1207,108 +1220,31 @@ def move():
         projectile.move()
 
 
-def iterate():
-    if info.spawndelay == 0 and len(info.spawnleft) > 0:
-        if type(info.spawnleft[1]) is str:
-            info.enemies.append(Enemy(True if info.spawnleft[0] == '1' else False, info.spawnleft[1], info.Map.path[0], 0))
-        else:
-            info.enemies.append(Enemy(True if info.spawnleft[0] == '1' else False, int(info.spawnleft[1]), info.Map.path[0], 0))
-        info.spawnleft = info.spawnleft[2:]
-        info.spawndelay = 20
-    else:
-        info.spawndelay -= 1
+def getClosestPoint(mx: int, my: int, *, sx: int = None, sy: int = None) -> [int, int]:
+    if sx is None and sy is None:
+        return [round((mx - 100) / 25) * 25 + 100, round((my - 125) / 25) * 25 + 125]
 
-    if len(info.enemies) == 0:
-        if info.nextWave <= 0:
-            try:
-                info.spawnleft = waves[info.wave]
-            except IndexError:
-                info.win = True
-            info.spawndelay = 20
-            info.nextWave = 300
-        else:
-            if info.nextWave == 279 and info.wave > 0:
-                info.coins += 100
+    closestDistance = 100000000
+    closestX = 0
+    closestY = 0
 
-            if info.nextWave == 300:
-                info.wave += 1
-            info.nextWave -= 1
+    for x in range(33):
+        distance = abs(x * 25 + 100 - mx) ** 2 + (sy - my) ** 2
 
-    mx, my = pygame.mouse.get_pos()
+        if distance < closestDistance:
+            closestDistance = distance
+            closestX = x * 25 + 100
+            closestY = sy
 
-    clock.tick(MaxFPS)
-    info.coins += income()
+    for y in range(19):
+        distance = (sx - mx) ** 2 + abs(y * 25 + 125 - my) ** 2
 
-    draw()
-    move()
+        if distance < closestDistance:
+            closestDistance = distance
+            closestX = sx
+            closestY = y * 25 + 125
 
-    if info.HP <= 0:
-        info.lose = True
-
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            save()
-            quit()
-
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1:
-                if mx <= 800 and my <= 450:
-                    for towerType in Towers.__subclasses__():
-                        if towerType.name == info.placing:
-                            info.placing = ''
-                            info.towers.append(towerType(mx, my))
-                            return
-
-                    for tower in info.towers:
-                        if abs(tower.x - mx) ** 2 + abs(tower.y - my) ** 2 <= 225:
-                            info.selected = tower
-                            return
-                    info.selected = None
-
-                if 810 <= mx <= 910:
-                    n = 0
-                    for tower in Towers.__subclasses__():
-                        if 40 + n * 80 + info.shopScroll <= my <= 70 + n * 80 + info.shopScroll <= 450 and info.coins >= tower.price and info.placing == '' and (info.wave >= tower.req or cheats):
-                            info.coins -= tower.price
-                            info.placing = tower.name
-                            info.selected = None
-                        n += 1
-
-                if 775 <= mx <= 975 and 500 <= my <= 530:
-                    info.reset()
-
-                if issubclass(type(info.selected), Towers):
-                    if 295 <= mx <= 595 and 485 <= my <= 570:
-                        n = (my - 485) // 30
-                        if info.selected.upgrades[n] < 3:
-                            cost = type(info.selected).upgradePrices[n][info.selected.upgrades[n]]
-                            if info.coins >= cost and (info.wave >= info.selected.req or cheats):
-                                info.coins -= cost
-                                info.selected.upgrades[n] += 1
-
-                    elif 620 <= mx < 820 and 545 <= my < 570:
-                        info.towers.remove(info.selected)
-                        info.coins += getSellPrice(info.selected)
-                        info.selected = None
-
-            elif event.button == 4:
-                if mx > 800 and my < 450:
-                    info.shopScroll = min(0, info.shopScroll + 10)
-
-            elif event.button == 5:
-                if mx > 800 and my < 450:
-                    maxScroll = len([tower for tower in Towers.__subclasses__() if (info.wave >= tower.req or cheats)]) * 80 - 450
-                    if maxScroll > 0:
-                        info.shopScroll = max(-maxScroll, info.shopScroll - 10)
-
-    pressed = pygame.key.get_pressed()
-    if pressed[pygame.K_UP]:
-        info.shopScroll = min(0, info.shopScroll + 10)
-
-    elif pressed[pygame.K_DOWN]:
-        maxScroll = len([tower for tower in Towers.__subclasses__() if (info.wave >= tower.req or cheats)]) * 80 - 450
-        if maxScroll > 0:
-            info.shopScroll = max(-maxScroll, info.shopScroll - 10)
+    return [closestX, closestY]
 
 
 def save():
@@ -1320,6 +1256,10 @@ def load():
 
     try:
         info = pickle.load(open('save.txt', 'rb'))
+
+        for attr in ['win', 'lose', 'mapSelect']:
+            if hasattr(info, attr):
+                delattr(info, attr)
 
         for attr, default in defaults.items():
             if not hasattr(info, attr):
@@ -1337,10 +1277,10 @@ def load():
 
         if info.totalWaves != len(waves):
             info.totalWaves = len(waves)
-            # if info.totalWaves < len(waves):
-            #     for name, PB in info.PBs.items():
-            #         if type(PB) is int:
-            #             info.PBs[name] = None
+            if info.totalWaves < len(waves):
+                for name, PB in info.PBs.items():
+                    if type(PB) is int:
+                        info.PBs[name] = None
 
     except FileNotFoundError:
         open('save.txt', 'w')
@@ -1395,14 +1335,21 @@ def app():
     while True:
         mx, my = pygame.mouse.get_pos()
 
-        if info.MapSelect:
+        if info.status == 'mapSelect':
             screen.fill((68, 68, 68))
 
             screen.blit(font.render('Map Select', True, (255, 255, 255)), (450, 25))
 
+            pygame.draw.rect(screen, (200, 200, 200), (25, 550, 125, 30))
+            centredBlit(font, 'Map Maker', (0, 0, 0), (87, 565))
+            if 25 <= mx <= 150 and 550 < my <= 580:
+                pygame.draw.rect(screen, (128, 128, 128), (25, 550, 125, 30), 5)
+            else:
+                pygame.draw.rect(screen, (0, 0, 0), (25, 550, 125, 30), 3)
+
             if LOCKED not in list(info.PBs.values()) or cheats:
                 pygame.draw.rect(screen, (200, 200, 200), (850, 550, 125, 30))
-                screen.blit(font.render('Random Map', True, (0, 0, 0)), (860, 555))
+                centredBlit(font, 'Random Map', (0, 0, 0), (912, 565))
                 if 850 <= mx <= 975 and 550 < my <= 580:
                     pygame.draw.rect(screen, (128, 128, 128), (850, 550, 125, 30), 5)
                 else:
@@ -1435,72 +1382,401 @@ def app():
                             for n in range(len(Maps)):
                                 if 40 * n + 60 <= my <= 40 * n + 90 and (list(info.PBs.values())[n] != LOCKED or cheats):
                                     info.Map = Maps[n]
-                                    info.MapSelect = False
+                                    info.status = 'game'
+
                         if 850 <= mx <= 975 and 550 <= my <= 580 and (LOCKED not in info.PBs.values() or cheats):
                             info.Map = random.choice(Maps)
-                            info.MapSelect = False
-        else:
-            if info.win:
-                n = False
-                for Map in Maps:
-                    if n and info.PBs[Map.name] == LOCKED:
-                        info.PBs[Map.name] = None
-                        break
+                            info.status = 'game'
 
-                    if Map.name == info.Map.name:
-                        n = True
+                        if 25 <= mx <= 150 and 550 <= my <= 580:
+                            info.status = 'mapMaker'
 
-                cont = False
-                if info.PBs[info.Map.name] is None or info.PBs[info.Map.name] == LOCKED:
-                    info.PBs[info.Map.name] = info.HP
-                elif info.PBs[info.Map.name] < info.HP:
-                    info.PBs[info.Map.name] = info.HP
-                info.FinalHP = info.HP
-                info.reset()
-                save()
+        elif info.status == 'win':
+            n = False
+            for Map in Maps:
+                if n and info.PBs[Map.name] == LOCKED:
+                    info.PBs[Map.name] = None
+                    break
+
+                if Map.name == info.Map.name:
+                    n = True
+
+            cont = False
+            if info.PBs[info.Map.name] is None or info.PBs[info.Map.name] == LOCKED:
+                info.PBs[info.Map.name] = info.HP
+            elif info.PBs[info.Map.name] < info.HP:
+                info.PBs[info.Map.name] = info.HP
+            info.FinalHP = info.HP
+            info.reset()
+            save()
+
+            while True:
+                screen.fill((32, 32, 32))
+                centredBlit(largeFont, 'You Win!', (255, 255, 255), (500, 125))
+                centredBlit(font, f'Your Final Score: {info.FinalHP}', (255, 255, 255), (500, 250))
+                centredBlit(font, f'Press [SPACE] to continue!', (255, 255, 255), (500, 280))
+                pygame.display.update()
+
+                for event in pygame.event.get():
+                    if event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_SPACE:
+                            cont = True
+                    elif event.type == pygame.QUIT:
+                        save()
+                        quit()
+
+                clock.tick(MaxFPS)
+                if cont:
+                    break
+
+        elif info.status == 'lose':
+            cont = False
+            info.reset()
+            save()
+
+            while True:
+                screen.fill((32, 32, 32))
+                centredBlit(largeFont, 'You Lost!', (255, 255, 255), (500, 125))
+                centredBlit(font, 'Press [SPACE] to continue!', (255, 255, 255), (500, 250))
+                pygame.display.update()
+
+                for event in pygame.event.get():
+                    if event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_SPACE:
+                            cont = True
+                    elif event.type == pygame.QUIT:
+                        save()
+                        quit()
+
+                clock.tick(MaxFPS)
+                if cont:
+                    break
+
+        elif info.status == 'mapMaker':
+            if info.mapMakerData['path'] is None:
+                ticks = 0
+                uppercase = False
 
                 while True:
-                    screen.fill((32, 32, 32))
-                    centredBlit(largeFont, 'You Win!', (255, 255, 255), (500, 125))
-                    centredBlit(font, f'Your Final Score: {info.FinalHP}', (255, 255, 255), (500, 250))
-                    centredBlit(font, f'Press [SPACE] to continue!', (255, 255, 255), (500, 280))
-                    pygame.display.update()
+                    mx, my = pygame.mouse.get_pos()
 
+                    translationKeys = {
+                        pygame.K_0: '0',
+                        pygame.K_1: '1',
+                        pygame.K_2: '2',
+                        pygame.K_3: '3',
+                        pygame.K_4: '4',
+                        pygame.K_5: '5',
+                        pygame.K_6: '6',
+                        pygame.K_7: '7',
+                        pygame.K_8: '8',
+                        pygame.K_9: '9',
+                        pygame.K_a: 'a',
+                        pygame.K_b: 'b',
+                        pygame.K_c: 'c',
+                        pygame.K_d: 'd',
+                        pygame.K_e: 'e',
+                        pygame.K_f: 'f',
+                        pygame.K_g: 'g',
+                        pygame.K_h: 'h',
+                        pygame.K_i: 'i',
+                        pygame.K_j: 'j',
+                        pygame.K_k: 'k',
+                        pygame.K_l: 'l',
+                        pygame.K_m: 'm',
+                        pygame.K_n: 'n',
+                        pygame.K_o: 'o',
+                        pygame.K_p: 'p',
+                        pygame.K_q: 'q',
+                        pygame.K_r: 'r',
+                        pygame.K_s: 's',
+                        pygame.K_t: 't',
+                        pygame.K_u: 'u',
+                        pygame.K_v: 'v',
+                        pygame.K_w: 'w',
+                        pygame.K_x: 'x',
+                        pygame.K_y: 'y',
+                        pygame.K_z: 'z',
+                        pygame.K_SPACE: ' ',
+                        pygame.K_COMMA: ',',
+                        pygame.K_LEFTBRACKET: '[',
+                        pygame.K_RIGHTBRACKET: ']'
+                    }
+
+                    screen.fill((200, 200, 200))
+                    centredBlit(mediumFont, 'Map Maker (Beta)', (0, 0, 0), (500, 75))
+                    screen.blit(font.render('Map Name: ', True, (0, 0, 0)), (130, 150))
+                    screen.blit(font.render('Background Color: ', True, (0, 0, 0)), (50, 250))
+                    screen.blit(font.render('Path Color: ', True, (0, 0, 0)), (110, 350))
+                    pygame.draw.rect(screen, (100, 100, 100), (225, 150, 675, 30))
+                    pygame.draw.rect(screen, (100, 100, 100), (225, 250, 675, 30))
+                    pygame.draw.rect(screen, (100, 100, 100), (225, 350, 675, 30))
+
+                    try:
+                        bgColor = [int(n) for n in removeCharset(str(info.mapMakerData['backgroundColor']), ' ()[]').split(',')]
+                        pygame.draw.rect(screen, bgColor, (925, 250, 30, 30))
+                        pygame.draw.rect(screen, (0, 0, 0), (925, 250, 30, 30), 2)
+                        validBGColor = True
+                    except ValueError:
+                        validBGColor = False
+
+                    try:
+                        pathColor = [int(n) for n in removeCharset(str(info.mapMakerData['pathColor']), ' ()[]').split(',')]
+                        pygame.draw.rect(screen, pathColor, (925, 350, 30, 30))
+                        pygame.draw.rect(screen, (0, 0, 0), (925, 350, 30, 30), 2)
+                        validPathColor = True
+                    except ValueError:
+                        validPathColor = False
+
+                    if validBGColor and validPathColor and info.mapMakerData['name'] != '':
+                        pygame.draw.rect(screen, (44, 255, 44), (800, 450, 100, 30))
+                        centredBlit(font, 'Next Step', (0, 0, 0), (850, 465))
+
+                        if 800 < mx < 900 and 450 < my < 480:
+                            pygame.draw.rect(screen, (32, 32, 32), (800, 450, 100, 30), 3)
+                        else:
+                            pygame.draw.rect(screen, (128, 128, 128), (800, 450, 100, 30), 3)
+
+                    field = info.mapMakerData['field']
+                    cont = True
                     for event in pygame.event.get():
-                        if event.type == pygame.KEYDOWN:
-                            if event.key == pygame.K_SPACE:
-                                cont = True
-                        elif event.type == pygame.QUIT:
+                        if field is not None:
+                            if event.type == pygame.KEYDOWN:
+                                if event.key == pygame.K_CAPSLOCK:
+                                    uppercase = not uppercase
+
+                                else:
+                                    for translationKey, letter in translationKeys.items():
+                                        if event.key == translationKey:
+                                            info.mapMakerData[field] += (letter.upper() if uppercase else letter.lower())
+
+                        if event.type == pygame.MOUSEBUTTONDOWN:
+                            if event.button == 1:
+                                if validBGColor and validPathColor and info.mapMakerData['name'] != '' and 800 < mx < 900 and 450 < my < 480:
+                                    info.mapMakerData['backgroundColor'] = [int(n) for n in removeCharset(str(info.mapMakerData['backgroundColor']), ' ()[]').split(',')]
+                                    info.mapMakerData['pathColor'] = [int(n) for n in removeCharset(str(info.mapMakerData['pathColor']), ' ()[]').split(',')]
+                                    info.mapMakerData['path'] = []
+                                    cont = False
+                                    break
+
+                                elif 225 < mx < 900 and 150 < my < 180:
+                                    info.mapMakerData['field'] = 'name'
+
+                                elif 225 < mx < 900 and 250 < my < 280:
+                                    info.mapMakerData['field'] = 'backgroundColor'
+
+                                elif 225 < mx < 900 and 350 < my < 380:
+                                    info.mapMakerData['field'] = 'pathColor'
+
+                                else:
+                                    info.mapMakerData['field'] = None
+
+                        if event.type == pygame.QUIT:
                             save()
                             quit()
 
-                    clock.tick(MaxFPS)
-                    if cont:
+                    if not cont:
                         break
-            elif info.lose:
-                cont = False
-                info.reset()
-                save()
 
-                while True:
-                    screen.fill((32, 32, 32))
-                    centredBlit(largeFont, 'You Lost!', (255, 255, 255), (500, 125))
-                    centredBlit(font, 'Press [SPACE] to continue!', (255, 255, 255), (500, 250))
+                    if pygame.key.get_pressed()[pygame.K_BACKSPACE] and ticks == 0:
+                        try:
+                            info.mapMakerData[field] = info.mapMakerData[field][:-1]
+                        except IndexError:
+                            pass
+
+                    for fieldName in ['name', 'backgroundColor', 'pathColor']:
+                        info.mapMakerData[fieldName] = str(info.mapMakerData[fieldName])
+
+                        txt = info.mapMakerData[fieldName]
+                        if ticks == 0 and fieldName == field:
+                            txt += '|'
+
+                        if fieldName == 'name':
+                            y = 150
+                        elif fieldName == 'backgroundColor':
+                            y = 250
+                        else:
+                            y = 350
+
+                        screen.blit(font.render(txt, True, (0, 0, 0)), (230, y))
+
                     pygame.display.update()
-
-                    for event in pygame.event.get():
-                        if event.type == pygame.KEYDOWN:
-                            if event.key == pygame.K_SPACE:
-                                cont = True
-                        elif event.type == pygame.QUIT:
-                            save()
-                            quit()
-
-                    clock.tick(MaxFPS)
-                    if cont:
-                        break
+                    ticks = (ticks + 1) % 10
+                    clock.tick(100)
             else:
-                iterate()
+                while True:
+                    mx, my = pygame.mouse.get_pos()
+
+                    if mx < 100 or mx > 900 or my < 125 or my > 575:
+                        cx = cy = -1
+
+                    else:
+                        try:
+                            cx, cy = getClosestPoint(mx, my, sx=info.mapMakerData['path'][-1][0], sy=info.mapMakerData['path'][-1][1])
+                        except IndexError:
+                            cx, cy = getClosestPoint(mx, my)
+
+                    screen.fill((200, 200, 200))
+                    centredBlit(mediumFont, 'Map Maker (Beta)', (0, 0, 0), (500, 75))
+                    pygame.draw.rect(screen, (0, 0, 0), (100, 125, 800, 450), 5)
+                    pygame.draw.rect(screen, info.mapMakerData['backgroundColor'], (100, 125, 800, 450))
+
+                    if 100 <= cx <= 900 and 125 <= cy <= 575:
+                        pygame.draw.circle(screen, (0, 0, 0), (cx, cy), 3)
+
+                    for i in range(len(info.mapMakerData['path']) - 1):
+                        pygame.draw.line(screen, info.mapMakerData['pathColor'], info.mapMakerData['path'][i], info.mapMakerData['path'][i + 1], 10)
+                    if info.mapMakerData['path']:
+                        pygame.draw.circle(screen, info.mapMakerData['pathColor'], info.mapMakerData['path'][0], 10)
+
+                    pygame.draw.rect(screen, (200, 200, 200), (100, 115, 800, 10))
+                    pygame.draw.rect(screen, (200, 200, 200), (100, 575, 800, 10))
+                    pygame.draw.rect(screen, (200, 200, 200), (90, 125, 10, 450))
+                    pygame.draw.rect(screen, (200, 200, 200), (900, 125, 10, 450))
+
+                    pygame.draw.rect(screen, (100, 100, 100), (0, 570, 60, 30))
+                    centredBlit(font, 'Clear', (0, 0, 0), (30, 585))
+
+                    if len(info.mapMakerData['path']) >= 2:
+                        pygame.draw.rect(screen, (44, 255, 44), (940, 570, 60, 30))
+                        centredBlit(font, 'Done', (0, 0, 0), (970, 585))
+
+                    pygame.display.update()
+
+                    cont = True
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            save()
+                            quit()
+
+                        elif event.type == pygame.MOUSEBUTTONDOWN:
+                            if 100 <= cx <= 900 and 125 <= cy <= 575:
+                                info.mapMakerData['path'].append([cx, cy])
+                            elif 0 < mx < 60 and 570 < my:
+                                info.mapMakerData['path'].clear()
+                            elif 940 < mx and 570 < my:
+                                mapVarName = ''
+                                for char in info.mapMakerData['name']:
+                                    if char.lower() in 'abcdefghijklmnopqrstuvwxyz':
+                                        mapVarName += char.upper()
+                                    elif char in ' _-':
+                                        mapVarName += '_'
+
+                                print(f'This is the map code for your map!\n\n{mapVarName} = Map({info.mapMakerData["path"]}, {tuple(info.mapMakerData["backgroundColor"])}, {tuple(info.mapMakerData["pathColor"])})')
+                                info.status = 'mapSelect'
+                                info.mapMakerData = defaults['mapMakerData']
+                                cont = False
+
+                    if not cont:
+                        break
+
+                    clock.tick(100)
+
+        elif info.status == 'game':
+                if info.spawndelay == 0 and len(info.spawnleft) > 0:
+                    if type(info.spawnleft[1]) is str:
+                        info.enemies.append(Enemy(True if info.spawnleft[0] == '1' else False, info.spawnleft[1], info.Map.path[0], 0))
+                    else:
+                        info.enemies.append(Enemy(True if info.spawnleft[0] == '1' else False, int(info.spawnleft[1]), info.Map.path[0], 0))
+                    info.spawnleft = info.spawnleft[2:]
+                    info.spawndelay = 20
+                else:
+                    info.spawndelay -= 1
+
+                if len(info.enemies) == 0:
+                    if info.nextWave <= 0:
+                        try:
+                            info.spawnleft = waves[info.wave]
+                        except IndexError:
+                            info.status = 'win'
+                        info.spawndelay = 20
+                        info.nextWave = 300
+                    else:
+                        if info.nextWave == 279 and info.wave > 0:
+                            info.coins += 100
+
+                        if info.nextWave == 300:
+                            info.wave += 1
+                        info.nextWave -= 1
+
+                mx, my = pygame.mouse.get_pos()
+
+                clock.tick(MaxFPS)
+                info.coins += income()
+
+                draw()
+                move()
+
+                if info.HP <= 0:
+                    info.status = 'lose'
+
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        save()
+                        quit()
+
+                    elif event.type == pygame.MOUSEBUTTONDOWN:
+                        if event.button == 1:
+                            if mx <= 800 and my <= 450:
+                                for towerType in Towers.__subclasses__():
+                                    if towerType.name == info.placing:
+                                        info.placing = ''
+                                        info.towers.append(towerType(mx, my))
+                                        return
+
+                                for tower in info.towers:
+                                    if abs(tower.x - mx) ** 2 + abs(tower.y - my) ** 2 <= 225:
+                                        info.selected = tower
+                                        return
+                                info.selected = None
+
+                            if 810 <= mx <= 910:
+                                n = 0
+                                for tower in Towers.__subclasses__():
+                                    if 40 + n * 80 + info.shopScroll <= my <= 70 + n * 80 + info.shopScroll <= 450 and info.coins >= tower.price and info.placing == '' and (
+                                            info.wave >= tower.req or cheats):
+                                        info.coins -= tower.price
+                                        info.placing = tower.name
+                                        info.selected = None
+                                    n += 1
+
+                            if 775 <= mx <= 975 and 500 <= my <= 530:
+                                info.reset()
+
+                            if issubclass(type(info.selected), Towers):
+                                if 295 <= mx <= 595 and 485 <= my <= 570:
+                                    n = (my - 485) // 30
+                                    if info.selected.upgrades[n] < 3:
+                                        cost = type(info.selected).upgradePrices[n][info.selected.upgrades[n]]
+                                        if info.coins >= cost and (info.wave >= info.selected.req or cheats):
+                                            info.coins -= cost
+                                            info.selected.upgrades[n] += 1
+
+                                elif 620 <= mx < 820 and 545 <= my < 570:
+                                    info.towers.remove(info.selected)
+                                    info.coins += getSellPrice(info.selected)
+                                    info.selected = None
+
+                        elif event.button == 4:
+                            if mx > 800 and my < 450:
+                                info.shopScroll = min(0, info.shopScroll + 10)
+
+                        elif event.button == 5:
+                            if mx > 800 and my < 450:
+                                maxScroll = len([tower for tower in Towers.__subclasses__() if
+                                                 (info.wave >= tower.req or cheats)]) * 80 - 450
+                                if maxScroll > 0:
+                                    info.shopScroll = max(-maxScroll, info.shopScroll - 10)
+
+                pressed = pygame.key.get_pressed()
+                if pressed[pygame.K_UP]:
+                    info.shopScroll = min(0, info.shopScroll + 10)
+
+                elif pressed[pygame.K_DOWN]:
+                    maxScroll = len(
+                        [tower for tower in Towers.__subclasses__() if (info.wave >= tower.req or cheats)]) * 80 - 450
+                    if maxScroll > 0:
+                        info.shopScroll = max(-maxScroll, info.shopScroll - 10)
 
 
 screen = pygame.display.set_mode((1000, 600))
@@ -1630,14 +1906,19 @@ defaults = {
     'placing': '',
     'nextWave': 299,
     'wave': 0,
-    'win': False,
-    'lose': False,
-    'MapSelect': True,
     'shopScroll': 0,
     'spawnleft': '',
     'spawndelay': 9,
     'Map': None,
-    'totalWaves': len(waves)
+    'totalWaves': len(waves),
+    'status': 'mapSelect',
+    'mapMakerData': {
+        'name': '',
+        'backgroundColor': '(0, 0, 0)',
+        'pathColor': '(0, 0, 0)',
+        'path': None,
+        'field': None
+    }
 }
 LOCKED = 'LOCKED'
 
