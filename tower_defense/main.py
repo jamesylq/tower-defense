@@ -1103,6 +1103,28 @@ def getTarget(tower: Towers, *, ignore: [Enemy] = None, overrideRange: int = Non
                 return enemy
 
 
+def hexToRGB(hexString: str) -> Tuple[int]:
+    hexString = removeCharset(hexString, ['0x', '#'])
+
+    if len(hexString) > 6:
+        raise ValueError
+
+    if len(hexString) == 6:
+        r, g, b = hexString[:2], hexString[2:4], hexString[4:]
+    elif len(hexString) == 5:
+        r, g, b = hexString[0], hexString[1:3], hexString[3:]
+    else:
+        r = '0'
+        if len(hexString) == 4:
+            g, b = hexString[:2], hexString[2:]
+        elif len(hexString) == 3:
+            g, b = hexString[0], hexString[1:]
+        else:
+            g, b = '0', hexString
+
+    return int(r, 16), int(g, 16), int(b, 16)
+
+
 def draw():
     mx, my = pygame.mouse.get_pos()
 
@@ -1515,19 +1537,29 @@ def app():
                     pygame.draw.rect(screen, (100, 100, 100), (225, 350, 675, 30))
 
                     try:
-                        bgColor = [int(n) for n in removeCharset(str(info.mapMakerData['backgroundColor']), ' ()[]').split(',')]
+                        if info.mapMakerData['backgroundColor'][0] == '#' or info.mapMakerData['backgroundColor'][:2] == '0x':
+                            bgColor = hexToRGB(info.mapMakerData['backgroundColor'])
+                        else:
+                            bgColor = [int(n) for n in removeCharset(str(info.mapMakerData['backgroundColor']), ' ()[]').split(',')]
+                            if len(bgColor) > 3:
+                                raise ValueError
                         pygame.draw.rect(screen, bgColor, (925, 250, 30, 30))
                         pygame.draw.rect(screen, (0, 0, 0), (925, 250, 30, 30), 2)
                         validBGColor = True
-                    except ValueError:
+                    except (ValueError, IndexError):
                         validBGColor = False
 
                     try:
-                        pathColor = [int(n) for n in removeCharset(str(info.mapMakerData['pathColor']), ' ()[]').split(',')]
+                        if info.mapMakerData['pathColor'][0] == '#' or info.mapMakerData['pathColor'][:2] == '0x':
+                            pathColor = hexToRGB(info.mapMakerData['pathColor'])
+                        else:
+                            pathColor = [int(n) for n in removeCharset(str(info.mapMakerData['pathColor']), ' ()[]').split(',')]
+                            if len(pathColor) > 3:
+                                raise ValueError
                         pygame.draw.rect(screen, pathColor, (925, 350, 30, 30))
                         pygame.draw.rect(screen, (0, 0, 0), (925, 350, 30, 30), 2)
                         validPathColor = True
-                    except ValueError:
+                    except (ValueError, IndexError):
                         validPathColor = False
 
                     if validBGColor and validPathColor and info.mapMakerData['name'] != '':
@@ -1541,18 +1573,25 @@ def app():
 
                     field = info.mapMakerData['field']
                     cont = True
+                    shifting = pygame.key.get_pressed()[pygame.K_LSHIFT]
                     for event in pygame.event.get():
                         if field is not None:
                             if event.type == pygame.KEYDOWN:
                                 if event.key == pygame.K_CAPSLOCK:
                                     uppercase = not uppercase
 
+                                elif event.key == pygame.K_TAB:
+                                    fields = ['name', 'backgroundColor', 'pathColor']
+
+                                    info.mapMakerData['field'] = fields[(fields.index(field) + (-1 if shifting else 1)) % 3]
+
                                 else:
                                     for translationKey, letter in translationKeys.items():
                                         if event.key == translationKey:
-                                            shifting = pygame.key.get_pressed()[pygame.K_LSHIFT]
                                             if event.key == pygame.K_0 and shifting:
                                                 letter = ')'
+                                            if event.key == pygame.K_3 and shifting:
+                                                letter = '#'
                                             if event.key == pygame.K_9 and shifting:
                                                 letter = '('
 
@@ -1561,8 +1600,12 @@ def app():
                         if event.type == pygame.MOUSEBUTTONDOWN:
                             if event.button == 1:
                                 if validBGColor and validPathColor and info.mapMakerData['name'] != '' and 800 < mx < 900 and 450 < my < 480:
-                                    info.mapMakerData['backgroundColor'] = [int(n) for n in removeCharset(str(info.mapMakerData['backgroundColor']), ' ()[]').split(',')]
-                                    info.mapMakerData['pathColor'] = [int(n) for n in removeCharset(str(info.mapMakerData['pathColor']), ' ()[]').split(',')]
+                                    try:
+                                        info.mapMakerData['backgroundColor'] = [int(n) for n in removeCharset(str(info.mapMakerData['backgroundColor']), ' ()[]').split(',')]
+                                        info.mapMakerData['pathColor'] = [int(n) for n in removeCharset(str(info.mapMakerData['pathColor']), ' ()[]').split(',')]
+                                    except ValueError:
+                                        info.mapMakerData['backgroundColor'] = hexToRGB(info.mapMakerData['backgroundColor'])
+                                        info.mapMakerData['pathColor'] = hexToRGB(info.mapMakerData['pathColor'])
                                     info.mapMakerData['path'] = []
                                     cont = False
 
@@ -1585,7 +1628,7 @@ def app():
                     if not cont:
                         break
 
-                    if pygame.key.get_pressed()[pygame.K_BACKSPACE] and ticks == 0:
+                    if pygame.key.get_pressed()[pygame.K_BACKSPACE] and ticks % 10 == 0:
                         try:
                             info.mapMakerData[field] = info.mapMakerData[field][:-1]
                         except IndexError:
@@ -1595,7 +1638,7 @@ def app():
                         info.mapMakerData[fieldName] = str(info.mapMakerData[fieldName])
 
                         txt = info.mapMakerData[fieldName]
-                        if ticks == 0 and fieldName == field:
+                        if ticks < 25 and fieldName == field:
                             txt += '|'
 
                         if fieldName == 'name':
@@ -1608,7 +1651,7 @@ def app():
                         screen.blit(font.render(txt, True, (0, 0, 0)), (230, y))
 
                     pygame.display.update()
-                    ticks = (ticks + 1) % 10
+                    ticks = (ticks + 1) % 50
                     clock.tick(100)
             else:
                 while True:
@@ -1669,7 +1712,7 @@ def app():
                                     elif char in ' _-':
                                         mapVarName += '_'
 
-                                print(f'This is the map code for your map!\n\n{mapVarName} = Map({info.mapMakerData["path"]}, {tuple(info.mapMakerData["backgroundColor"])}, {tuple(info.mapMakerData["pathColor"])})')
+                                print(f'This is the map code for your map!\n\n{mapVarName} = Map({info.mapMakerData["path"]}, \"{info.mapMakerData["name"]}\", {tuple(info.mapMakerData["backgroundColor"])}, {tuple(info.mapMakerData["pathColor"])})')
                                 info.status = 'mapSelect'
                                 info.mapMakerData = defaults['mapMakerData']
                                 cont = False
