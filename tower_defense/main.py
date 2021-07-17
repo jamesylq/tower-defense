@@ -6,7 +6,7 @@ import math
 
 from _pickle import UnpicklingError
 from tower_defense import __version__
-from typing import overload
+from typing import overload, List, Tuple
 
 current_path = os.path.dirname(__file__)
 resource_path = os.path.join(current_path, 'resources')
@@ -16,7 +16,7 @@ cheats = False
 
 
 class Map:
-    def __init__(self, path: list, name: str, backgroundColor: (int, int, int), pathColor: (int, int, int), displayColor: (int, int, int) = None):
+    def __init__(self, path: list, name: str, backgroundColor: Tuple[int], pathColor: Tuple[int], displayColor: Tuple[int] = None):
         self.name = name
         self.path = path
         self.backgroundColor = backgroundColor
@@ -831,7 +831,7 @@ class PiercingProjectile:
 
 
 class Enemy:
-    def __init__(self, camo: bool, tier: str or int, spawn: [int, int], lineIndex: int):
+    def __init__(self, camo: bool, tier: str or int, spawn: List[int], lineIndex: int):
         try:
             self.tier = int(tier)
         except ValueError:
@@ -1019,7 +1019,7 @@ def reset() -> None:
 
 
 @overload
-def removeCharset(s: str, charset: []) -> str: ...
+def removeCharset(s: str, charset: List[str]) -> str: ...
 @overload
 def removeCharset(s: str, charset: str) -> str: ...
 
@@ -1039,7 +1039,7 @@ def getSellPrice(tower: Towers) -> float:
     return price * 0.5
 
 
-def centredBlit(font: pygame.font.Font, text: str, color: (int, int, int), pos: (int, int)):
+def centredBlit(font: pygame.font.Font, text: str, color: Tuple[int], pos: Tuple[int]):
     textObj = font.render(text, True, color)
     screen.blit(textObj, textObj.get_rect(center=pos))
 
@@ -1220,7 +1220,7 @@ def move():
         projectile.move()
 
 
-def getClosestPoint(mx: int, my: int, *, sx: int = None, sy: int = None) -> [int, int]:
+def getClosestPoint(mx: int, my: int, *, sx: int = None, sy: int = None) -> List[int]:
     if sx is None and sy is None:
         return [round((mx - 100) / 25) * 25 + 100, round((my - 125) / 25) * 25 + 125]
 
