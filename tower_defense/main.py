@@ -1548,6 +1548,12 @@ def app():
                                 else:
                                     for translationKey, letter in translationKeys.items():
                                         if event.key == translationKey:
+                                            shifting = pygame.key.get_pressed()[pygame.K_LSHIFT]
+                                            if event.key == pygame.K_0 and shifting:
+                                                letter = ')'
+                                            if event.key == pygame.K_9 and shifting:
+                                                letter = '('
+
                                             info.mapMakerData[field] += (letter.upper() if uppercase else letter.lower())
 
                         if event.type == pygame.MOUSEBUTTONDOWN:
