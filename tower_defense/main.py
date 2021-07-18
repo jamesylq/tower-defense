@@ -1480,7 +1480,10 @@ def app():
             if info.mapMakerData['path'] is None:
                 ticks = 0
                 uppercase = False
-                charInsertIndex = len(info.mapMakerData[info.mapMakerData['field']])
+                try:
+                    charInsertIndex = len(info.mapMakerData[info.mapMakerData['field']])
+                except KeyError:
+                    charInsertIndex = 0
 
                 while True:
                     mx, my = pygame.mouse.get_pos()
@@ -1632,12 +1635,15 @@ def app():
 
                                 elif 225 < mx < 900 and 150 < my < 180:
                                     info.mapMakerData['field'] = 'name'
+                                    charInsertIndex = min((mx - 230) // font.size('a')[0], len(info.mapMakerData['name']))
 
                                 elif 225 < mx < 900 and 250 < my < 280:
                                     info.mapMakerData['field'] = 'backgroundColor'
+                                    charInsertIndex = min((mx - 230) // font.size('a')[0], len(info.mapMakerData['backgroundColor']))
 
                                 elif 225 < mx < 900 and 350 < my < 380:
                                     info.mapMakerData['field'] = 'pathColor'
+                                    charInsertIndex = min((mx - 230) // font.size('a')[0], len(info.mapMakerData['pathColor']))
 
                                 else:
                                     info.mapMakerData['field'] = None
@@ -1657,7 +1663,7 @@ def app():
                                 info.mapMakerData[field] = info.mapMakerData[field][:charInsertIndex-1] + info.mapMakerData[field][charInsertIndex:]
 
                             charInsertIndex = max(0, charInsertIndex - 1)
-                        except IndexError:
+                        except (IndexError, KeyError):
                             pass
 
                     for fieldName in ['name', 'backgroundColor', 'pathColor']:
@@ -1739,7 +1745,9 @@ def app():
                                     elif char in ' _-':
                                         mapVarName += '_'
 
-                                print(f'This is the map code for your map!\n\n{mapVarName} = Map({info.mapMakerData["path"]}, \"{info.mapMakerData["name"]}\", {tuple(info.mapMakerData["backgroundColor"])}, {tuple(info.mapMakerData["pathColor"])})')
+                                mapShiftedPath = [[point[0] - 100, point[1] - 125] for point in info.mapMakerData['path']]
+
+                                print(f'This is the map code for your map!\n\n{mapVarName} = Map({mapShiftedPath}, \"{info.mapMakerData["name"]}\", {tuple(info.mapMakerData["backgroundColor"])}, {tuple(info.mapMakerData["pathColor"])})')
                                 info.status = 'mapSelect'
                                 info.mapMakerData = defaults['mapMakerData']
                                 cont = False
@@ -1871,12 +1879,13 @@ centredBlit(mediumFont, 'Loading...', (100, 100, 100), (500, 300))
 pygame.display.update()
 
 RACE_TRACK = Map([[25, 0], [25, 375], [775, 375], [775, 25], [40, 25], [40, 360], [760, 360], [760, 40], [55, 40], [55, 345], [745, 345], [745, 55], [0, 55]], "Race Track", (19, 109, 21), (189, 22, 44), (189, 22, 44))
+WIZARDS_LAIR = Map([[0, 25], [775, 25], [775, 425], [25, 425], [25, 75], [725, 75], [725, 375], [0, 375]], "Wizard's Lair", (187, 11, 255), (153, 153, 153))
 POND = Map([[0, 25], [700, 25], [700, 375], [100, 375], [100, 75], [800, 75]], "Pond", (6, 50, 98), (0, 0, 255))
 LAVA_SPIRAL = Map([[300, 225], [575, 225], [575, 325], [125, 325], [125, 125], [675, 125], [675, 425], [25, 425], [25, 0]], "Lava Spiral", (207, 16, 32), (255, 140, 0), (178, 66, 0))
 PLAINS = Map([[25, 0], [25, 375], [500, 375], [500, 25], [350, 25], [350, 175], [750, 175], [750, 0]], "Plains", (19, 109, 21), (155, 118, 83))
 DESERT = Map([[0, 25], [750, 25], [750, 200], [25, 200], [25, 375], [800, 375]], "Desert", (170, 108, 35), (178, 151, 5))
 THE_END = Map([[0, 225], [800, 225]], "The End", (100, 100, 100), (200, 200, 200))
-Maps = [RACE_TRACK, POND, LAVA_SPIRAL, PLAINS, DESERT, THE_END]
+Maps = [RACE_TRACK, WIZARDS_LAIR, POND, LAVA_SPIRAL, PLAINS, DESERT, THE_END]
 
 waves = [
     '00' * 3,
