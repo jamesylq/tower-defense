@@ -28,14 +28,20 @@ class data:
     def __init__(self):
         self.PBs = {Map.name: (LOCKED if Map != Maps[0] else None) for Map in Maps}
         for attr, default in defaults.items():
-            setattr(self, attr, default)
+            if type(default) in [dict, list]:
+                setattr(self, attr, default.copy())
+            else:
+                setattr(self, attr, default)
 
     def reset(self):
         for attr, default in defaults.items():
             if attr in ['PBs', 'FinalHP', 'totalWaves']:
                 continue
 
-            setattr(self, attr, default if type(default) is not list else [])
+            if type(default) in [dict, list]:
+                setattr(self, attr, default.copy())
+            else:
+                setattr(self, attr, default)
 
 
 class Towers:
@@ -1626,10 +1632,14 @@ def app():
                                 if validBGColor and validPathColor and info.mapMakerData['name'] != '' and 800 < mx < 900 and 450 < my < 480:
                                     try:
                                         info.mapMakerData['backgroundColor'] = [int(n) for n in removeCharset(str(info.mapMakerData['backgroundColor']), ' ()[]').split(',')]
-                                        info.mapMakerData['pathColor'] = [int(n) for n in removeCharset(str(info.mapMakerData['pathColor']), ' ()[]').split(',')]
                                     except ValueError:
                                         info.mapMakerData['backgroundColor'] = hexToRGB(info.mapMakerData['backgroundColor'])
+
+                                    try:
+                                        info.mapMakerData['pathColor'] = [int(n) for n in removeCharset(str(info.mapMakerData['pathColor']), ' ()[]').split(',')]
+                                    except ValueError:
                                         info.mapMakerData['pathColor'] = hexToRGB(info.mapMakerData['pathColor'])
+
                                     info.mapMakerData['path'] = []
                                     cont = False
 
@@ -1712,8 +1722,8 @@ def app():
                     if info.mapMakerData['path']:
                         pygame.draw.circle(screen, info.mapMakerData['pathColor'], info.mapMakerData['path'][0], 10)
 
-                    pygame.draw.rect(screen, (200, 200, 200), (100, 115, 800, 10))
-                    pygame.draw.rect(screen, (200, 200, 200), (100, 575, 800, 10))
+                    pygame.draw.rect(screen, (200, 200, 200), (90, 115, 900, 10))
+                    pygame.draw.rect(screen, (200, 200, 200), (90, 575, 900, 10))
                     pygame.draw.rect(screen, (200, 200, 200), (90, 125, 10, 450))
                     pygame.draw.rect(screen, (200, 200, 200), (900, 125, 10, 450))
 
@@ -1749,7 +1759,7 @@ def app():
 
                                 print(f'This is the map code for your map!\n\n{mapVarName} = Map({mapShiftedPath}, \"{info.mapMakerData["name"]}\", {tuple(info.mapMakerData["backgroundColor"])}, {tuple(info.mapMakerData["pathColor"])})')
                                 info.status = 'mapSelect'
-                                info.mapMakerData = defaults['mapMakerData']
+                                info.mapMakerData = defaults['mapMakerData'].copy()
                                 cont = False
 
                     if not cont:
@@ -2017,7 +2027,7 @@ largeIceCircle = IceCircle.copy()
 largeIceCircle.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
 
 rangeImages = []
-possibleRanges = [50, 100, 125, 130, 150, 165, 175, 180, 200, 250, 400]
+possibleRanges = [0, 50, 100, 125, 130, 150, 165, 175, 180, 200, 250, 400]
 for possibleRange in possibleRanges:
     rangeImage = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'range.png')), (possibleRange * 2,) * 2)
     alphaImage = rangeImage.copy()
