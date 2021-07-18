@@ -45,13 +45,14 @@ class data:
 
 
 class Towers:
-    def __init__(self, x: int, y: int):
+    def __init__(self, x: int, y: int, *, overrideCamoDetect: bool = False):
         self.x = x
         self.y = y
         self.timer = 0
         self.upgrades = [0, 0, 0]
         self.stun = 0
         self.hits = 0
+        self.camoDetectionOverride = overrideCamoDetect
 
     def draw(self):
         pygame.draw.circle(screen, self.color, (self.x, self.y), 15)
@@ -120,7 +121,7 @@ class IceTower(Towers):
         def draw(self):
             if self.visibleTicks > 0:
                 self.visibleTicks -= 1
-                screen.blit(largeIceCircle if self.parent.upgrades[0] >= 1 else smallIceCircle, (self.x - self.parent.range, self.y - self.parent.range))
+                screen.blit(largeIceCircle if self.parent.upgrades[0] >= 1 else smallIceCircle, (self.x - 125, self.y - 125))
 
         def freeze(self):
             self.visibleTicks = 50
@@ -293,7 +294,7 @@ class SpikeTower(Towers):
 
     def update(self):
         self.projectileSpeed = [1, 1.5, 2.2, 3][self.upgrades[0]]
-        self.cooldown = [100, 50, 25, 0][self.upgrades[1]]
+        self.cooldown = [100, 35, 10, 0][self.upgrades[1]]
 
 
 class BombTower(Towers):
@@ -442,26 +443,26 @@ class Wizard(Towers):
 
         def attack(self):
             self.visibleTicks = 50
-            self.t1 = getTarget(Towers(self.pos[0], self.pos[1]), overrideRange=1000)
+            self.t1 = getTarget(Towers(self.pos[0], self.pos[1], overrideCamoDetect=self.parent.upgrades[1] >= 2), overrideRange=1000)
             if type(self.t1) is Enemy:
-                self.t1.kill(coinMultiplier=getCoinMultiplier(self.parent))
+                self.t1.kill(coinMultiplier=getCoinMultiplier(self.parent), bossDamage=25)
                 self.parent.hits += 1
-                self.t2 = getTarget(Towers(self.t1.x, self.t1.y), ignore=[self.t1], overrideRange=1000)
+                self.t2 = getTarget(Towers(self.t1.x, self.t1.y, overrideCamoDetect=self.parent.upgrades[1] >= 2), ignore=[self.t1], overrideRange=1000)
                 if type(self.t2) is Enemy:
-                    self.t2.kill(coinMultiplier=getCoinMultiplier(self.parent))
+                    self.t2.kill(coinMultiplier=getCoinMultiplier(self.parent), bossDamage=25)
                     self.parent.hits += 1
-                    self.t3 = getTarget(Towers(self.t2.x, self.t2.y), ignore=[self.t1, self.t2], overrideRange=1000)
+                    self.t3 = getTarget(Towers(self.t2.x, self.t2.y, overrideCamoDetect=self.parent.upgrades[1] >= 2), ignore=[self.t1, self.t2], overrideRange=1000)
                     if type(self.t3) is Enemy:
-                        self.t3.kill(coinMultiplier=getCoinMultiplier(self.parent))
+                        self.t3.kill(coinMultiplier=getCoinMultiplier(self.parent), bossDamage=25)
                         self.parent.hits += 1
                         if self.parent.upgrades[1] == 3:
-                            self.t4 = getTarget(Towers(self.t3.x, self.t3.y), ignore=[self.t1, self.t2, self.t3], overrideRange=1000)
+                            self.t4 = getTarget(Towers(self.t3.x, self.t3.y, overrideCamoDetect=self.parent.upgrades[1] >= 2), ignore=[self.t1, self.t2, self.t3], overrideRange=1000)
                             if type(self.t4) is Enemy:
-                                self.t4.kill(coinMultiplier=getCoinMultiplier(self.parent))
+                                self.t4.kill(coinMultiplier=getCoinMultiplier(self.parent), bossDamage=25)
                                 self.parent.hits += 1
-                                self.t5 = getTarget(Towers(self.t4.x, self.t4.y), ignore=[self.t1, self.t2, self.t3, self.t4], overrideRange=1000)
+                                self.t5 = getTarget(Towers(self.t4.x, self.t4.y, overrideCamoDetect=self.parent.upgrades[1] >= 2), ignore=[self.t1, self.t2, self.t3, self.t4], overrideRange=1000)
                                 if type(self.t5) is Enemy:
-                                    self.t5.kill(coinMultiplier=getCoinMultiplier(self.parent))
+                                    self.t5.kill(coinMultiplier=getCoinMultiplier(self.parent), bossDamage=25)
                             else:
                                 self.t5 = None
                         else:
@@ -787,7 +788,10 @@ class Projectile:
                 raise ZeroDivisionError
 
         except ZeroDivisionError:
-            info.projectiles.remove(self)
+            try:
+                info.projectiles.remove(self)
+            except ValueError:
+                pass
 
     def draw(self):
         pygame.draw.circle(screen, self.color, (self.x, self.y), 3)
@@ -1070,13 +1074,19 @@ def getCoinMultiplier(Tower: Towers) -> int:
 
 
 def canSeeCamo(Tower: Towers) -> bool:
+    if Tower.camoDetectionOverride:
+        return True
+
     if type(Tower) is Turret and Tower.upgrades[2] >= 2:
         return True
 
     if type(Tower) is Wizard and Tower.upgrades[1] >= 2:
         return True
 
-    villages = [tower for tower in info.towers if type(tower) is Village and tower.upgrades[0] > 0]
+    if type(Tower) is Village and Tower.upgrades[0] >= 1:
+        return True
+
+    villages = [tower for tower in info.towers if type(tower) is Village and tower.upgrades[0] >= 1]
     for village in villages:
         if abs(Tower.x - village.x) ** 2 + abs(Tower.y - village.y) ** 2 < village.range ** 2:
             return True
