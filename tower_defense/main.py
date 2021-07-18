@@ -1480,6 +1480,7 @@ def app():
             if info.mapMakerData['path'] is None:
                 ticks = 0
                 uppercase = False
+                charInsertIndex = 0
 
                 while True:
                     mx, my = pygame.mouse.get_pos()
@@ -1524,7 +1525,8 @@ def app():
                         pygame.K_SPACE: ' ',
                         pygame.K_COMMA: ',',
                         pygame.K_LEFTBRACKET: '[',
-                        pygame.K_RIGHTBRACKET: ']'
+                        pygame.K_RIGHTBRACKET: ']',
+                        pygame.K_QUOTE: '\''
                     }
 
                     screen.fill((200, 200, 200))
@@ -1580,10 +1582,23 @@ def app():
                                 if event.key == pygame.K_CAPSLOCK:
                                     uppercase = not uppercase
 
-                                elif event.key == pygame.K_TAB:
+                                elif event.key in [pygame.K_TAB, pygame.K_UP, pygame.K_DOWN]:
                                     fields = ['name', 'backgroundColor', 'pathColor']
 
-                                    info.mapMakerData['field'] = fields[(fields.index(field) + (-1 if shifting else 1)) % 3]
+                                    if event.key == pygame.K_TAB:
+                                        info.mapMakerData['field'] = fields[(fields.index(field) + (-1 if shifting else 1)) % 3]
+                                    elif event.key == pygame.K_UP:
+                                        info.mapMakerData['field'] = fields[(fields.index(field) - 1) % 3]
+                                    elif event.key == pygame.K_DOWN:
+                                        info.mapMakerData['field'] = fields[(fields.index(field) + 1) % 3]
+
+                                    charInsertIndex = min(charInsertIndex, len(info.mapMakerData[info.mapMakerData['field']]))
+
+                                elif event.key == pygame.K_LEFT:
+                                    charInsertIndex = max(0, charInsertIndex - 1)
+
+                                elif event.key == pygame.K_RIGHT:
+                                    charInsertIndex = min(len(info.mapMakerData[info.mapMakerData['field']]), charInsertIndex + 1)
 
                                 else:
                                     for translationKey, letter in translationKeys.items():
@@ -1595,7 +1610,13 @@ def app():
                                             if event.key == pygame.K_9 and shifting:
                                                 letter = '('
 
-                                            info.mapMakerData[field] += (letter.upper() if uppercase else letter.lower())
+                                            if charInsertIndex == 0:
+                                                info.mapMakerData[field] = (letter.upper() if uppercase else letter.lower()) + info.mapMakerData[field]
+                                            elif charInsertIndex == len(info.mapMakerData[field]):
+                                                info.mapMakerData[field] += (letter.upper() if uppercase else letter.lower())
+                                            else:
+                                                info.mapMakerData[field] = info.mapMakerData[field][:charInsertIndex] + (letter.upper() if uppercase else letter.lower()) + info.mapMakerData[field][charInsertIndex:]
+                                            charInsertIndex += 1
 
                         if event.type == pygame.MOUSEBUTTONDOWN:
                             if event.button == 1:
@@ -1630,7 +1651,12 @@ def app():
 
                     if pygame.key.get_pressed()[pygame.K_BACKSPACE] and ticks % 10 == 0:
                         try:
-                            info.mapMakerData[field] = info.mapMakerData[field][:-1]
+                            if charInsertIndex == len(info.mapMakerData[field]):
+                                info.mapMakerData[field] = info.mapMakerData[field][:-1]
+                            else:
+                                info.mapMakerData[field] = info.mapMakerData[field][:charInsertIndex-1] + info.mapMakerData[field][charInsertIndex:]
+
+                            charInsertIndex = max(0, charInsertIndex - 1)
                         except IndexError:
                             pass
 
@@ -1639,7 +1665,12 @@ def app():
 
                         txt = info.mapMakerData[fieldName]
                         if ticks < 25 and fieldName == field:
-                            txt += '|'
+                            if charInsertIndex == 0:
+                                txt = '|' + txt
+                            elif charInsertIndex == len(txt):
+                                txt += '|'
+                            else:
+                                txt = txt[:charInsertIndex] + '|' + txt[charInsertIndex:]
 
                         if fieldName == 'name':
                             y = 150
