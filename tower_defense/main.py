@@ -1480,7 +1480,7 @@ def app():
             if info.mapMakerData['path'] is None:
                 ticks = 0
                 uppercase = False
-                charInsertIndex = 0
+                charInsertIndex = len(info.mapMakerData[info.mapMakerData['field']])
 
                 while True:
                     mx, my = pygame.mouse.get_pos()
@@ -1653,7 +1653,7 @@ def app():
                         try:
                             if charInsertIndex == len(info.mapMakerData[field]):
                                 info.mapMakerData[field] = info.mapMakerData[field][:-1]
-                            else:
+                            elif charInsertIndex > 0:
                                 info.mapMakerData[field] = info.mapMakerData[field][:charInsertIndex-1] + info.mapMakerData[field][charInsertIndex:]
 
                             charInsertIndex = max(0, charInsertIndex - 1)
@@ -1663,21 +1663,17 @@ def app():
                     for fieldName in ['name', 'backgroundColor', 'pathColor']:
                         info.mapMakerData[fieldName] = str(info.mapMakerData[fieldName])
 
-                        txt = info.mapMakerData[fieldName]
-                        if ticks < 25 and fieldName == field:
-                            if charInsertIndex == 0:
-                                txt = '|' + txt
-                            elif charInsertIndex == len(txt):
-                                txt += '|'
-                            else:
-                                txt = txt[:charInsertIndex] + '|' + txt[charInsertIndex:]
-
                         if fieldName == 'name':
                             y = 150
                         elif fieldName == 'backgroundColor':
                             y = 250
                         else:
                             y = 350
+
+                        txt = info.mapMakerData[fieldName]
+                        if ticks < 25 and fieldName == field:
+                            length = font.size('a' * charInsertIndex)[0]
+                            pygame.draw.line(screen, (0, 0, 0), (230 + length, y), (230 + length, y + 20))
 
                         screen.blit(font.render(txt, True, (0, 0, 0)), (230, y))
 
