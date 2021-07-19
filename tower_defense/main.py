@@ -12,7 +12,7 @@ current_path = os.path.dirname(__file__)
 resource_path = os.path.join(current_path, 'resources')
 
 MaxFPS = 100
-cheats = False
+cheats = True
 
 
 class Map:
@@ -35,7 +35,7 @@ class data:
 
     def reset(self):
         for attr, default in defaults.items():
-            if attr in ['PBs', 'FinalHP', 'totalWaves']:
+            if attr in ['PBs', 'FinalHP', 'totalWaves', 'status']:
                 continue
 
             if type(default) in [dict, list]:
@@ -121,7 +121,7 @@ class IceTower(Towers):
         def draw(self):
             if self.visibleTicks > 0:
                 self.visibleTicks -= 1
-                screen.blit(largeIceCircle if self.parent.upgrades[0] >= 1 else smallIceCircle, (self.x - 125, self.y - 125))
+                screen.blit(IceCircle, (self.x - 125, self.y - 125))
 
         def freeze(self):
             self.visibleTicks = 50
@@ -151,10 +151,12 @@ class IceTower(Towers):
     range = 125
     cooldown = 100
     freezeDuration = 20
+    snowCircleTimer = 0
 
     def __init__(self, x: int, y: int):
         super().__init__(x, y)
         self.snowCircle = self.SnowStormCircle(self, self.x, self.y)
+        self.enabled = True
 
     def draw(self):
         super().draw()
@@ -165,25 +167,31 @@ class IceTower(Towers):
             self.stun -= 1
             return
 
+        if not self.enabled:
+            return
+
         if self.timer >= self.cooldown:
-            if self.upgrades[2] >= 2:
-                self.snowCircle.freeze()
+            try:
+                closest = getTarget(self)
+                info.projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, freezeDuration=self.freezeDuration))
                 self.timer = 0
-            else:
-                try:
-                    closest = getTarget(self)
-                    info.projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, freezeDuration=self.freezeDuration))
-                    self.timer = 0
-                except AttributeError:
-                    pass
+            except AttributeError:
+                pass
         else:
             self.timer += 1
+
+        if self.upgrades[2] >= 2:
+            if self.snowCircleTimer >= self.cooldown * 10:
+                self.snowCircle.freeze()
+                self.snowCircleTimer = 0
+            else:
+                self.snowCircleTimer += 1
 
     def update(self):
         self.snowCircle.update()
 
         self.range = [150, 180, 200, 250][self.upgrades[0]]
-        self.cooldown = [1, 0.75, 0.55, 0.4][self.upgrades[1]] * (50 if self.upgrades[2] < 2 else 1000)
+        self.cooldown = [50, 38, 27, 20][self.upgrades[1]]
         if self.upgrades[2] >= 1:
             self.freezeDuration = 45
         if self.upgrades[2] == 3:
@@ -1123,7 +1131,7 @@ def hexToRGB(hexString: str) -> Tuple[int]:
     hexString = removeCharset(hexString, ['0x', '#'])
 
     if len(hexString) > 6:
-        raise ValueError
+        raise ValueError('RGB input error')
 
     if len(hexString) == 6:
         r, g, b = hexString[:2], hexString[2:4], hexString[4:]
@@ -1209,8 +1217,13 @@ def draw():
     screen.blit(font.render(f'FPS: {round(clock.get_fps(), 1)}', True, (0, 0, 0)), (10, 520))
     screen.blit(font.render(f'Wave {max(info.wave, 1)} of {len(waves)}', True, 0), (825, 570))
 
-    pygame.draw.rect(screen, (128, 128, 128), (775, 500, 200, 30))
-    screen.blit(font.render('Map Selection', True, (0, 0, 0)), (800, 505))
+    pygame.draw.rect(screen, (255, 0, 0), (0, 450, 20, 20))
+    pygame.draw.line(screen, (0, 0, 0), (3, 453), (17, 467), 2)
+    pygame.draw.line(screen, (0, 0, 0), (3, 467), (17, 453), 2)
+    if mx <= 20 and 450 <= my <= 470:
+        pygame.draw.rect(screen, (64, 64, 64), (0, 450, 20, 20), 3)
+    else:
+        pygame.draw.rect(screen, (0, 0, 0), (0, 450, 20, 20), 3)
 
     if issubclass(type(info.selected), Towers):
         screen.blit(font.render('Upgrades:', True, 0), (200, 487))
@@ -1237,6 +1250,11 @@ def draw():
         pygame.draw.rect(screen, (128, 128, 128), (620, 545, 200, 25))
         pygame.draw.rect(screen, (200, 200, 200) if 620 < mx < 820 and 545 < my < 570 else (0, 0, 0), (620, 545, 200, 25), 3)
         screen.blit(font.render(f'Sell for [${round(getSellPrice(info.selected))}]', True, 0), (625, 545))
+
+        if type(info.selected) is IceTower:
+            pygame.draw.rect(screen, (0, 255, 0) if info.selected.enabled else (255, 0, 0), (620, 500, 150, 25))
+            pygame.draw.rect(screen, (200, 200, 200) if 620 < mx < 770 and 500 < my < 525 else (0, 0, 0), (620, 500, 150, 25), 3)
+            centredBlit(font, 'ENABLED' if info.selected.enabled else 'DISABLED', (0, 0, 0), (695, 512))
 
     pygame.display.update()
 
@@ -1847,8 +1865,9 @@ def app():
                                     info.selected = None
                                 n += 1
 
-                        if 775 <= mx <= 975 and 500 <= my <= 530:
+                        if mx <= 20 and 450 <= my <= 470:
                             info.reset()
+                            info.status = 'mapSelect'
 
                         if issubclass(type(info.selected), Towers):
                             if 295 <= mx <= 595 and 485 <= my <= 570:
@@ -1863,6 +1882,11 @@ def app():
                                 info.towers.remove(info.selected)
                                 info.coins += getSellPrice(info.selected)
                                 info.selected = None
+
+
+                            elif type(info.selected) is IceTower:
+                                if 620 <= mx <= 770 and 500 <= my <= 525:
+                                    info.selected.enabled = not info.selected.enabled
 
                     elif event.button == 4:
                         if mx > 800 and my < 450:
@@ -2028,13 +2052,8 @@ defaults = {
 }
 LOCKED = 'LOCKED'
 
-IceCircle = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'ice_circle.png')), (250, 250))
-smallIceCircle = IceCircle.copy()
-smallIceCircle.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
-
-IceCircle = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'ice_circle.png')), (350, 350))
-largeIceCircle = IceCircle.copy()
-largeIceCircle.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
+IceCircle = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'ice_circle.png')), (250, 250)).copy()
+IceCircle.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
 
 rangeImages = []
 possibleRanges = [0, 50, 100, 125, 130, 150, 165, 175, 180, 200, 250, 400]
