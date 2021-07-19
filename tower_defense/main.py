@@ -1304,6 +1304,25 @@ def getClosestPoint(mx: int, my: int, *, sx: int = None, sy: int = None) -> List
     return [closestX, closestY]
 
 
+def updateDict(d: dict, l: list) -> dict:
+    """Re-order the items in d based on the items in l and deletes redundant items."""
+
+    newDict = {}
+    oldDict = d.copy()
+
+    keys = list(oldDict.keys())
+    values = list(oldDict.values())
+
+    for item in l:
+        try:
+            index = keys.index(item)
+            newDict[keys[index]] = values[index]
+        except ValueError:
+            continue
+
+    return newDict
+
+
 def save():
     pickle.dump(info, open('save.txt', 'wb'))
 
@@ -1322,6 +1341,8 @@ def load():
             if not hasattr(info, attr):
                 setattr(info, attr, default)
 
+        info.PBs = updateDict(info.PBs, Maps)
+
         foundUnlocked = False
         for Map in Maps:
             if Map.name not in info.PBs.keys():
@@ -1329,6 +1350,7 @@ def load():
 
             if info.PBs[Map.name] != LOCKED:
                 foundUnlocked = True
+
             elif not foundUnlocked:
                 info.PBs[Map.name] = None
 
