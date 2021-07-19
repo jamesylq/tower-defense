@@ -1341,7 +1341,7 @@ def load():
             if not hasattr(info, attr):
                 setattr(info, attr, default)
 
-        info.PBs = updateDict(info.PBs, Maps)
+        info.PBs = updateDict(info.PBs, [Map.name for Map in Maps])
 
         foundUnlocked = False
         for Map in Maps:
@@ -1404,6 +1404,7 @@ def app():
                         if 375 < my < 425:
                             if 225 < mx < 400:
                                 info.reset()
+                                info.status = 'mapSelect'
                                 cont = True
                             elif 600 < mx < 775:
                                 cont = True
@@ -1426,13 +1427,12 @@ def app():
             else:
                 pygame.draw.rect(screen, (0, 0, 0), (25, 550, 125, 30), 3)
 
-            if LOCKED not in list(info.PBs.values()) or cheats:
-                pygame.draw.rect(screen, (200, 200, 200), (850, 550, 125, 30))
-                centredBlit(font, 'Random Map', (0, 0, 0), (912, 565))
-                if 850 <= mx <= 975 and 550 < my <= 580:
-                    pygame.draw.rect(screen, (128, 128, 128), (850, 550, 125, 30), 5)
-                else:
-                    pygame.draw.rect(screen, (0, 0, 0), (850, 550, 125, 30), 3)
+            pygame.draw.rect(screen, (200, 200, 200), (850, 550, 125, 30))
+            centredBlit(font, 'Random Map', (0, 0, 0), (912, 565))
+            if 850 <= mx <= 975 and 550 < my <= 580:
+                pygame.draw.rect(screen, (128, 128, 128), (850, 550, 125, 30), 5)
+            else:
+                pygame.draw.rect(screen, (0, 0, 0), (850, 550, 125, 30), 3)
 
             for n in range(len(Maps)):
                 if info.PBs[Maps[n].name] != LOCKED or cheats:
@@ -1463,8 +1463,8 @@ def app():
                                     info.Map = Maps[n]
                                     info.status = 'game'
 
-                        if 850 <= mx <= 975 and 550 <= my <= 580 and (LOCKED not in info.PBs.values() or cheats):
-                            info.Map = random.choice(Maps)
+                        if 850 <= mx <= 975 and 550 <= my <= 580:
+                            info.Map = random.choice([Map for Map in Maps if type(info.PBs[Map.name]) is int])
                             info.status = 'game'
 
                         if 25 <= mx <= 150 and 550 <= my <= 580:
