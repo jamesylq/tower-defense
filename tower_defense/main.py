@@ -1464,7 +1464,7 @@ def app():
                                     info.status = 'game'
 
                         if 850 <= mx <= 975 and 550 <= my <= 580:
-                            info.Map = random.choice([Map for Map in Maps if type(info.PBs[Map.name]) is int])
+                            info.Map = random.choice([Map for Map in Maps if info.PBs[Map.name] != LOCKED])
                             info.status = 'game'
 
                         if 25 <= mx <= 150 and 550 <= my <= 580:
