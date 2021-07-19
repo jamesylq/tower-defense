@@ -1050,6 +1050,7 @@ def removeCharset(s, charset) -> str:
 
 def getSellPrice(tower: Towers) -> float:
     price = tower.price
+
     for n in range(3):
         for m in range(tower.upgrades[n]):
             price += tower.upgradePrices[n][m]
@@ -1610,6 +1611,14 @@ def app():
                         else:
                             pygame.draw.rect(screen, (128, 128, 128), (800, 450, 100, 30), 3)
 
+                    pygame.draw.rect(screen, (255, 0, 0), (30, 550, 100, 30))
+                    centredBlit(font, 'Cancel', (0, 0, 0), (80, 565))
+
+                    if 30 < mx < 130 and 550 < my < 580:
+                        pygame.draw.rect(screen, (32, 32, 32), (30, 550, 100, 30), 3)
+                    else:
+                        pygame.draw.rect(screen, (128, 128, 128), (30, 550, 100, 30), 3)
+
                     field = info.mapMakerData['field']
                     cont = True
                     shifting = pygame.key.get_pressed()[pygame.K_LSHIFT]
@@ -1682,6 +1691,11 @@ def app():
                                 elif 225 < mx < 900 and 350 < my < 380:
                                     info.mapMakerData['field'] = 'pathColor'
                                     charInsertIndex = min((mx - 230) // font.size('a')[0], len(info.mapMakerData['pathColor']))
+
+                                elif 30 < mx < 130 and 550 < my < 580:
+                                    info.mapMakerData = defaults['mapMakerData'].copy()
+                                    info.status = 'mapSelect'
+                                    cont = False
 
                                 else:
                                     info.mapMakerData['field'] = None
@@ -1771,24 +1785,27 @@ def app():
                             quit()
 
                         elif event.type == pygame.MOUSEBUTTONDOWN:
-                            if 100 <= cx <= 900 and 125 <= cy <= 575:
-                                info.mapMakerData['path'].append([cx, cy])
-                            elif 0 < mx < 60 and 570 < my:
-                                info.mapMakerData['path'].clear()
-                            elif 940 < mx and 570 < my:
-                                mapVarName = ''
-                                for char in info.mapMakerData['name']:
-                                    if char.lower() in 'abcdefghijklmnopqrstuvwxyz':
-                                        mapVarName += char.upper()
-                                    elif char in ' _-':
-                                        mapVarName += '_'
+                            if event.button == 1:
+                                if 100 <= cx <= 900 and 125 <= cy <= 575:
+                                    info.mapMakerData['path'].append([cx, cy])
 
-                                mapShiftedPath = [[point[0] - 100, point[1] - 125] for point in info.mapMakerData['path']]
+                                elif 0 < mx < 60 and 570 < my:
+                                    info.mapMakerData['path'].clear()
 
-                                print(f'This is the map code for your map!\n\n{mapVarName} = Map({mapShiftedPath}, \"{info.mapMakerData["name"]}\", {tuple(info.mapMakerData["backgroundColor"])}, {tuple(info.mapMakerData["pathColor"])})')
-                                info.status = 'mapSelect'
-                                info.mapMakerData = defaults['mapMakerData'].copy()
-                                cont = False
+                                elif 940 < mx and 570 < my:
+                                    mapVarName = ''
+                                    for char in info.mapMakerData['name']:
+                                        if char.lower() in 'abcdefghijklmnopqrstuvwxyz':
+                                            mapVarName += char.upper()
+                                        elif char in ' _-':
+                                            mapVarName += '_'
+
+                                    mapShiftedPath = [[point[0] - 100, point[1] - 125] for point in info.mapMakerData['path']]
+
+                                    print(f'This is the map code for your map!\n\n{mapVarName} = Map({mapShiftedPath}, \"{info.mapMakerData["name"]}\", {tuple(info.mapMakerData["backgroundColor"])}, {tuple(info.mapMakerData["pathColor"])})')
+                                    info.status = 'mapSelect'
+                                    info.mapMakerData = defaults['mapMakerData'].copy()
+                                    cont = False
 
                     if not cont:
                         break
