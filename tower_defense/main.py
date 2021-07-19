@@ -12,7 +12,7 @@ current_path = os.path.dirname(__file__)
 resource_path = os.path.join(current_path, 'resources')
 
 MaxFPS = 100
-cheats = True
+cheats = False
 
 
 class Map:
