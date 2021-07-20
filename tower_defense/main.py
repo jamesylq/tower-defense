@@ -34,7 +34,7 @@ class data:
 
     def reset(self):
         for attr, default in defaults.items():
-            if attr in ['PBs', 'FinalHP', 'totalWaves', 'status', 'sandboxMode']:
+            if attr in ['PBs', 'FinalHP', 'totalWaves', 'status', 'sandboxMode', 'Map']:
                 continue
 
             if type(default) in [dict, list]:
@@ -1330,11 +1330,11 @@ def hasAllMaxScore() -> bool:
     return True
 
 
-def save():
+def save() -> None:
     pickle.dump(info, open('save.txt', 'wb'))
 
 
-def load():
+def load() -> None:
     global info
 
     try:
@@ -1380,7 +1380,7 @@ def load():
 def app():
     load()
 
-    if info.Map is not None:
+    if info.Map is not None and info.status not in ['win', 'lose']:
         cont = False
 
         while True:
@@ -1519,6 +1519,8 @@ def app():
                 centredBlit(largeFont, 'You Win!', (255, 255, 255), (500, 125))
                 centredBlit(font, f'Your Final Score: {info.FinalHP}', (255, 255, 255), (500, 250))
                 centredBlit(font, f'Press [SPACE] to continue!', (255, 255, 255), (500, 280))
+                if info.sandboxMode:
+                    centredBlit(font, 'You were playing on Sandbox Mode!', (255, 255, 255), (500, 350))
                 pygame.display.update()
 
                 for event in pygame.event.get():
