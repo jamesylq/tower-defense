@@ -12,7 +12,6 @@ current_path = os.path.dirname(__file__)
 resource_path = os.path.join(current_path, 'resources')
 
 MaxFPS = 100
-cheats = False
 
 
 class Map:
@@ -35,7 +34,7 @@ class data:
 
     def reset(self):
         for attr, default in defaults.items():
-            if attr in ['PBs', 'FinalHP', 'totalWaves', 'status']:
+            if attr in ['PBs', 'FinalHP', 'totalWaves', 'status', 'sandboxMode']:
                 continue
 
             if type(default) in [dict, list]:
@@ -1201,7 +1200,7 @@ def draw():
 
     n = 0
     for towerType in Towers.__subclasses__():
-        if info.wave >= towerType.req or cheats:
+        if info.wave >= towerType.req or info.sandboxMode:
             screen.blit(font.render(f'{towerType.name} (${towerType.price})', True, 0), (810, 10 + 80 * n + info.shopScroll))
             pygame.draw.rect(screen, (187, 187, 187), (945, 30 + 80 * n + info.shopScroll, 42, 42))
             pygame.draw.circle(screen, towerType.color, (966, 51 + 80 * n + info.shopScroll), 15)
@@ -1323,6 +1322,14 @@ def updateDict(d: dict, l: list) -> dict:
     return newDict
 
 
+def hasAllMaxScore() -> bool:
+    for score in info.PBs.values():
+        if score != 100:
+            return False
+
+    return True
+
+
 def save():
     pickle.dump(info, open('save.txt', 'wb'))
 
@@ -1360,6 +1367,9 @@ def load():
                 for name, PB in info.PBs.items():
                     if type(PB) is int:
                         info.PBs[name] = None
+
+        if not hasAllMaxScore():
+            info.sandboxMode = False
 
     except FileNotFoundError:
         open('save.txt', 'w')
@@ -1427,6 +1437,14 @@ def app():
             else:
                 pygame.draw.rect(screen, (0, 0, 0), (25, 550, 125, 30), 3)
 
+            if hasAllMaxScore():
+                pygame.draw.rect(screen, (0, 225, 0) if info.sandboxMode else (255, 0, 0), (200, 550, 200, 30))
+                centredBlit(font, 'Sandbox Mode: ' + ('ON' if info.sandboxMode else 'OFF'), (0, 0, 0), (300, 565))
+                if 200 <= mx <= 400 and 550 <= my <= 580:
+                    pygame.draw.rect(screen, (128, 128, 128), (200, 550, 200, 30), 5)
+                else:
+                    pygame.draw.rect(screen, (0, 0, 0), (200, 550, 200, 30), 3)
+
             pygame.draw.rect(screen, (200, 200, 200), (850, 550, 125, 30))
             centredBlit(font, 'Random Map', (0, 0, 0), (912, 565))
             if 850 <= mx <= 975 and 550 < my <= 580:
@@ -1435,7 +1453,7 @@ def app():
                 pygame.draw.rect(screen, (0, 0, 0), (850, 550, 125, 30), 3)
 
             for n in range(len(Maps)):
-                if info.PBs[Maps[n].name] != LOCKED or cheats:
+                if info.PBs[Maps[n].name] != LOCKED or info.sandboxMode:
                     pygame.draw.rect(screen, Maps[n].displayColor, (10, 40 * n + 60, 980, 30))
                     if 10 <= mx <= 980 and 40 * n + 60 < my <= 40 * n + 90:
                         pygame.draw.rect(screen, (128, 128, 128), (10, 40 * n + 60, 980, 30), 5)
@@ -1459,16 +1477,22 @@ def app():
                     if event.button == 1:
                         if 10 <= mx <= 980:
                             for n in range(len(Maps)):
-                                if 40 * n + 60 <= my <= 40 * n + 90 and (list(info.PBs.values())[n] != LOCKED or cheats):
+                                if 40 * n + 60 <= my <= 40 * n + 90 and (list(info.PBs.values())[n] != LOCKED or info.sandboxMode):
                                     info.Map = Maps[n]
                                     info.status = 'game'
+                                    info.coins = 100000 if info.sandboxMode else 50
 
                         if 850 <= mx <= 975 and 550 <= my <= 580:
                             info.Map = random.choice([Map for Map in Maps if info.PBs[Map.name] != LOCKED])
                             info.status = 'game'
+                            info.coins = 100000 if info.sandboxMode else 50
 
                         if 25 <= mx <= 150 and 550 <= my <= 580:
                             info.status = 'mapMaker'
+
+                        if 200 <= mx <= 400 and 550 <= my <= 580:
+                            if hasAllMaxScore():
+                                info.sandboxMode = not info.sandboxMode
 
         elif info.status == 'win':
             n = False
@@ -1481,10 +1505,11 @@ def app():
                     n = True
 
             cont = False
-            if info.PBs[info.Map.name] is None or info.PBs[info.Map.name] == LOCKED:
-                info.PBs[info.Map.name] = info.HP
-            elif info.PBs[info.Map.name] < info.HP:
-                info.PBs[info.Map.name] = info.HP
+            if not info.sandboxMode:
+                if info.PBs[info.Map.name] is None or info.PBs[info.Map.name] == LOCKED:
+                    info.PBs[info.Map.name] = info.HP
+                elif info.PBs[info.Map.name] < info.HP:
+                    info.PBs[info.Map.name] = info.HP
             info.FinalHP = info.HP
             info.reset()
             save()
@@ -1898,7 +1923,7 @@ def app():
                             n = 0
                             for tower in Towers.__subclasses__():
                                 if 40 + n * 80 + info.shopScroll <= my <= 70 + n * 80 + info.shopScroll <= 450 and info.coins >= tower.price and info.placing == '' and (
-                                        info.wave >= tower.req or cheats):
+                                        info.wave >= tower.req or info.sandboxMode):
                                     info.coins -= tower.price
                                     info.placing = tower.name
                                     info.selected = None
@@ -1913,7 +1938,7 @@ def app():
                                 n = (my - 485) // 30
                                 if info.selected.upgrades[n] < 3:
                                     cost = type(info.selected).upgradePrices[n][info.selected.upgrades[n]]
-                                    if info.coins >= cost and (info.wave >= info.selected.req or cheats):
+                                    if info.coins >= cost and (info.wave >= info.selected.req or info.sandboxMode):
                                         info.coins -= cost
                                         info.selected.upgrades[n] += 1
 
@@ -1933,7 +1958,7 @@ def app():
 
                     elif event.button == 5:
                         if mx > 800 and my < 450:
-                            maxScroll = len([tower for tower in Towers.__subclasses__() if (info.wave >= tower.req or cheats)]) * 80 - 450
+                            maxScroll = len([tower for tower in Towers.__subclasses__() if (info.wave >= tower.req or info.sandboxMode)]) * 80 - 450
                             if maxScroll > 0:
                                 info.shopScroll = max(-maxScroll, info.shopScroll - 10)
 
@@ -1942,7 +1967,7 @@ def app():
                 info.shopScroll = min(0, info.shopScroll + 10)
 
             elif pressed[pygame.K_DOWN]:
-                maxScroll = len([tower for tower in Towers.__subclasses__() if (info.wave >= tower.req or cheats)]) * 80 - 450
+                maxScroll = len([tower for tower in Towers.__subclasses__() if (info.wave >= tower.req or info.sandboxMode)]) * 80 - 450
                 if maxScroll > 0:
                     info.shopScroll = max(-maxScroll, info.shopScroll - 10)
 
@@ -2070,7 +2095,7 @@ defaults = {
     'towers': [],
     'HP': 100,
     'FinalHP': None,
-    'coins': 100000 if cheats else 50,
+    'coins': 50,
     'selected': None,
     'placing': '',
     'nextWave': 299,
@@ -2087,7 +2112,8 @@ defaults = {
         'pathColor': '(0, 0, 0)',
         'path': None,
         'field': None
-    }
+    },
+    'sandboxMode': False
 }
 LOCKED = 'LOCKED'
 
