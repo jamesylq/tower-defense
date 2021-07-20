@@ -1021,7 +1021,7 @@ class Enemy:
         if self.camo:
             pygame.draw.circle(screen, (0, 0, 0), (self.x, self.y), 20 if type(self.tier) is str else 10, 2)
 
-    def kill(self, *, spawnNew: bool = True, coinMultiplier: int = 1, ignoreBoss: bool = False, burn: bool = False, bossDamage: int = 1) -> Enemy:
+    def kill(self, *, spawnNew: bool = True, coinMultiplier: int = 1, ignoreBoss: bool = False, burn: bool = False, bossDamage: int = 1):
         if type(self.tier) is int or ignoreBoss:
             try:
                 info.enemies.remove(self)
