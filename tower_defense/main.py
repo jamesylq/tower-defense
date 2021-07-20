@@ -5,8 +5,8 @@ import random
 import math
 
 from _pickle import UnpicklingError
-from tower_defense import __version__
 from typing import overload, List, Tuple
+from tower_defense import __version__
 
 current_path = os.path.dirname(__file__)
 resource_path = os.path.join(current_path, 'resources')
@@ -174,6 +174,7 @@ class IceTower(Towers):
                 closest = getTarget(self)
                 info.projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, freezeDuration=self.freezeDuration))
                 self.timer = 0
+
             except AttributeError:
                 pass
         else:
@@ -290,6 +291,7 @@ class SpikeTower(Towers):
 
         if True in [s.visible for s in self.spikes.spikes]:
             self.spikes.moveSpikes()
+
         elif self.timer >= self.cooldown:
             for spike in self.spikes.spikes:
                 spike.visible = True
@@ -297,6 +299,7 @@ class SpikeTower(Towers):
                 spike.y = self.y
                 spike.ignore = []
             self.timer = 0
+
         else:
             self.timer += 1
 
@@ -342,6 +345,7 @@ class BombTower(Towers):
                         twin.move()
                     info.projectiles.append(twin)
                 self.timer = 0
+
             except AttributeError:
                 pass
         else:
@@ -384,6 +388,7 @@ class BananaFarm(Towers):
                     closest = getTarget(self)
                     info.projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y))
                     self.timer = 0
+
                 except AttributeError:
                     pass
             else:
@@ -427,6 +432,7 @@ class Bowler(Towers):
                 for direction in ['left', 'right', 'up', 'down']:
                     info.piercingProjectiles.append(PiercingProjectile(self, self.x, self.y, self.pierce, direction))
                 self.timer = 0
+
             except AttributeError:
                 pass
         else:
@@ -441,7 +447,6 @@ class Wizard(Towers):
     class LightningBolt:
         def __init__(self, parent):
             self.parent = parent
-            self.pos = [self.parent.x, self.parent.y]
             self.t1 = None
             self.t2 = None
             self.t3 = None
@@ -451,7 +456,7 @@ class Wizard(Towers):
 
         def attack(self):
             self.visibleTicks = 50
-            self.t1 = getTarget(Towers(self.pos[0], self.pos[1], overrideCamoDetect=self.parent.upgrades[1] >= 2), overrideRange=1000)
+            self.t1 = getTarget(Towers(self.parent.x, self.parent.y, overrideCamoDetect=self.parent.upgrades[1] >= 2), overrideRange=1000)
             if type(self.t1) is Enemy:
                 self.t1.kill(coinMultiplier=getCoinMultiplier(self.parent), bossDamage=25)
                 self.parent.hits += 1
@@ -505,7 +510,7 @@ class Wizard(Towers):
                 self.visibleTicks -= 1
 
                 if self.t1 is not None:
-                    pygame.draw.line(screen, (191, 0, 255), self.pos, [self.t1.x, self.t1.y], 3)
+                    pygame.draw.line(screen, (191, 0, 255), [self.parent.x, self.parent.y], [self.t1.x, self.t1.y], 3)
                     if self.t2 is not None:
                         pygame.draw.line(screen, (191, 0, 255), [self.t1.x, self.t1.y], [self.t2.x, self.t2.y], 3)
                         if self.t3 is not None:
@@ -661,7 +666,7 @@ class Village(Towers):
             if closest is None:
                 self.parent.timer = 100
             else:
-                info.projectiles.append(Projectile(self.parent, self.x, self.y, closest.x, closest.y))
+                info.projectiles.append(Projectile(self.parent, self.x, self.y, closest.x, closest.y, explosiveRadius=30 if self.parent.upgrades[0] >= 2 else 0))
 
         def draw(self):
             pygame.draw.circle(screen, (184, 134, 69), (self.x, self.y), 10)
@@ -685,8 +690,10 @@ class Village(Towers):
                             self.target = closest
                             self.moveCooldown = 0
                             self.parent.targets = [villager.target for villager in self.parent.villagers]
+
                     elif getTarget(Towers(self.x, self.y), overrideRange=self.parent.range) is None or (self.x - self.parent.x) ** 2 + (self.y - self.parent.y) ** 2 < 625:
                         self.moveCooldown += 1
+
                 else:
                     dx, dy = abs(self.x - self.tx), abs(self.y - self.ty)
                     try:
@@ -701,6 +708,7 @@ class Village(Towers):
                     else:
                         self.x += self.dx
                         self.y += self.dy
+
             else:
                 self.x += self.dx
                 self.y += self.dy
@@ -723,7 +731,7 @@ class Village(Towers):
         [50, 75, 100]
     ]
     upgradeNames = [
-        ['Anti-Camo', 'Powerful Villagers', 'Turret Villagers'],
+        ['Anti-Camo', 'Bomber Villagers', 'Turret Villagers'],
         ['Longer Range', 'Extreme Range', 'Ultra Range'],
         ['Two Villagers', 'Three Villagers', 'Four Villagers']
     ]
@@ -749,14 +757,14 @@ class Village(Towers):
                 villager.timer += 1
 
     def update(self):
-        self.cooldown = [50, 50, 40, 27][self.upgrades[0]]
+        self.cooldown = [50, 50, 50, 20][self.upgrades[0]]
         self.range = [100, 125, 150, 175][self.upgrades[1]]
         self.targets = [villager.target for villager in self.villagers]
 
         for villager in self.villagers:
             villager.move()
 
-        if len(self.villagers) < self.upgrades[2]:
+        if len(self.villagers) <= self.upgrades[2]:
             self.villagers.append(self.Villager(self))
 
 
@@ -819,6 +827,7 @@ class Projectile:
                 if self.fireTicks > 0:
                     enemy.fireTicks = self.fireTicks
                     enemy.fireIgnitedBy = self.parent
+
                 enemy.kill(coinMultiplier=getCoinMultiplier(self.parent))
                 self.parent.hits += 1
                 info.statistics['pops'] += 1
@@ -866,14 +875,15 @@ class Enemy:
         self.lineIndex = lineIndex
         self.totalMovement = 0
         self.freezeTimer = 0
-        if self.tier in trueHP.keys():
-            self.HP = self.MaxHP = trueHP[self.tier]
-        else:
-            self.HP = self.MaxHP = 1
         self.fireTicks = 0
         self.fireIgnitedBy = None
         self.timer = 0
         self.camo = camo
+
+        if self.tier in trueHP.keys():
+            self.HP = self.MaxHP = trueHP[self.tier]
+        else:
+            self.HP = self.MaxHP = 1
 
     def move(self):
         if self.timer > 0:
@@ -951,6 +961,7 @@ class Enemy:
                                 new = new.kill(coinMultiplier=projectile.coinMultiplier, bossDamage=projectile.bossDamage)
                                 projectile.parent.hits += 1
                                 info.statistics['pops'] += 1
+
                     if self.tier not in onlyExplosiveTiers:
                         new = self
                         for n in range(projectile.impactDamage):
@@ -1010,7 +1021,7 @@ class Enemy:
         if self.camo:
             pygame.draw.circle(screen, (0, 0, 0), (self.x, self.y), 20 if type(self.tier) is str else 10, 2)
 
-    def kill(self, *, spawnNew: bool = True, coinMultiplier: int = 1, ignoreBoss: bool = False, burn: bool = False, bossDamage: int = 1):
+    def kill(self, *, spawnNew: bool = True, coinMultiplier: int = 1, ignoreBoss: bool = False, burn: bool = False, bossDamage: int = 1) -> Enemy:
         if type(self.tier) is int or ignoreBoss:
             try:
                 info.enemies.remove(self)
@@ -1020,8 +1031,10 @@ class Enemy:
             if spawnNew:
                 if self.tier == 0:
                     info.coins += 3 * coinMultiplier
+
                 elif self.tier in bossCoins.keys():
                     info.coins += bossCoins[self.tier]
+
                 else:
                     new = Enemy(self.camo, self.tier - 1, (self.x, self.y), self.lineIndex)
                     new.fireTicks = self.fireTicks
@@ -1157,14 +1170,18 @@ def hexToRGB(hexString: str) -> Tuple[int]:
 
     if len(hexString) == 6:
         r, g, b = hexString[:2], hexString[2:4], hexString[4:]
+
     elif len(hexString) == 5:
         r, g, b = hexString[0], hexString[1:3], hexString[3:]
+
     else:
         r = '0'
         if len(hexString) == 4:
             g, b = hexString[:2], hexString[2:]
+
         elif len(hexString) == 3:
             g, b = hexString[0], hexString[1:]
+
         else:
             g, b = '0', hexString
 
@@ -1431,6 +1448,7 @@ def app():
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     quit()
+
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if event.button == 1:
                         if 375 < my < 425:
@@ -1532,6 +1550,7 @@ def app():
                     info.PBs[info.Map.name] = info.HP
                 elif info.PBs[info.Map.name] < info.HP:
                     info.PBs[info.Map.name] = info.HP
+
             info.FinalHP = info.HP
             info.reset()
             save()
@@ -1541,8 +1560,10 @@ def app():
                 centredBlit(largeFont, 'You Win!', (255, 255, 255), (500, 125))
                 centredBlit(font, f'Your Final Score: {info.FinalHP}', (255, 255, 255), (500, 250))
                 centredBlit(font, f'Press [SPACE] to continue!', (255, 255, 255), (500, 280))
+
                 if info.sandboxMode:
                     centredBlit(font, 'You were playing on Sandbox Mode!', (255, 255, 255), (500, 350))
+
                 pygame.display.update()
 
                 for event in pygame.event.get():
@@ -1574,6 +1595,7 @@ def app():
                         if event.key == pygame.K_SPACE:
                             info.status = 'mapSelect'
                             cont = True
+
                     elif event.type == pygame.QUIT:
                         save()
                         quit()
@@ -1733,6 +1755,7 @@ def app():
                                                 info.mapMakerData[field] += (letter.upper() if uppercase else letter.lower())
                                             else:
                                                 info.mapMakerData[field] = info.mapMakerData[field][:charInsertIndex] + (letter.upper() if uppercase else letter.lower()) + info.mapMakerData[field][charInsertIndex:]
+
                                             charInsertIndex += 1
 
                         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -1786,6 +1809,7 @@ def app():
                                 info.mapMakerData[field] = info.mapMakerData[field][:charInsertIndex-1] + info.mapMakerData[field][charInsertIndex:]
 
                             charInsertIndex = max(0, charInsertIndex - 1)
+
                         except (IndexError, KeyError):
                             pass
 
@@ -1832,6 +1856,7 @@ def app():
 
                     for i in range(len(info.mapMakerData['path']) - 1):
                         pygame.draw.line(screen, info.mapMakerData['pathColor'], info.mapMakerData['path'][i], info.mapMakerData['path'][i + 1], 10)
+
                     if info.mapMakerData['path']:
                         pygame.draw.circle(screen, info.mapMakerData['pathColor'], info.mapMakerData['path'][0], 10)
 
@@ -1889,6 +1914,7 @@ def app():
                     info.enemies.append(Enemy(True if info.spawnleft[0] == '1' else False, info.spawnleft[1], info.Map.path[0], 0))
                 else:
                     info.enemies.append(Enemy(True if info.spawnleft[0] == '1' else False, int(info.spawnleft[1]), info.Map.path[0], 0))
+
                 info.spawnleft = info.spawnleft[2:]
                 info.spawndelay = 20
             else:
@@ -1911,6 +1937,7 @@ def app():
                     if info.nextWave == 300:
                         info.wave += 1
                         info.statistics['wavesPlayed'] += 1
+
                     info.nextWave -= 1
 
             mx, my = pygame.mouse.get_pos()
