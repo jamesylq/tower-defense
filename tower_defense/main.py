@@ -34,7 +34,7 @@ class data:
 
     def reset(self):
         for attr, default in defaults.items():
-            if attr in ['PBs', 'FinalHP', 'totalWaves', 'status', 'sandboxMode', 'Map']:
+            if attr in ['PBs', 'FinalHP', 'totalWaves', 'status', 'sandboxMode', 'Map', 'statistics']:
                 continue
 
             if type(default) in [dict, list]:
@@ -231,6 +231,7 @@ class SpikeTower(Towers):
                         new = new.kill(coinMultiplier=getCoinMultiplier(self.parent))
                     self.ignore.append(new if type(enemy.tier) is int else enemy)
                     self.parent.hits += 1
+                    info.statistics['pops'] += 1
 
         def draw(self):
             if not self.visible:
@@ -348,7 +349,7 @@ class BombTower(Towers):
 
     def update(self):
         self.range = [50, 100, 150, 200][self.upgrades[0]]
-        self.cooldown = [200, 145, 75, 75][self.upgrades[1]]
+        self.cooldown = [100, 50, 25, 25][self.upgrades[1]]
 
 
 class BananaFarm(Towers):
@@ -454,22 +455,28 @@ class Wizard(Towers):
             if type(self.t1) is Enemy:
                 self.t1.kill(coinMultiplier=getCoinMultiplier(self.parent), bossDamage=25)
                 self.parent.hits += 1
+                info.statistics['pops'] += 1
                 self.t2 = getTarget(Towers(self.t1.x, self.t1.y, overrideCamoDetect=self.parent.upgrades[1] >= 2), ignore=[self.t1], overrideRange=1000)
                 if type(self.t2) is Enemy:
                     self.t2.kill(coinMultiplier=getCoinMultiplier(self.parent), bossDamage=25)
                     self.parent.hits += 1
+                    info.statistics['pops'] += 1
                     self.t3 = getTarget(Towers(self.t2.x, self.t2.y, overrideCamoDetect=self.parent.upgrades[1] >= 2), ignore=[self.t1, self.t2], overrideRange=1000)
                     if type(self.t3) is Enemy:
                         self.t3.kill(coinMultiplier=getCoinMultiplier(self.parent), bossDamage=25)
                         self.parent.hits += 1
+                        info.statistics['pops'] += 1
                         if self.parent.upgrades[1] == 3:
                             self.t4 = getTarget(Towers(self.t3.x, self.t3.y, overrideCamoDetect=self.parent.upgrades[1] >= 2), ignore=[self.t1, self.t2, self.t3], overrideRange=1000)
                             if type(self.t4) is Enemy:
                                 self.t4.kill(coinMultiplier=getCoinMultiplier(self.parent), bossDamage=25)
                                 self.parent.hits += 1
+                                info.statistics['pops'] += 1
                                 self.t5 = getTarget(Towers(self.t4.x, self.t4.y, overrideCamoDetect=self.parent.upgrades[1] >= 2), ignore=[self.t1, self.t2, self.t3, self.t4], overrideRange=1000)
                                 if type(self.t5) is Enemy:
                                     self.t5.kill(coinMultiplier=getCoinMultiplier(self.parent), bossDamage=25)
+                                    self.parent.hits += 1
+                                    info.statistics['pops'] += 1
                             else:
                                 self.t5 = None
                         else:
@@ -814,6 +821,7 @@ class Projectile:
                     enemy.fireIgnitedBy = self.parent
                 enemy.kill(coinMultiplier=getCoinMultiplier(self.parent))
                 self.parent.hits += 1
+                info.statistics['pops'] += 1
 
 
 class PiercingProjectile:
@@ -882,6 +890,7 @@ class Enemy:
         else:
             if len(info.Map.path) - 1 == self.lineIndex:
                 self.kill(spawnNew=False, ignoreBoss=True)
+                info.statistics['enemiesMissed'] += 1
                 info.HP -= damages[str(self.tier)]
             else:
                 current = info.Map.path[self.lineIndex]
@@ -905,6 +914,7 @@ class Enemy:
                         self.lineIndex += 1
                 else:
                     self.kill(spawnNew=False, ignoreBoss=True)
+                    info.statistics['enemiesMissed'] += 1
 
                 self.totalMovement += 1
 
@@ -918,6 +928,7 @@ class Enemy:
             if self.fireTicks % 100 == 0:
                 new = self.kill(burn=True)
                 self.fireIgnitedBy.hits += 1
+                info.statistics['pops'] += 1
                 if new is not None:
                     new.fireTicks -= 1
                 else:
@@ -939,11 +950,13 @@ class Enemy:
                             for n in range(projectile.impactDamage):
                                 new = new.kill(coinMultiplier=projectile.coinMultiplier, bossDamage=projectile.bossDamage)
                                 projectile.parent.hits += 1
+                                info.statistics['pops'] += 1
                     if self.tier not in onlyExplosiveTiers:
                         new = self
                         for n in range(projectile.impactDamage):
                             new = new.kill(coinMultiplier=projectile.coinMultiplier, bossDamage=projectile.bossDamage)
                             projectile.parent.hits += 1
+                            info.statistics['pops'] += 1
 
                             if new is None:
                                 break
@@ -963,6 +976,7 @@ class Enemy:
                         for n in range(damage):
                             new = new.kill(coinMultiplier=projectile.coinMultiplier)
                             projectile.parent.hits += 1
+                            info.statistics['pops'] += 1
 
                             if new is None:
                                 break
@@ -1013,13 +1027,21 @@ class Enemy:
                     new.fireTicks = self.fireTicks
                     new.fireIgnitedBy = self.fireIgnitedBy
                     info.enemies.append(new)
+
                     return new
+
+            else:
+                info.statistics['enemiesKilled'] += 1
+
         elif type(self.tier) is str:
             self.HP -= 10 if burn else bossDamage
             if self.HP <= 0:
                 self.kill(spawnNew=spawnNew, coinMultiplier=coinMultiplier, ignoreBoss=True)
+
                 try:
                     self.fireIgnitedBy.hits += 1
+                    info.statistics['pops'] += 1
+                    info.statistics['enemiesKilled'] += 1
                 except AttributeError:
                     pass
 
@@ -1028,11 +1050,11 @@ def reset() -> None:
     try:
         open('save.txt', 'r').close()
     except FileNotFoundError:
-        print('Fatal: No save file detected')
+        print('tower-defense.core: No save file detected')
     else:
         with open('save.txt', 'w') as saveFile:
             saveFile.write('')
-        print('Success! Save file cleared')
+        print('tower-defense.core: Save file cleared!')
 
 
 @overload
@@ -1380,7 +1402,7 @@ def load() -> None:
 def app():
     load()
 
-    if info.Map is not None and info.status not in ['win', 'lose']:
+    if info.Map is not None and info.status == 'game':
         cont = False
 
         while True:
@@ -1878,14 +1900,17 @@ def app():
                         info.spawnleft = waves[info.wave]
                     except IndexError:
                         info.status = 'win'
-                    info.spawndelay = 20
-                    info.nextWave = 300
+                        info.statistics['wins'] += 1
+                    finally:
+                        info.spawndelay = 20
+                        info.nextWave = 300
                 else:
                     if info.nextWave == 279 and info.wave > 0:
                         info.coins += 100
 
                     if info.nextWave == 300:
                         info.wave += 1
+                        info.statistics['wavesPlayed'] += 1
                     info.nextWave -= 1
 
             mx, my = pygame.mouse.get_pos()
@@ -1898,6 +1923,7 @@ def app():
 
             if info.HP <= 0:
                 info.status = 'lose'
+                info.statistics['losses'] += 1
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -1911,6 +1937,7 @@ def app():
                                 if towerType.name == info.placing:
                                     info.placing = ''
                                     info.towers.append(towerType(mx, my))
+                                    info.statistics['towersPlaced'] += 1
 
                             found = False
                             for tower in info.towers:
@@ -1947,6 +1974,7 @@ def app():
                             elif 620 <= mx < 820 and 545 <= my < 570:
                                 info.towers.remove(info.selected)
                                 info.coins += getSellPrice(info.selected)
+                                info.statistics['towersSold'] += 1
                                 info.selected = None
 
 
@@ -1992,7 +2020,7 @@ RACE_TRACK = Map([[25, 0], [25, 375], [775, 375], [775, 25], [40, 25], [40, 360]
 WIZARDS_LAIR = Map([[0, 25], [775, 25], [775, 425], [25, 425], [25, 75], [725, 75], [725, 375], [0, 375]], "Wizard's Lair", (187, 11, 255), (153, 153, 153))
 POND = Map([[0, 25], [700, 25], [700, 375], [100, 375], [100, 75], [800, 75]], "Pond", (6, 50, 98), (0, 0, 255))
 LAVA_SPIRAL = Map([[300, 225], [575, 225], [575, 325], [125, 325], [125, 125], [675, 125], [675, 425], [25, 425], [25, 0]], "Lava Spiral", (207, 16, 32), (255, 140, 0), (178, 66, 0))
-PLAINS = Map([[25, 0], [25, 375], [500, 375], [500, 25], [350, 25], [350, 175], [750, 175], [750, 0]], "Plains", (19, 109, 21), (155, 118, 83))
+PLAINS = Map([[25, 0], [25, 425], [525, 425], [525, 25], [275, 25], [275, 275], [750, 275], [750, 0]], "Plains", (19, 109, 21), (155, 118, 83))
 DESERT = Map([[0, 25], [750, 25], [750, 200], [25, 200], [25, 375], [800, 375]], "Desert", (170, 108, 35), (178, 151, 5))
 THE_END = Map([[0, 225], [800, 225]], "The End", (100, 100, 100), (200, 200, 200))
 Maps = [RACE_TRACK, WIZARDS_LAIR, POND, LAVA_SPIRAL, PLAINS, DESERT, THE_END]
@@ -2115,7 +2143,17 @@ defaults = {
         'path': None,
         'field': None
     },
-    'sandboxMode': False
+    'sandboxMode': False,
+    'statistics': {
+        'pops': 0,
+        'towersPlaced': 0,
+        'towersSold': 0,
+        'enemiesKilled': 0,
+        'enemiesMissed': 0,
+        'wavesPlayed': 0,
+        'wins': 0,
+        'losses': 0
+    }
 }
 LOCKED = 'LOCKED'
 
