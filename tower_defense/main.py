@@ -230,6 +230,7 @@ class SpikeTower(Towers):
                     new = enemy.kill(coinMultiplier=getCoinMultiplier(self.parent))
                     if self.parent.upgrades[2] >= 1 and new is not None:
                         new = new.kill(coinMultiplier=getCoinMultiplier(self.parent))
+                        info.statistics['pops'] += 1
                     self.ignore.append(new if type(enemy.tier) is int else enemy)
                     self.parent.hits += 1
                     info.statistics['pops'] += 1
@@ -1043,9 +1044,6 @@ class Enemy:
 
                     return new
 
-            else:
-                info.statistics['enemiesKilled'] += 1
-
         elif type(self.tier) is str:
             self.HP -= 10 if burn else bossDamage
             if self.HP <= 0:
@@ -1054,7 +1052,6 @@ class Enemy:
                 try:
                     self.fireIgnitedBy.hits += 1
                     info.statistics['pops'] += 1
-                    info.statistics['enemiesKilled'] += 1
                 except AttributeError:
                     pass
 
@@ -1388,6 +1385,7 @@ def load() -> None:
                 setattr(info, attr, default)
 
         info.PBs = updateDict(info.PBs, [Map.name for Map in Maps])
+        info.statistics['wins'] = updateDict(info.statistics['wins'], [Map.name for Map in Maps])
 
         foundUnlocked = False
         for Map in Maps:
@@ -1485,6 +1483,13 @@ def app():
                 else:
                     pygame.draw.rect(screen, (0, 0, 0), (200, 550, 200, 30), 3)
 
+            pygame.draw.rect(screen, (200, 200, 200), (675, 550, 125, 30))
+            centredBlit(font, 'Stats', (0, 0, 0), (737, 565))
+            if 675 <= mx <= 800 and 550 < my <= 580:
+                pygame.draw.rect(screen, (128, 128, 128), (675, 550, 125, 30), 5)
+            else:
+                pygame.draw.rect(screen, (0, 0, 0), (675, 550, 125, 30), 3)
+
             pygame.draw.rect(screen, (200, 200, 200), (850, 550, 125, 30))
             centredBlit(font, 'Random Map', (0, 0, 0), (912, 565))
             if 850 <= mx <= 975 and 550 < my <= 580:
@@ -1529,6 +1534,9 @@ def app():
 
                         if 25 <= mx <= 150 and 550 <= my <= 580:
                             info.status = 'mapMaker'
+
+                        if 675 <= mx <= 800 and 550 < my <= 580:
+                            info.status = 'statistics'
 
                         if 200 <= mx <= 400 and 550 <= my <= 580:
                             if hasAllMaxScore():
@@ -1924,12 +1932,19 @@ def app():
                 if info.nextWave <= 0:
                     try:
                         info.spawnleft = waves[info.wave]
+
                     except IndexError:
                         info.status = 'win'
-                        info.statistics['wins'] += 1
+
+                        try:
+                            info.statistics['wins'][info.Map.name] += 1
+                        except KeyError:
+                            info.statistics['wins'][info.Map.name] = 1
+
                     finally:
                         info.spawndelay = 20
                         info.nextWave = 300
+
                 else:
                     if info.nextWave == 279 and info.wave > 0:
                         info.coins += 100
@@ -2027,6 +2042,68 @@ def app():
                 maxScroll = len([tower for tower in Towers.__subclasses__() if (info.wave >= tower.req or info.sandboxMode)]) * 80 - 450
                 if maxScroll > 0:
                     info.shopScroll = max(-maxScroll, info.shopScroll - 10)
+
+        elif info.status == 'statistics':
+            scroll = 0
+
+            while True:
+                mx, my = pygame.mouse.get_pos()
+
+                screen.fill((200, 200, 200))
+
+                centredBlit(mediumFont, 'General Statistics', (0, 0, 0), (500, 20 - scroll))
+                screen.blit(font.render(f'Total Pops: {info.statistics["pops"]}', True, (0, 0, 0)), (20, 70 - scroll))
+                screen.blit(font.render(f'Towers Placed: {info.statistics["towersPlaced"]}', True, (0, 0, 0)), (20, 100 - scroll))
+                screen.blit(font.render(f'Towers Sold: {info.statistics["towersSold"]}', True, (0, 0, 0)), (20, 130 - scroll))
+                screen.blit(font.render(f'Enemies Missed: {info.statistics["enemiesMissed"]}', True, (0, 0, 0)), (20, 160 - scroll))
+
+                centredBlit(mediumFont, 'Wins and Losses', (0, 0, 0), (500, 210 - scroll))
+
+                screen.blit(font.render(f'Total Losses: {info.statistics["losses"]}', True, (0, 0, 0)), (20, 290 - scroll))
+
+                numMaps = 0
+                totalWins = 0
+                for mapName, wins in info.statistics['wins'].items():
+                    numMaps += 1
+                    totalWins += wins
+
+                    screen.blit(font.render(f'{mapName}: {wins} ' + ('win' if wins == 1 else 'wins'), True, (0, 0, 0)), (20, 360 + 30 * numMaps - scroll))
+
+                screen.blit(font.render(f'Total Wins: {totalWins}', True, (0, 0, 0)), (20, 260 - scroll))
+                if totalWins > 0:
+                    centredBlit(mediumFont, 'Wins by map', (0, 0, 0), (500, 340 - scroll))
+
+                pygame.draw.rect(screen, (200, 200, 200), (0, 525, 1000, 75))
+
+                pygame.draw.rect(screen, (255, 0, 0), (25, 550, 100, 30))
+                centredBlit(font, 'Close', (0, 0, 0), (75, 565))
+                if 25 <= mx <= 125 and 550 <= my <= 580:
+                    pygame.draw.rect(screen, (0, 0, 0), (25, 550, 100, 30), 3)
+                else:
+                    pygame.draw.rect(screen, (128, 128, 128), (25, 550, 100, 30), 3)
+
+                cont = True
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        save()
+                        quit()
+
+                    elif event.type == pygame.MOUSEBUTTONDOWN:
+                        if event.button == 1:
+                            if 25 <= mx <= 125 and 550 <= my <= 580:
+                                cont = False
+                                info.status = 'mapSelect'
+
+                        elif event.button == 4:
+                            scroll = max(0, scroll - 10)
+
+                        elif event.button == 5:
+                            scroll = min(scroll + 10, max(30 * numMaps - 85, 0))
+
+                if not cont:
+                    break
+
+                pygame.display.update()
 
 
 screen = pygame.display.set_mode((1000, 600))
@@ -2175,10 +2252,9 @@ defaults = {
         'pops': 0,
         'towersPlaced': 0,
         'towersSold': 0,
-        'enemiesKilled': 0,
         'enemiesMissed': 0,
         'wavesPlayed': 0,
-        'wins': 0,
+        'wins': {},
         'losses': 0
     }
 }
