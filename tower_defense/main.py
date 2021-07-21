@@ -1385,7 +1385,6 @@ def load() -> None:
                 setattr(info, attr, default)
 
         info.PBs = updateDict(info.PBs, [Map.name for Map in Maps])
-        info.statistics['wins'] = updateDict(info.statistics['wins'], [Map.name for Map in Maps])
 
         foundUnlocked = False
         for Map in Maps:
@@ -1537,6 +1536,7 @@ def app():
 
                         if 675 <= mx <= 800 and 550 < my <= 580:
                             info.status = 'statistics'
+                            info.statistics['wins'] = updateDict(info.statistics['wins'], [Map.name for Map in Maps])
 
                         if 200 <= mx <= 400 and 550 <= my <= 580:
                             if hasAllMaxScore():
