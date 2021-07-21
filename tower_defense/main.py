@@ -1929,9 +1929,14 @@ def app():
                 info.spawndelay -= 1
 
             if len(info.enemies) == 0:
+                if len(info.spawnleft) == 0 and info.ticksSinceNoEnemies == 0:
+                    info.coins += 100
+                    info.ticksSinceNoEnemies += 1
+
                 if info.nextWave <= 0:
                     try:
                         info.spawnleft = waves[info.wave]
+                        info.ticksSinceNoEnemies = 0
 
                     except IndexError:
                         info.status = 'win'
@@ -1946,9 +1951,6 @@ def app():
                         info.nextWave = 300
 
                 else:
-                    if info.nextWave == 279 and info.wave > 0:
-                        info.coins += 100
-
                     if info.nextWave == 300:
                         info.wave += 1
                         info.statistics['wavesPlayed'] += 1
@@ -2256,7 +2258,8 @@ defaults = {
         'wavesPlayed': 0,
         'wins': {},
         'losses': 0
-    }
+    },
+    'ticksSinceNoEnemies': 0
 }
 LOCKED = 'LOCKED'
 
