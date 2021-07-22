@@ -1384,6 +1384,12 @@ def load() -> None:
             if not hasattr(info, attr):
                 setattr(info, attr, default)
 
+        for attr, default in defaults['statistics'].items():
+            try:
+                info.statistics[attr]
+            except KeyError:
+                info.statistics[attr] = default
+
         info.PBs = updateDict(info.PBs, [Map.name for Map in Maps])
 
         foundUnlocked = False
@@ -1995,11 +2001,11 @@ def app():
                         if 810 <= mx <= 910:
                             n = 0
                             for tower in Towers.__subclasses__():
-                                if 40 + n * 80 + info.shopScroll <= my <= 70 + n * 80 + info.shopScroll <= 450 and info.coins >= tower.price and info.placing == '' and (
-                                        info.wave >= tower.req or info.sandboxMode):
+                                if 40 + n * 80 + info.shopScroll <= my <= 70 + n * 80 + info.shopScroll <= 450 and info.coins >= tower.price and info.placing == '' and (info.wave >= tower.req or info.sandboxMode):
                                     info.coins -= tower.price
                                     info.placing = tower.name
                                     info.selected = None
+                                    info.statistics['coinsSpent'] += tower.price
                                 n += 1
 
                         if mx <= 20 and 450 <= my <= 470:
@@ -2013,6 +2019,7 @@ def app():
                                     cost = type(info.selected).upgradePrices[n][info.selected.upgrades[n]]
                                     if info.coins >= cost and (info.wave >= info.selected.req or info.sandboxMode):
                                         info.coins -= cost
+                                        info.statistics['coinsSpent'] += cost
                                         info.selected.upgrades[n] += 1
 
                             elif 620 <= mx < 820 and 545 <= my < 570:
@@ -2058,10 +2065,11 @@ def app():
                 screen.blit(font.render(f'Towers Placed: {info.statistics["towersPlaced"]}', True, (0, 0, 0)), (20, 100 - scroll))
                 screen.blit(font.render(f'Towers Sold: {info.statistics["towersSold"]}', True, (0, 0, 0)), (20, 130 - scroll))
                 screen.blit(font.render(f'Enemies Missed: {info.statistics["enemiesMissed"]}', True, (0, 0, 0)), (20, 160 - scroll))
+                screen.blit(font.render(f'Coins Spent: {info.statistics["coinsSpent"]}', True, (0, 0, 0)), (20, 190 - scroll))
 
-                centredBlit(mediumFont, 'Wins and Losses', (0, 0, 0), (500, 210 - scroll))
+                centredBlit(mediumFont, 'Wins and Losses', (0, 0, 0), (500, 240 - scroll))
 
-                screen.blit(font.render(f'Total Losses: {info.statistics["losses"]}', True, (0, 0, 0)), (20, 290 - scroll))
+                screen.blit(font.render(f'Total Losses: {info.statistics["losses"]}', True, (0, 0, 0)), (20, 320 - scroll))
 
                 numMaps = 0
                 totalWins = 0
@@ -2069,11 +2077,11 @@ def app():
                     numMaps += 1
                     totalWins += wins
 
-                    screen.blit(font.render(f'{mapName}: {wins} ' + ('win' if wins == 1 else 'wins'), True, (0, 0, 0)), (20, 360 + 30 * numMaps - scroll))
+                    screen.blit(font.render(f'{mapName}: {wins} ' + ('win' if wins == 1 else 'wins'), True, (0, 0, 0)), (20, 390 + 30 * numMaps - scroll))
 
-                screen.blit(font.render(f'Total Wins: {totalWins}', True, (0, 0, 0)), (20, 260 - scroll))
+                screen.blit(font.render(f'Total Wins: {totalWins}', True, (0, 0, 0)), (20, 290 - scroll))
                 if totalWins > 0:
-                    centredBlit(mediumFont, 'Wins by map', (0, 0, 0), (500, 340 - scroll))
+                    centredBlit(mediumFont, 'Wins by map', (0, 0, 0), (500, 370 - scroll))
 
                 pygame.draw.rect(screen, (200, 200, 200), (0, 525, 1000, 75))
 
@@ -2257,7 +2265,8 @@ defaults = {
         'enemiesMissed': 0,
         'wavesPlayed': 0,
         'wins': {},
-        'losses': 0
+        'losses': 0,
+        'coinsSpent': 0
     },
     'ticksSinceNoEnemies': 0
 }
