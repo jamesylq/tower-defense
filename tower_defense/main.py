@@ -1244,6 +1244,12 @@ def draw():
             pygame.draw.line(screen, 0, (800, 80 * n + info.shopScroll), (1000, 80 * n + info.shopScroll), 3)
             pygame.draw.rect(screen, (136, 136, 136), (810, 40 + 80 * n + info.shopScroll, 100, 30))
             screen.blit(font.render('Buy New', True, 0), (820, 42 + 80 * n + info.shopScroll))
+
+            if 810 <= mx <= 910 and 40 + 80 * n + info.shopScroll <= my <= 70 + 80 * n + info.shopScroll:
+                pygame.draw.rect(screen, (128, 128, 128), (810, 40 + 80 * n + info.shopScroll, 100, 30), 3)
+            else:
+                pygame.draw.rect(screen, (0, 0, 0), (810, 40 + 80 * n + info.shopScroll, 100, 30), 3)
+
         n += 1
 
     pygame.draw.rect(screen, (170, 170, 170), (0, 450, 1000, 150))
@@ -1266,18 +1272,24 @@ def draw():
         screen.blit(font.render(f'Pops: {info.selected.hits}', True, 0), (200, 460))
 
         for n in range(3):
+            if 295 <= mx <= 595 and 485 + 30 * n <= my <= 515 + 30 * n:
+                pygame.draw.rect(screen, (200, 200, 200), (295, 485 + 30 * n, 300, 30))
+            else:
+                pygame.draw.rect(screen, (128, 128, 128), (295, 485 + 30 * n, 300, 30))
+
             if info.selected.upgrades[n] == 3:
                 pygame.draw.rect(screen, (255, 255, 191), (295, 485 + 30 * n, 300, 30))
-                pygame.draw.rect(screen, (128, 128, 128), (295, 485 + 30 * n, 300, 30), 5)
+                pygame.draw.rect(screen, (0, 0, 0), (295, 485 + 30 * n, 300, 30), 3)
                 centredBlit(font, 'MAX', (0, 0, 0), (445, 500 + 30 * n))
             else:
-                pygame.draw.rect(screen, (128, 128, 128), (295, 485 + 30 * n, 300, 30), 5)
+                pygame.draw.rect(screen, (0, 0, 0), (295, 485 + 30 * n, 300, 30), 3)
 
                 nameWithSpace = ''
                 for m in range(18):
                     nameWithSpace += info.selected.upgradeNames[n][info.selected.upgrades[n]][m] if m < len(info.selected.upgradeNames[n][info.selected.upgrades[n]]) else ' '
 
                 screen.blit(font.render(f'{nameWithSpace} [${info.selected.upgradePrices[n][info.selected.upgrades[n]]}]', True, (32, 32, 32)), (300, 485 + n * 30))
+
             for m in range(3):
                 if info.selected.upgrades[n] > m:
                     pygame.draw.circle(screen, (0, 255, 0), (560 + 12 * m, 497 + 30 * n), 5)
@@ -1436,15 +1448,15 @@ def app():
             centredBlit(font, 'tower-defense might not be compatible with earlier versions.', (0, 0, 0), (500, 230))
             centredBlit(mediumFont, 'Yes', (0, 0, 0), (687, 400))
             centredBlit(mediumFont, 'No', (0, 0, 0), (313, 400))
-            pygame.draw.rect(screen, (128, 128, 128), (225, 375, 175, 50), 3)
-            pygame.draw.rect(screen, (128, 128, 128), (600, 375, 175, 50), 3)
+            pygame.draw.rect(screen, (0, 0, 0), (225, 375, 175, 50), 5)
+            pygame.draw.rect(screen, (0, 0, 0), (600, 375, 175, 50), 5)
 
             if 375 < my < 425:
                 if 225 < mx < 400:
-                    pygame.draw.rect(screen, (0, 0, 0), (225, 375, 175, 50), 5)
+                    pygame.draw.rect(screen, (128, 128, 128), (225, 375, 175, 50), 5)
 
                 if 600 < mx < 775:
-                    pygame.draw.rect(screen, (0, 0, 0), (600, 375, 175, 50), 5)
+                    pygame.draw.rect(screen, (128, 128, 128), (600, 375, 175, 50), 5)
 
             pygame.display.update()
 
@@ -1714,17 +1726,17 @@ def app():
                         centredBlit(font, 'Next Step', (0, 0, 0), (850, 465))
 
                         if 800 < mx < 900 and 450 < my < 480:
-                            pygame.draw.rect(screen, (32, 32, 32), (800, 450, 100, 30), 3)
-                        else:
                             pygame.draw.rect(screen, (128, 128, 128), (800, 450, 100, 30), 3)
+                        else:
+                            pygame.draw.rect(screen, (0, 0, 0), (800, 450, 100, 30), 3)
 
                     pygame.draw.rect(screen, (255, 0, 0), (30, 550, 100, 30))
                     centredBlit(font, 'Cancel', (0, 0, 0), (80, 565))
 
                     if 30 < mx < 130 and 550 < my < 580:
-                        pygame.draw.rect(screen, (32, 32, 32), (30, 550, 100, 30), 3)
-                    else:
                         pygame.draw.rect(screen, (128, 128, 128), (30, 550, 100, 30), 3)
+                    else:
+                        pygame.draw.rect(screen, (0, 0, 0), (30, 550, 100, 30), 3)
 
                     field = info.mapMakerData['field']
                     cont = True
@@ -1882,9 +1894,19 @@ def app():
                     pygame.draw.rect(screen, (100, 100, 100), (0, 570, 60, 30))
                     centredBlit(font, 'Clear', (0, 0, 0), (30, 585))
 
+                    if mx <= 60 and 570 <= my:
+                        pygame.draw.rect(screen, (128, 128, 128), (0, 570, 60, 30), 3)
+                    else:
+                        pygame.draw.rect(screen, (0, 0, 0), (0, 570, 60, 30), 3)
+
                     if len(info.mapMakerData['path']) >= 2:
                         pygame.draw.rect(screen, (44, 255, 44), (940, 570, 60, 30))
                         centredBlit(font, 'Done', (0, 0, 0), (970, 585))
+
+                        if mx >= 940 and my >= 570:
+                            pygame.draw.rect(screen, (128, 128, 128), (940, 570, 60, 30), 3)
+                        else:
+                            pygame.draw.rect(screen, (0, 0, 0), (940, 570, 60, 30), 3)
 
                     pygame.display.update()
 
@@ -2001,7 +2023,7 @@ def app():
                         if 810 <= mx <= 910:
                             n = 0
                             for tower in Towers.__subclasses__():
-                                if 40 + n * 80 + info.shopScroll <= my <= 70 + n * 80 + info.shopScroll <= 450 and info.coins >= tower.price and info.placing == '' and (info.wave >= tower.req or info.sandboxMode):
+                                if 40 + n * 80 + info.shopScroll <= my <= 70 + n * 80 + info.shopScroll and my <= 450 and info.coins >= tower.price and info.placing == '' and (info.wave >= tower.req or info.sandboxMode):
                                     info.coins -= tower.price
                                     info.placing = tower.name
                                     info.selected = None
@@ -2088,9 +2110,9 @@ def app():
                 pygame.draw.rect(screen, (255, 0, 0), (25, 550, 100, 30))
                 centredBlit(font, 'Close', (0, 0, 0), (75, 565))
                 if 25 <= mx <= 125 and 550 <= my <= 580:
-                    pygame.draw.rect(screen, (0, 0, 0), (25, 550, 100, 30), 3)
-                else:
                     pygame.draw.rect(screen, (128, 128, 128), (25, 550, 100, 30), 3)
+                else:
+                    pygame.draw.rect(screen, (0, 0, 0), (25, 550, 100, 30), 3)
 
                 cont = True
                 for event in pygame.event.get():
