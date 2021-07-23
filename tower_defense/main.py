@@ -1427,6 +1427,8 @@ def load() -> None:
 
     except FileNotFoundError:
         open('save.txt', 'w')
+    except AttributeError:
+        print(f'tower-defense.core: Fatal - There seems to be something wrong with your save-file.')
     except (EOFError, ValueError, UnpicklingError):
         pass
 
@@ -2146,6 +2148,7 @@ font = pygame.font.SysFont('Ubuntu Mono', 20)
 mediumFont = pygame.font.SysFont('Ubuntu Mono', 30)
 largeFont = pygame.font.SysFont('Ubuntu Mono', 75)
 pygame.display.set_caption('Tower Defense')
+pygame.display.set_icon(pygame.image.load(os.path.join(resource_path, 'icon.png')))
 
 screen.fill((200, 200, 200))
 centredBlit(largeFont, f'Tower Defense v{__version__}', (100, 100, 100), (500, 200))
