@@ -987,7 +987,7 @@ class Enemy:
 
         if self.tier not in onlyExplosiveTiers:
             for projectile in info.piercingProjectiles:
-                if abs(self.x - projectile.x) ** 2 + abs(self.y - projectile.y) ** 2 < 100:
+                if abs(self.x - projectile.x) ** 2 + abs(self.y - projectile.y) ** 2 < (400 if type(self.tier) is str else 100):
                     if (self not in projectile.ignore) and (not self.camo):
                         damage = 1
                         if type(projectile.parent) is Bowler:
@@ -1384,9 +1384,9 @@ def updateDict(d: dict, l: list) -> dict:
     return newDict
 
 
-def hasAllMaxScore() -> bool:
+def hasAllUnlocked() -> bool:
     for score in info.PBs.values():
-        if score != 100:
+        if score is None or score == LOCKED:
             return False
 
     return True
@@ -1436,7 +1436,7 @@ def load() -> None:
                     if type(PB) is int:
                         info.PBs[name] = None
 
-        if not hasAllMaxScore():
+        if not hasAllUnlocked():
             info.sandboxMode = False
 
     except FileNotFoundError:
@@ -1513,7 +1513,7 @@ def app():
             else:
                 pygame.draw.rect(screen, (0, 0, 0), (25, 550, 125, 30), 3)
 
-            if hasAllMaxScore():
+            if hasAllUnlocked():
                 pygame.draw.rect(screen, (0, 225, 0) if info.sandboxMode else (255, 0, 0), (200, 550, 200, 30))
                 centredBlit(font, 'Sandbox Mode: ' + ('ON' if info.sandboxMode else 'OFF'), (0, 0, 0), (300, 565))
                 if 200 <= mx <= 400 and 550 <= my <= 580:
@@ -1578,7 +1578,7 @@ def app():
                             info.statistics['wins'] = updateDict(info.statistics['wins'], [Map.name for Map in Maps])
 
                         if 200 <= mx <= 400 and 550 <= my <= 580:
-                            if hasAllMaxScore():
+                            if hasAllUnlocked():
                                 info.sandboxMode = not info.sandboxMode
 
         elif info.status == 'win':
@@ -2273,7 +2273,7 @@ bossCoins = {
 bossFreeze = {
     'A': 3,
     'B': 5,
-    'C': 8
+    'C': 5
 }
 
 defaults = {
