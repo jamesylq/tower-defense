@@ -99,7 +99,7 @@ class Turret(Towers):
             try:
                 closest = getTarget(self)
                 explosiveRadius = 30 if self.upgrades[2] >= 1 else 0
-                info.projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, bossDamage= 5 if self.upgrades[2] == 3 else 1, explosiveRadius=explosiveRadius))
+                info.projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, bossDamage=(10 if self.upgrades[2] == 3 else 1), explosiveRadius=explosiveRadius))
                 self.timer = 0
             except AttributeError:
                 pass
@@ -195,10 +195,7 @@ class IceTower(Towers):
 
         self.range = [150, 180, 200, 250][self.upgrades[0]]
         self.cooldown = [50, 38, 27, 20][self.upgrades[1]]
-        if self.upgrades[2] >= 1:
-            self.freezeDuration = 45
-        if self.upgrades[2] == 3:
-            self.freezeDuration = 75
+        self.freezeDuration = [20, 45, 45, 75][self.upgrades[2]]
 
 
 class SpikeTower(Towers):
@@ -966,7 +963,7 @@ class Enemy:
             if abs(self.x - projectile.x) ** 2 + abs(self.y - projectile.y) ** 2 < (625 if type(self.tier) is str else 100):
                 if projectile.freezeDuration > 0:
                     info.projectiles.remove(projectile)
-                    self.freezeTimer = max(self.freezeTimer, projectile.freezeDuration // (3 if type(self.tier) is str else 1))
+                    self.freezeTimer = max(self.freezeTimer, projectile.freezeDuration // (5 if type(self.tier) is str else 1))
                 else:
                     info.projectiles.remove(projectile)
                     if projectile.explosiveRadius > 0:
