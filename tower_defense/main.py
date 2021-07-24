@@ -150,7 +150,7 @@ class IceTower(Towers):
         ['Lesser Cooldown', 'Snowball Shower', 'Heavy Snowfall'],
         ['Longer Freeze', 'Snowstorm Circle', 'Ultra Freeze']
     ]
-    range = 125
+    range = 150
     cooldown = 100
     freezeDuration = 20
     snowCircleTimer = 0
