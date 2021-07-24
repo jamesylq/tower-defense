@@ -22,6 +22,9 @@ class Map:
         self.pathColor = pathColor
         self.displayColor = self.backgroundColor if displayColor is None else displayColor
 
+    def __str__(self):
+        return self.name
+
 
 class data:
     def __init__(self):
@@ -463,22 +466,26 @@ class Wizard(Towers):
                 self.parent.hits += 1
                 info.statistics['pops'] += 1
                 self.t2 = getTarget(Towers(self.t1.x, self.t1.y, overrideCamoDetect=self.parent.upgrades[1] >= 2), ignore=[self.t1], overrideRange=1000)
+
                 if type(self.t2) is Enemy:
                     self.t2.kill(coinMultiplier=getCoinMultiplier(self.parent), bossDamage=25)
                     self.parent.hits += 1
                     info.statistics['pops'] += 1
                     self.t3 = getTarget(Towers(self.t2.x, self.t2.y, overrideCamoDetect=self.parent.upgrades[1] >= 2), ignore=[self.t1, self.t2], overrideRange=1000)
+
                     if type(self.t3) is Enemy:
                         self.t3.kill(coinMultiplier=getCoinMultiplier(self.parent), bossDamage=25)
                         self.parent.hits += 1
                         info.statistics['pops'] += 1
                         if self.parent.upgrades[1] == 3:
                             self.t4 = getTarget(Towers(self.t3.x, self.t3.y, overrideCamoDetect=self.parent.upgrades[1] >= 2), ignore=[self.t1, self.t2, self.t3], overrideRange=1000)
+
                             if type(self.t4) is Enemy:
                                 self.t4.kill(coinMultiplier=getCoinMultiplier(self.parent), bossDamage=25)
                                 self.parent.hits += 1
                                 info.statistics['pops'] += 1
                                 self.t5 = getTarget(Towers(self.t4.x, self.t4.y, overrideCamoDetect=self.parent.upgrades[1] >= 2), ignore=[self.t1, self.t2, self.t3, self.t4], overrideRange=1000)
+
                                 if type(self.t5) is Enemy:
                                     self.t5.kill(coinMultiplier=getCoinMultiplier(self.parent), bossDamage=25)
                                     self.parent.hits += 1
@@ -531,7 +538,7 @@ class Wizard(Towers):
         [50, 65, 90]
     ]
     upgradeNames = [
-        ['Longer Range', 'Extreme Range', 'Ultra Range'],
+        ['Longer Range', 'Extreme Range', 'Magic Healing'],
         ['Lighning Zap', 'Wisdom of Camo', '5-hit Lightning'],
         ['Big Blast Radius', 'Faster Reload', 'Hyper Reload']
     ]
@@ -542,6 +549,7 @@ class Wizard(Towers):
         super().__init__(x, y)
         self.lightning = self.LightningBolt(self)
         self.lightningTimer = 0
+        self.healTimer = 0
 
     def draw(self):
         super().draw()
@@ -564,11 +572,18 @@ class Wizard(Towers):
 
         if self.lightningTimer >= 500:
             self.lightning.attack()
-        elif self.upgrades[1]:
+        elif self.upgrades[1] >= 1:
             self.lightningTimer += 1
 
     def update(self):
-        self.range = [125, 150, 175, 200][self.upgrades[0]]
+        if self.upgrades[0] == 3:
+            if self.healTimer >= 1000 and info.HP < 100:
+                info.HP += 1
+                self.healTimer = 0
+            else:
+                self.healTimer += 1
+
+        self.range = [125, 150, 175, 175][self.upgrades[0]]
         self.cooldown = [50, 50, 33, 16][self.upgrades[2]]
 
 
@@ -1002,13 +1017,15 @@ class Enemy:
 
     def draw(self):
         if type(self.tier) is str:
-            if self.HP > 800:
+            healthPercent = self.HP / trueHP[self.tier]
+
+            if healthPercent >= 0.8:
                 color = (191, 255, 0)
-            elif self.HP > 600:
+            elif healthPercent >= 0.6:
                 color = (196, 211, 0)
-            elif self.HP > 400:
+            elif healthPercent >= 0.4:
                 color = (255, 255, 0)
-            elif self.HP > 200:
+            elif healthPercent >= 0.2:
                 color = (255, 69, 0)
             else:
                 color = (255, 0, 0)
@@ -1427,9 +1444,14 @@ def load() -> None:
 
     except FileNotFoundError:
         open('save.txt', 'w')
+
     except AttributeError:
-        print(f'tower-defense.core: Fatal - There seems to be something wrong with your save-file.')
-    except (EOFError, ValueError, UnpicklingError):
+        print('tower-defense.core: Fatal - There seems to be something wrong with your save-file.')
+
+    except UnpicklingError:
+        print('tower-defense.core: Fatal - Your save-file seems to be corrupt and it has been reset!')
+
+    except (EOFError, ValueError):
         pass
 
 
@@ -1689,7 +1711,7 @@ def app():
                     }
 
                     screen.fill((200, 200, 200))
-                    centredBlit(mediumFont, 'Map Maker (Beta)', (0, 0, 0), (500, 75))
+                    centredBlit(mediumFont, 'Map Maker', (0, 0, 0), (500, 75))
                     screen.blit(font.render('Map Name: ', True, (0, 0, 0)), (130, 150))
                     screen.blit(font.render('Background Color: ', True, (0, 0, 0)), (50, 250))
                     screen.blit(font.render('Path Color: ', True, (0, 0, 0)), (110, 350))
@@ -2240,9 +2262,9 @@ speed = {
 onlyExplosiveTiers = [7, 8, 'C']
 
 trueHP = {
-    'A': 1000,
+    'A': 500,
     'B': 1500,
-    'C': 2100
+    'C': 2500
 }
 
 bossCoins = {
@@ -2293,7 +2315,7 @@ defaults = {
         'losses': 0,
         'coinsSpent': 0
     },
-    'ticksSinceNoEnemies': 0
+    'ticksSinceNoEnemies': 1
 }
 LOCKED = 'LOCKED'
 
