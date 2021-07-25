@@ -530,7 +530,7 @@ class Wizard(Towers):
     req = 7
     price = 250
     upgradePrices = [
-        [30, 60, 90],
+        [30, 60, 150],
         [75, 95, 150],
         [50, 65, 90]
     ]
@@ -656,7 +656,7 @@ class InfernoTower(Towers):
             self.timer += 1
 
     def update(self):
-        self.range = [100, 150, 250, 400][self.upgrades[0]]
+        self.range = [100, 125, 160, 200][self.upgrades[0]]
         self.cooldown = [500, 375, 250, 200][self.upgrades[1]]
 
 
@@ -1582,14 +1582,13 @@ def app():
                                 info.sandboxMode = not info.sandboxMode
 
         elif info.status == 'win':
-            n = False
-            for Map in Maps:
-                if n and info.PBs[Map.name] == LOCKED:
-                    info.PBs[Map.name] = None
-                    break
+            try:
+                nextMap = Maps[[m.name for m in Maps].index(info.Map.name) + 1].name
+                if info.PBs[nextMap] == LOCKED:
+                    info.PBs[nextMap] = None
 
-                if Map.name == info.Map.name:
-                    n = True
+            except IndexError:
+                pass
 
             cont = False
             if not info.sandboxMode:
@@ -1894,7 +1893,7 @@ def app():
                             cx, cy = getClosestPoint(mx, my)
 
                     screen.fill((200, 200, 200))
-                    centredBlit(mediumFont, 'Map Maker (Beta)', (0, 0, 0), (500, 75))
+                    centredBlit(mediumFont, 'Map Maker', (0, 0, 0), (500, 75))
                     pygame.draw.rect(screen, (0, 0, 0), (100, 125, 800, 450), 5)
                     pygame.draw.rect(screen, info.mapMakerData['backgroundColor'], (100, 125, 800, 450))
 
@@ -1995,7 +1994,7 @@ def app():
                         except KeyError:
                             info.statistics['wins'][info.Map.name] = 1
 
-                    finally:
+                    else:
                         info.spawndelay = 20
                         info.nextWave = 300
 
@@ -2320,7 +2319,7 @@ IceCircle = pygame.transform.scale(pygame.image.load(os.path.join(resource_path,
 IceCircle.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
 
 rangeImages = []
-possibleRanges = [0, 50, 100, 125, 130, 150, 165, 175, 180, 200, 250, 400]
+possibleRanges = [0, 50, 100, 125, 130, 150, 160, 165, 175, 180, 200, 250, 400]
 for possibleRange in possibleRanges:
     rangeImage = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'range.png')), (possibleRange * 2,) * 2)
     alphaImage = rangeImage.copy()
