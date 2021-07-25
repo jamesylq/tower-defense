@@ -1240,7 +1240,8 @@ def draw():
         screen.blit(modified, (info.selected.x - info.selected.range, info.selected.y - info.selected.range))
 
     if info.placing != '':
-        screen.blit(font.render(f'Click anywhere on the map to place the {info.placing}!', True, 0), (250, 400))
+        centredBlit(font, f'Click anywhere on the map to place the {info.placing}!', (0, 0, 0), (400, 400))
+        centredBlit(font, f'Press [ESC] to cancel!', (0, 0, 0), (400, 425))
         if 0 <= mx <= 800 and 0 <= my <= 450:
             classObj = None
             for tower in Towers.__subclasses__():
@@ -1325,7 +1326,7 @@ def draw():
         else:
             pygame.draw.rect(screen, (0, 0, 0), (620, 545, 150, 25), 3)
 
-        centredBlit(font, f'Sell for [${round(getSellPrice(info.selected))}]', (0, 0, 0), (695, 557))
+        centredBlit(font, f'Sell: ${round(getSellPrice(info.selected))}', (0, 0, 0), (695, 557))
 
         if type(info.selected) is IceTower:
             pygame.draw.rect(screen, (0, 255, 0) if info.selected.enabled else (255, 0, 0), (620, 500, 150, 25))
@@ -1518,7 +1519,7 @@ def app():
         if info.status == 'mapSelect':
             screen.fill((68, 68, 68))
 
-            screen.blit(font.render('Map Select', True, (255, 255, 255)), (450, 25))
+            centredBlit(font, 'Map Select', (255, 255, 255), (500, 30))
 
             pygame.draw.rect(screen, (200, 200, 200), (25, 550, 125, 30))
             centredBlit(font, 'Map Maker', (0, 0, 0), (87, 565))
@@ -2110,6 +2111,13 @@ def app():
                             maxScroll = len([tower for tower in Towers.__subclasses__() if (info.wave >= tower.req or info.sandboxMode)]) * 80 - 450
                             if maxScroll > 0:
                                 info.shopScroll = max(-maxScroll, info.shopScroll - 10)
+
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        price = {t.name: t.price for t in Towers.__subclasses__()}[info.placing]
+                        info.coins += price
+                        info.statistics['coinsSpent'] -= price
+                        info.placing = ''
 
             pressed = pygame.key.get_pressed()
             if pressed[pygame.K_UP]:
