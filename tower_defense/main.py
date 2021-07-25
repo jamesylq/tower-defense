@@ -1237,6 +1237,7 @@ def draw():
             original = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'range.png')), (info.selected.range * 2, info.selected.range * 2))
             modified = original.copy()
             modified.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
+
         screen.blit(modified, (info.selected.x - info.selected.range, info.selected.y - info.selected.range))
 
     if info.placing != '':
@@ -1282,9 +1283,10 @@ def draw():
 
     pygame.draw.rect(screen, (170, 170, 170), (0, 450, 1000, 150))
 
-    screen.blit(font.render(f'Health: {info.HP} HP', True, 0), (10, 545))
+    screen.blit(font.render(f'FPS: {round(clock.get_fps(), 1)}', True, (0, 0, 0)), (10, 545))
+    screen.blit(font.render(str(info.HP), True, 0), (10, 520))
+    screen.blit(healthImage, (font.size(str(info.HP))[0] + 17, 523))
     screen.blit(font.render(f'Coins: {math.floor(info.coins)}', True, 0), (10, 570))
-    screen.blit(font.render(f'FPS: {round(clock.get_fps(), 1)}', True, (0, 0, 0)), (10, 520))
     screen.blit(font.render(f'Wave {max(info.wave, 1)} of {len(waves)}', True, 0), (825, 570))
 
     pygame.draw.rect(screen, (255, 0, 0), (0, 450, 20, 20))
@@ -2363,6 +2365,8 @@ for possibleRange in possibleRanges:
     alphaImage = rangeImage.copy()
     alphaImage.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
     rangeImages.append(alphaImage)
+
+healthImage = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'heart.png')), (16, 16))
 
 SIN45 = COS45 = math.sqrt(2) / 2
 
