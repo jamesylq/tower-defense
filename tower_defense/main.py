@@ -403,7 +403,7 @@ class BananaFarm(Towers):
 
 class Bowler(Towers):
     name = 'Bowler'
-    color = (32, 32, 32)
+    color = (64, 64, 64)
     req = 5
     price = 175
     upgradePrices = [
@@ -1103,9 +1103,19 @@ def getSellPrice(tower: Towers) -> float:
     return price * 0.5
 
 
+def leftAlignBlit(font: pygame.font.Font, text: str, color: Tuple[int], pos: Tuple[int]):
+    textObj = font.render(text, True, color)
+    screen.blit(textObj, textObj.get_rect(center=[pos[0] + font.size(text)[0] / 2, pos[1]]))
+
+
 def centredBlit(font: pygame.font.Font, text: str, color: Tuple[int], pos: Tuple[int]):
     textObj = font.render(text, True, color)
     screen.blit(textObj, textObj.get_rect(center=pos))
+
+
+def rightAlignBlit(font: pygame.font.Font, text: str, color: Tuple[int], pos: Tuple[int]):
+    textObj = font.render(text, True, color)
+    screen.blit(textObj, textObj.get_rect(center=[pos[0] - font.size(text)[0] / 2, pos[1]]))
 
 
 def income() -> float:
@@ -1252,12 +1262,15 @@ def draw():
     for towerType in Towers.__subclasses__():
         if info.wave >= towerType.req or info.sandboxMode:
             screen.blit(font.render(f'{towerType.name} (${towerType.price})', True, 0), (810, 10 + 80 * n + info.shopScroll))
+
             pygame.draw.rect(screen, (187, 187, 187), (945, 30 + 80 * n + info.shopScroll, 42, 42))
             pygame.draw.circle(screen, towerType.color, (966, 51 + 80 * n + info.shopScroll), 15)
+
             pygame.draw.line(screen, 0, (800, 80 + 80 * n + info.shopScroll), (1000, 80 + 80 * n + info.shopScroll), 3)
             pygame.draw.line(screen, 0, (800, 80 * n + info.shopScroll), (1000, 80 * n + info.shopScroll), 3)
-            pygame.draw.rect(screen, (136, 136, 136), (810, 40 + 80 * n + info.shopScroll, 100, 30))
-            screen.blit(font.render('Buy New', True, 0), (820, 42 + 80 * n + info.shopScroll))
+
+            pygame.draw.rect(screen, (200, 200, 200), (810, 40 + 80 * n + info.shopScroll, 100, 30))
+            centredBlit(font, 'Buy New', (0, 0, 0), (860, 55 + 80 * n + info.shopScroll))
 
             if 810 <= mx <= 910 and 40 + 80 * n + info.shopScroll <= my <= 70 + 80 * n + info.shopScroll:
                 pygame.draw.rect(screen, (128, 128, 128), (810, 40 + 80 * n + info.shopScroll, 100, 30), 3)
@@ -1298,20 +1311,21 @@ def draw():
             else:
                 pygame.draw.rect(screen, (0, 0, 0), (295, 485 + 30 * n, 300, 30), 3)
 
-                nameWithSpace = ''
-                for m in range(18):
-                    nameWithSpace += info.selected.upgradeNames[n][info.selected.upgrades[n]][m] if m < len(info.selected.upgradeNames[n][info.selected.upgrades[n]]) else ' '
-
-                screen.blit(font.render(f'{nameWithSpace} [${info.selected.upgradePrices[n][info.selected.upgrades[n]]}]', True, (32, 32, 32)), (300, 485 + n * 30))
+                leftAlignBlit(font, f'{info.selected.upgradeNames[n][info.selected.upgrades[n]]} [${info.selected.upgradePrices[n][info.selected.upgrades[n]]}]', (32, 32, 32), (300, 500 + n * 30))
 
             for m in range(3):
                 if info.selected.upgrades[n] > m:
                     pygame.draw.circle(screen, (0, 255, 0), (560 + 12 * m, 497 + 30 * n), 5)
                 pygame.draw.circle(screen, (0, 0, 0), (560 + 12 * m, 497 + 30 * n), 5, 2)
 
-        pygame.draw.rect(screen, (128, 128, 128), (620, 545, 200, 25))
-        pygame.draw.rect(screen, (200, 200, 200) if 620 < mx < 820 and 545 < my < 570 else (0, 0, 0), (620, 545, 200, 25), 3)
-        screen.blit(font.render(f'Sell for [${round(getSellPrice(info.selected))}]', True, 0), (625, 545))
+        pygame.draw.rect(screen, (128, 128, 128), (620, 545, 150, 25))
+
+        if 620 < mx < 820 and 545 < my < 570:
+            pygame.draw.rect(screen, (200, 200, 200), (620, 545, 150, 25), 3)
+        else:
+            pygame.draw.rect(screen, (0, 0, 0), (620, 545, 150, 25), 3)
+
+        centredBlit(font, f'Sell for [${round(getSellPrice(info.selected))}]', (0, 0, 0), (695, 557))
 
         if type(info.selected) is IceTower:
             pygame.draw.rect(screen, (0, 255, 0) if info.selected.enabled else (255, 0, 0), (620, 500, 150, 25))
@@ -1542,8 +1556,9 @@ def app():
                         pygame.draw.rect(screen, (128, 128, 128), (10, 40 * n + 60, 980, 30), 5)
                     else:
                         pygame.draw.rect(screen, (0, 0, 0), (10, 40 * n + 60, 980, 30), 3)
-                    screen.blit(font.render(Maps[n].name.upper(), True, (0, 0, 0)), (20, 62 + n * 40))
-                    screen.blit(font.render(f'(Best: {info.PBs[Maps[n].name]})', True, (225, 255, 0) if info.PBs[Maps[n].name] == 100 else (0, 0, 0)), (800, 62 + n * 40))
+
+                    leftAlignBlit(font, Maps[n].name.upper(), (0, 0, 0), (20, 74 + n * 40))
+                    centredBlit(font, f'(Best: {info.PBs[Maps[n].name]})', (225, 225, 0) if info.PBs[Maps[n].name] == 100 else (0, 0, 0), (900, 74 + n * 40))
                 else:
                     pygame.draw.rect(screen, (32, 32, 32), (10, 40 * n + 60, 980, 30))
                     pygame.draw.rect(screen, (0, 0, 0), (10, 40 * n + 60, 980, 30), 3)
@@ -1707,10 +1722,13 @@ def app():
                     }
 
                     screen.fill((200, 200, 200))
+
                     centredBlit(mediumFont, 'Map Maker', (0, 0, 0), (500, 75))
-                    screen.blit(font.render('Map Name: ', True, (0, 0, 0)), (130, 150))
-                    screen.blit(font.render('Background Color: ', True, (0, 0, 0)), (50, 250))
-                    screen.blit(font.render('Path Color: ', True, (0, 0, 0)), (110, 350))
+                    n = 0
+                    for txt in ['Map name:', 'Background Color:', 'Path Color:']:
+                        rightAlignBlit(font, txt, (0, 0, 0), (200, 160 + n * 100))
+                        n += 1
+
                     pygame.draw.rect(screen, (100, 100, 100), (225, 150, 675, 30))
                     pygame.draw.rect(screen, (100, 100, 100), (225, 250, 675, 30))
                     pygame.draw.rect(screen, (100, 100, 100), (225, 350, 675, 30))
@@ -1722,9 +1740,11 @@ def app():
                             bgColor = [int(n) for n in removeCharset(str(info.mapMakerData['backgroundColor']), ' ()[]').split(',')]
                             if len(bgColor) > 3:
                                 raise ValueError
+
                         pygame.draw.rect(screen, bgColor, (925, 250, 30, 30))
                         pygame.draw.rect(screen, (0, 0, 0), (925, 250, 30, 30), 2)
                         validBGColor = True
+
                     except (ValueError, IndexError):
                         validBGColor = False
 
@@ -1735,9 +1755,11 @@ def app():
                             pathColor = [int(n) for n in removeCharset(str(info.mapMakerData['pathColor']), ' ()[]').split(',')]
                             if len(pathColor) > 3:
                                 raise ValueError
+
                         pygame.draw.rect(screen, pathColor, (925, 350, 30, 30))
                         pygame.draw.rect(screen, (0, 0, 0), (925, 350, 30, 30), 2)
                         validPathColor = True
+
                     except (ValueError, IndexError):
                         validPathColor = False
 
@@ -1772,10 +1794,14 @@ def app():
 
                                     if event.key == pygame.K_TAB:
                                         info.mapMakerData['field'] = fields[(fields.index(field) + (-1 if shifting else 1)) % 3]
-                                    elif event.key == pygame.K_UP:
-                                        info.mapMakerData['field'] = fields[(fields.index(field) - 1) % 3]
-                                    elif event.key == pygame.K_DOWN:
-                                        info.mapMakerData['field'] = fields[(fields.index(field) + 1) % 3]
+                                    try:
+                                        if event.key == pygame.K_UP:
+                                            info.mapMakerData['field'] = fields[(fields.index(field) - 1)]
+                                        if event.key == pygame.K_DOWN:
+                                            info.mapMakerData['field'] = fields[(fields.index(field) + 1)]
+
+                                    except IndexError:
+                                        pass
 
                                     charInsertIndex = min(charInsertIndex, len(info.mapMakerData[info.mapMakerData['field']]))
 
@@ -1871,10 +1897,10 @@ def app():
 
                         txt = info.mapMakerData[fieldName]
                         if ticks < 25 and fieldName == field:
-                            length = font.size('a' * charInsertIndex)[0]
-                            pygame.draw.line(screen, (0, 0, 0), (230 + length, y), (230 + length, y + 20))
+                            length = font.size(txt[:charInsertIndex])[0]
+                            pygame.draw.line(screen, (0, 0, 0), (length + 230, y), (length + 230, y + 20))
 
-                        screen.blit(font.render(txt, True, (0, 0, 0)), (230, y))
+                        leftAlignBlit(font, txt, (0, 0, 0), (230, y + 10))
 
                     pygame.display.update()
                     ticks = (ticks + 1) % 50
@@ -2064,7 +2090,7 @@ def app():
                                         info.statistics['coinsSpent'] += cost
                                         info.selected.upgrades[n] += 1
 
-                            elif 620 <= mx < 820 and 545 <= my < 570:
+                            elif 620 <= mx < 770 and 545 <= my < 570:
                                 info.towers.remove(info.selected)
                                 info.coins += getSellPrice(info.selected)
                                 info.statistics['towersSold'] += 1
@@ -2162,9 +2188,12 @@ screen = pygame.display.set_mode((1000, 600))
 pygame.init()
 pygame.font.init()
 clock = pygame.time.Clock()
-font = pygame.font.SysFont('Ubuntu Mono', 20)
-mediumFont = pygame.font.SysFont('Ubuntu Mono', 30)
-largeFont = pygame.font.SysFont('Ubuntu Mono', 75)
+
+fontType = 'Ubuntu Mono'
+font = pygame.font.SysFont(fontType, 20)
+mediumFont = pygame.font.SysFont(fontType, 30)
+largeFont = pygame.font.SysFont(fontType, 75)
+
 pygame.display.set_caption('Tower Defense')
 pygame.display.set_icon(pygame.image.load(os.path.join(resource_path, 'icon.png')))
 
@@ -2313,6 +2342,7 @@ defaults = {
     },
     'ticksSinceNoEnemies': 1
 }
+
 LOCKED = 'LOCKED'
 
 IceCircle = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'ice_circle.png')), (250, 250)).copy()
