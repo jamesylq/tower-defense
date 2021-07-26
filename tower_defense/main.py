@@ -37,7 +37,7 @@ class data:
 
     def reset(self):
         for attr, default in defaults.items():
-            if attr in ['PBs', 'FinalHP', 'totalWaves', 'status', 'sandboxMode', 'Map', 'statistics']:
+            if attr in ['PBs', 'FinalHP', 'totalWaves', 'status', 'sandboxMode', 'Map', 'statistics', 'achievements']:
                 continue
 
             if type(default) in [dict, list]:
@@ -1429,9 +1429,21 @@ def load() -> None:
 
         for attr, default in defaults['statistics'].items():
             try:
-                info.statistics[attr]
+                info.statistics[attr] = info.statistics[attr]
             except KeyError:
-                info.statistics[attr] = default
+                if attr == 'totalWins':
+                    try:
+                        info.statistics[attr] = sum([val for val in info.statistics['wins'].values()])
+                    except KeyError:
+                        info.statistics[attr] = 0
+                else:
+                    info.statistics[attr] = default
+
+        for attr, default in defaults['achievements'].items():
+            try:
+                info.achievements[attr] = info.achievements[attr]
+            except KeyError:
+                info.achievements[attr] = default
 
         info.PBs = updateDict(info.PBs, [Map.name for Map in Maps])
 
@@ -1459,11 +1471,11 @@ def load() -> None:
     except FileNotFoundError:
         open('save.txt', 'w')
 
-    except AttributeError:
-        print('tower-defense.core: Fatal - There seems to be something wrong with your save-file.')
+    except AttributeError as e:
+        print(f'tower-defense.core: Fatal - There seems to be something wrong with your save-file.\n\nSee details: {e}')
 
-    except UnpicklingError:
-        print('tower-defense.core: Fatal - Your save-file seems to be corrupt and it has been reset!')
+    except UnpicklingError as e:
+        print(f'tower-defense.core: Fatal - Your save-file seems to be corrupt and it has been reset!\n\nSee details: {e}')
 
     except (EOFError, ValueError):
         pass
@@ -1545,28 +1557,38 @@ def app():
             else:
                 pygame.draw.rect(screen, (0, 0, 0), (675, 550, 125, 30), 3)
 
-            pygame.draw.rect(screen, (200, 200, 200), (850, 550, 125, 30))
-            centredBlit(font, 'Random Map', (0, 0, 0), (912, 565))
-            if 850 <= mx <= 975 and 550 < my <= 580:
-                pygame.draw.rect(screen, (128, 128, 128), (850, 550, 125, 30), 5)
+            pygame.draw.rect(screen, (200, 200, 200), (825, 550, 150, 30))
+            centredBlit(font, 'Achievements', (0, 0, 0), (900, 565))
+            if 825 <= mx <= 975 and 550 < my <= 580:
+                pygame.draw.rect(screen, (128, 128, 128), (825, 550, 150, 30), 5)
             else:
-                pygame.draw.rect(screen, (0, 0, 0), (850, 550, 125, 30), 3)
+                pygame.draw.rect(screen, (0, 0, 0), (825, 550, 150, 30), 3)
 
-            for n in range(len(Maps)):
-                if info.PBs[Maps[n].name] != LOCKED or info.sandboxMode:
-                    pygame.draw.rect(screen, Maps[n].displayColor, (10, 40 * n + 60, 980, 30))
-                    if 10 <= mx <= 980 and 40 * n + 60 < my <= 40 * n + 90:
+            n = 0
+            for Map in Maps:
+                if info.PBs[Map.name] != LOCKED or info.sandboxMode:
+                    pygame.draw.rect(screen, Map.displayColor, (10, 40 * n + 60, 980, 30))
+                    if 10 <= mx <= 980 and 40 * n + 60 <= my <= 40 * n + 90:
                         pygame.draw.rect(screen, (128, 128, 128), (10, 40 * n + 60, 980, 30), 5)
                     else:
                         pygame.draw.rect(screen, (0, 0, 0), (10, 40 * n + 60, 980, 30), 3)
 
-                    leftAlignBlit(font, Maps[n].name.upper(), (0, 0, 0), (20, 74 + n * 40))
-                    centredBlit(font, f'(Best: {info.PBs[Maps[n].name]})', (225, 225, 0) if info.PBs[Maps[n].name] == 100 else (0, 0, 0), (900, 74 + n * 40))
+                    leftAlignBlit(font, Map.name.upper(), (0, 0, 0), (20, 74 + n * 40))
+                    centredBlit(font, f'(Best: {info.PBs[Map.name]})', (225, 225, 0) if info.PBs[Map.name] == 100 else (0, 0, 0), (900, 74 + n * 40))
                 else:
                     pygame.draw.rect(screen, (32, 32, 32), (10, 40 * n + 60, 980, 30))
                     pygame.draw.rect(screen, (0, 0, 0), (10, 40 * n + 60, 980, 30), 3)
-                    screen.blit(font.render(Maps[n].name.upper(), True, (0, 0, 0)), (20, 62 + n * 40))
+                    screen.blit(font.render(Map.name.upper(), True, (0, 0, 0)), (20, 62 + n * 40))
                     screen.blit(font.render(LOCKED, True, (0, 0, 0)), (830, 62 + n * 40))
+
+                n += 1
+
+            pygame.draw.rect(screen, (200, 200, 200), (10, 40 * n + 60, 980, 30))
+            if 10 <= mx <= 980 and 40 * n + 60 <= my <= 40 * n + 90:
+                pygame.draw.rect(screen, (128, 128, 128), (10, 40 * n + 60, 980, 30), 5)
+            else:
+                pygame.draw.rect(screen, (0, 0, 0), (10, 40 * n + 60, 980, 30), 3)
+            centredBlit(font, 'Random Map', (0, 0, 0), (500, 40 * n + 75))
 
             pygame.display.update()
 
@@ -1583,7 +1605,7 @@ def app():
                                     info.status = 'game'
                                     info.coins = 100000 if info.sandboxMode else 50
 
-                        if 850 <= mx <= 975 and 550 <= my <= 580:
+                        if 10 <= mx <= 980 and 40 * len(Maps) + 60 <= my <= 40 * len(Maps) + 90:
                             info.Map = random.choice([Map for Map in Maps if info.PBs[Map.name] != LOCKED])
                             info.status = 'game'
                             info.coins = 100000 if info.sandboxMode else 50
@@ -1591,13 +1613,83 @@ def app():
                         if 25 <= mx <= 150 and 550 <= my <= 580:
                             info.status = 'mapMaker'
 
-                        if 675 <= mx <= 800 and 550 < my <= 580:
+                        if 675 <= mx <= 800 and 550 <= my <= 580:
                             info.status = 'statistics'
                             info.statistics['wins'] = updateDict(info.statistics['wins'], [Map.name for Map in Maps])
+
+                        if 825 <= mx <= 975 and 550 <= my <= 580:
+                            info.status = 'achievements'
 
                         if 200 <= mx <= 400 and 550 <= my <= 580:
                             if hasAllUnlocked():
                                 info.sandboxMode = not info.sandboxMode
+
+        elif info.status == 'achievements':
+            for achievement, requirement in achievementRequirements.items():
+                stat = info.statistics[requirement['attr']]
+                highest = 0
+                for tier in requirement['tiers']:
+                    if stat >= tier:
+                        highest += 1
+
+                info.achievements[achievement] = highest
+
+            while True:
+                mx, my = pygame.mouse.get_pos()
+
+                screen.fill((200, 200, 200))
+
+                centredBlit(mediumFont, 'Achievements', (0, 0, 0), (500, 50))
+
+                n = 0
+                for achievement, information in achievements.items():
+                    pygame.draw.rect(screen, (100, 100, 100), (10, 80 + 110 * n, 980, 100))
+                    leftAlignBlit(font, information['names'][min(info.achievements[achievement], 2)], (0, 0, 0), (20, 93 + 110 * n))
+                    leftAlignBlit(tinyFont, information['lore'].replace('[%]', str(achievementRequirements[achievement]['tiers'][min(info.achievements[achievement], 2)])), (0, 0, 0), (20, 120 + 110 * n))
+
+                    for m in range(3):
+                        if info.achievements[achievement] > m:
+                            pygame.draw.circle(screen, (255, 255, 0), (900 + m * 20, 100 + 110 * n), 7)
+                        pygame.draw.circle(screen, (0, 0, 0), (900 + m * 20, 100 + 110 * n), 7, 2)
+
+                    if info.achievements[achievement] < len(achievementRequirements[achievement]['tiers']):
+                        current = info.statistics[achievementRequirements[achievement]['attr']]
+                        target = achievementRequirements[achievement]['tiers'][info.achievements[achievement]]
+                        percent = current / target * 100
+                        pygame.draw.rect(screen, (0, 255, 0), (40, 140 + 110 * n, percent * 8, 20))
+                        centredBlit(font, f'{round(percent, 1)}% ({current} / {target})', (0, 0, 0), (440, 150 + 110 * n))
+                    else:
+                        target = achievementRequirements[achievement]['tiers'][info.achievements[achievement] - 1]
+                        pygame.draw.rect(screen, (0, 255, 0), (40, 140 + 110 * n, 800, 20))
+                        centredBlit(font, f'100% ({target} / {target})', (0, 0, 0), (440, 150 + 110 * n))
+
+                    pygame.draw.rect(screen, (0, 0, 0), (40, 140 + 110 * n, 800, 20), 3)
+
+                    n += 1
+
+                pygame.draw.rect(screen, (255, 0, 0), (20, 550, 100, 30))
+                centredBlit(font, 'Close', (0, 0, 0), (70, 565))
+                if 20 <= mx <= 120 and 550 <= my <= 580:
+                    pygame.draw.rect(screen, (0, 0, 0), (20, 550, 100, 30), 3)
+                else:
+                    pygame.draw.rect(screen, (128, 128, 128), (20, 550, 100, 30), 5)
+
+                pygame.display.update()
+
+                cont = True
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        save()
+                        quit()
+
+                    elif event.type == pygame.MOUSEBUTTONDOWN:
+                        if event.button == 1:
+                            if 20 <= mx <= 120 and 550 <= my <= 580:
+                                info.status = 'mapSelect'
+                                cont = False
+
+                if not cont:
+                    break
 
         elif info.status == 'win':
             try:
@@ -2200,6 +2292,7 @@ pygame.font.init()
 clock = pygame.time.Clock()
 
 fontType = 'Ubuntu Mono'
+tinyFont = pygame.font.SysFont(fontType, 17)
 font = pygame.font.SysFont(fontType, 20)
 mediumFont = pygame.font.SysFont(fontType, 30)
 largeFont = pygame.font.SysFont(fontType, 75)
@@ -2348,9 +2441,45 @@ defaults = {
         'wavesPlayed': 0,
         'wins': {},
         'losses': 0,
-        'coinsSpent': 0
+        'coinsSpent': 0,
+        'totalWins': 0
     },
-    'ticksSinceNoEnemies': 1
+    'ticksSinceNoEnemies': 1,
+    'achievements': {
+        'pops': 0,
+        'wins': 0,
+        'spendCoins': 0
+    }
+}
+
+achievementRequirements = {
+    'pops': {
+        'attr': 'pops',
+        'tiers': [10000, 100000, 1000000]
+    },
+    'wins': {
+        'attr': 'totalWins',
+        'tiers': [3, 10, 25]
+    },
+    'spendCoins': {
+        'attr': 'coinsSpent',
+        'tiers': [10000, 100000, 1000000]
+    }
+}
+
+achievements = {
+    'pops': {
+        'names': ['Balloon Popper', 'Balloon Fighter', 'Balloon Exterminator'],
+        'lore': 'Pop [%] balloons!'
+    },
+    'wins': {
+        'names': ['Triple Winner', 'Tower-defense Pro', 'Tower-defense Legend'],
+        'lore': 'Win [%] games!'
+    },
+    'spendCoins': {
+        'names': ['Money Spender', 'Rich Player', 'Millionaire!'],
+        'lore': 'Spend [%] coins!'
+    }
 }
 
 LOCKED = 'LOCKED'
