@@ -2114,6 +2114,8 @@ def app():
                             info.statistics['wins'][info.Map.name] += 1
                         except KeyError:
                             info.statistics['wins'][info.Map.name] = 1
+                        finally:
+                            info.statistics['totalWins'] += 1
 
                     else:
                         info.spawndelay = 20
