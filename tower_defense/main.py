@@ -1657,11 +1657,20 @@ def app():
                         target = achievementRequirements[achievement]['tiers'][info.achievements[achievement]]
                         percent = current / target * 100
                         pygame.draw.rect(screen, (0, 255, 0), (40, 140 + 110 * n, percent * 8, 20))
-                        centredBlit(font, f'{round(percent, 1)}% ({current} / {target})', (0, 0, 0), (440, 150 + 110 * n))
+                        txt = f'{round(percent, 1)}%'
+                        if 10 <= mx <= 990 and 80 + 110 * n <= my <= 180 + 110 * n:
+                            txt += f' ({current} / {target})'
+
+                        centredBlit(font, txt, (0, 0, 0), (440, 150 + 110 * n))
                     else:
+                        current = info.statistics[achievementRequirements[achievement]['attr']]
                         target = achievementRequirements[achievement]['tiers'][info.achievements[achievement] - 1]
+                        txt = '100%'
+                        if 10 <= mx <= 990 and 80 + 110 * n <= my <= 180 + 110 * n:
+                            txt += f' ({current} / {target})'
+
                         pygame.draw.rect(screen, (0, 255, 0), (40, 140 + 110 * n, 800, 20))
-                        centredBlit(font, f'100% ({target} / {target})', (0, 0, 0), (440, 150 + 110 * n))
+                        centredBlit(font, txt, (0, 0, 0), (440, 150 + 110 * n))
 
                     pygame.draw.rect(screen, (0, 0, 0), (40, 140 + 110 * n, 800, 20), 3)
 
@@ -2461,7 +2470,7 @@ achievementRequirements = {
     },
     'wins': {
         'attr': 'totalWins',
-        'tiers': [3, 10, 25]
+        'tiers': [5, 20, 50]
     },
     'spendCoins': {
         'attr': 'coinsSpent',
@@ -2475,7 +2484,7 @@ achievements = {
         'lore': 'Pop [%] balloons!'
     },
     'wins': {
-        'names': ['Triple Winner', 'Tower-defense Pro', 'Tower-defense Legend'],
+        'names': ['Tower-defense Rookie', 'Tower-defense Pro', 'Tower-defense Legend'],
         'lore': 'Win [%] games!'
     },
     'spendCoins': {
