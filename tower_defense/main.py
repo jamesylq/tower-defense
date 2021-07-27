@@ -37,7 +37,7 @@ class data:
 
     def reset(self):
         for attr, default in defaults.items():
-            if attr in ['PBs', 'FinalHP', 'totalWaves', 'status', 'sandboxMode', 'Map', 'statistics', 'achievements']:
+            if attr in ['PBs', 'FinalHP', 'totalWaves', 'status', 'sandboxMode', 'Map', 'statistics', 'achievements', 'mapsBeat']:
                 continue
 
             if type(default) in [dict, list]:
@@ -1447,6 +1447,8 @@ def load() -> None:
 
         info.PBs = updateDict(info.PBs, [Map.name for Map in Maps])
 
+        info.statistics['mapsBeat'] = len([m for m in info.PBs.keys() if type(info.PBs[m]) is int])
+
         foundUnlocked = False
         for Map in Maps:
             if Map.name not in info.PBs.keys():
@@ -2125,6 +2127,7 @@ def app():
                             info.statistics['wins'][info.Map.name] = 1
                         finally:
                             info.statistics['totalWins'] += 1
+                            info.statistics['mapsBeat'] = len([m for m in info.PBs.keys() if type(info.PBs[m]) is int])
 
                     else:
                         info.spawndelay = 20
@@ -2453,17 +2456,24 @@ defaults = {
         'wins': {},
         'losses': 0,
         'coinsSpent': 0,
-        'totalWins': 0
+        'totalWins': 0,
+        'mapsBeat': 0
     },
     'ticksSinceNoEnemies': 1,
     'achievements': {
         'pops': 0,
         'wins': 0,
-        'spendCoins': 0
-    }
+        'spendCoins': 0,
+        'beatMaps': 0
+    },
+    'mapsBeat': 0
 }
 
 achievementRequirements = {
+    'beatMaps': {
+        'attr': 'mapsBeat',
+        'tiers': [1, 3, 7]
+    },
     'pops': {
         'attr': 'pops',
         'tiers': [10000, 100000, 1000000]
@@ -2479,6 +2489,10 @@ achievementRequirements = {
 }
 
 achievements = {
+    'beatMaps': {
+        'names': ['First map!', 'Third time\'s the charm', 'Master of The End'],
+        'lore': 'Beat [%] unique maps!'
+    },
     'pops': {
         'names': ['Balloon Popper', 'Balloon Fighter', 'Balloon Exterminator'],
         'lore': 'Pop [%] balloons!'
