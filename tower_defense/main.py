@@ -1,3 +1,4 @@
+import builtins
 import os
 import pygame
 import pickle
@@ -1103,17 +1104,17 @@ def getSellPrice(tower: Towers) -> float:
     return price * 0.5
 
 
-def leftAlignBlit(font: pygame.font.Font, text: str, color: Tuple[int], pos: Tuple[int]):
+def leftAlignBlit(font: pygame.font.Font, text: str, color: Tuple[int], pos: Tuple[int]) -> None:
     textObj = font.render(text, True, color)
     screen.blit(textObj, textObj.get_rect(center=[pos[0] + font.size(text)[0] / 2, pos[1]]))
 
 
-def centredBlit(font: pygame.font.Font, text: str, color: Tuple[int], pos: Tuple[int]):
+def centredBlit(font: pygame.font.Font, text: str, color: Tuple[int], pos: Tuple[int]) -> None:
     textObj = font.render(text, True, color)
     screen.blit(textObj, textObj.get_rect(center=pos))
 
 
-def rightAlignBlit(font: pygame.font.Font, text: str, color: Tuple[int], pos: Tuple[int]):
+def rightAlignBlit(font: pygame.font.Font, text: str, color: Tuple[int], pos: Tuple[int]) -> None:
     textObj = font.render(text, True, color)
     screen.blit(textObj, textObj.get_rect(center=[pos[0] - font.size(text)[0] / 2, pos[1]]))
 
@@ -1209,7 +1210,7 @@ def hexToRGB(hexString: str) -> Tuple[int]:
     return int(r, 16), int(g, 16), int(b, 16)
 
 
-def draw():
+def draw() -> None:
     mx, my = pygame.mouse.get_pos()
 
     screen.fill(info.Map.backgroundColor)
@@ -1338,7 +1339,7 @@ def draw():
     pygame.display.update()
 
 
-def move():
+def move() -> None:
     for enemy in info.enemies:
         for i in range(speed[str(enemy.tier)]):
             enemy.move()
@@ -1483,7 +1484,7 @@ def load() -> None:
         pass
 
 
-def app():
+def app() -> None:
     load()
 
     if info.Map is not None and info.status == 'game':
@@ -1667,7 +1668,7 @@ def app():
                     else:
                         current = info.statistics[achievementRequirements[achievement]['attr']]
                         target = achievementRequirements[achievement]['tiers'][info.achievements[achievement] - 1]
-                        txt = '100%'
+                        txt = '100.0%'
                         if 10 <= mx <= 990 and 80 + 110 * n <= my <= 180 + 110 * n:
                             txt += f' ({current} / {target})'
 
@@ -2441,8 +2442,8 @@ defaults = {
     'status': 'mapSelect',
     'mapMakerData': {
         'name': '',
-        'backgroundColor': '(0, 0, 0)',
-        'pathColor': '(0, 0, 0)',
+        'backgroundColor': '',
+        'pathColor': '',
         'path': None,
         'field': None
     },
