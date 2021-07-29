@@ -58,7 +58,10 @@ class Towers:
         self.camoDetectionOverride = overrideCamoDetect
 
     def draw(self):
-        pygame.draw.circle(screen, self.color, (self.x, self.y), 15)
+        if towerImages[self.name] is not None:
+            screen.blit(towerImages[self.name], (self.x - 15, self.y - 15))
+        else:
+            pygame.draw.circle(screen, self.color, (self.x, self.y), 15)
 
     def attack(self):
         pass
@@ -69,6 +72,7 @@ class Towers:
 
 class Turret(Towers):
     name = 'Turret'
+    imageName = 'turret.png'
     color = (128, 128, 128)
     req = 0
     price = 50
@@ -138,6 +142,7 @@ class IceTower(Towers):
             self.freezeDuration = [100, 150, 150, 199][self.parent.upgrades[2]]
 
     name = 'Ice Tower'
+    imageName = 'ice_tower.png'
     color = (32, 32, 200)
     req = 2
     price = 30
@@ -261,6 +266,7 @@ class SpikeTower(Towers):
                 spike.draw()
 
     name = 'Spike Tower'
+    imageName = 'spike_tower.png'
     color = (224, 17, 95)
     req = 2
     price = 125
@@ -312,6 +318,7 @@ class SpikeTower(Towers):
 
 class BombTower(Towers):
     name = 'Bomb Tower'
+    imageName = 'bomb_tower.png'
     color = (0, 0, 0)
     req = 4
     price = 100
@@ -360,6 +367,7 @@ class BombTower(Towers):
 
 class BananaFarm(Towers):
     name = 'Banana Farm'
+    imageName = 'banana_farm.png'
     color = (255, 255, 0)
     req = 4
     price = 150
@@ -404,6 +412,7 @@ class BananaFarm(Towers):
 
 class Bowler(Towers):
     name = 'Bowler'
+    imageName = 'bowler.png'
     color = (64, 64, 64)
     req = 5
     price = 175
@@ -527,6 +536,7 @@ class Wizard(Towers):
                                     pygame.draw.line(screen, (191, 0, 255), [self.t4.x, self.t4.y], [self.t5.x, self.t5.y], 3)
 
     name = 'Wizard'
+    imageName = 'wizard.png'
     color = (128, 0, 128)
     req = 7
     price = 250
@@ -621,6 +631,7 @@ class InfernoTower(Towers):
                 render.draw()
 
     name = 'Inferno'
+    imageName = 'inferno.png'
     color = (255, 69, 0)
     req = 8
     price = 500
@@ -736,6 +747,7 @@ class Village(Towers):
                     self.moveCooldown = 0
 
     name = 'Village'
+    imageName = 'village.png'
     color = (202, 164, 114)
     req = 10
     price = 400
@@ -758,9 +770,9 @@ class Village(Towers):
         self.targets = []
 
     def draw(self):
-        super().draw()
         for villager in self.villagers:
             villager.draw()
+        super().draw()
 
     def attack(self):
         for villager in self.villagers:
@@ -1250,7 +1262,10 @@ def draw() -> None:
                 if tower.name == info.placing:
                     classObj = tower
 
-            pygame.draw.circle(screen, classObj.color, (mx, my), 15)
+            if towerImages[classObj.name] is not None:
+                screen.blit(towerImages[classObj.name], (mx - 15, my - 15))
+            else:
+                pygame.draw.circle(screen, classObj.color, (mx, my), 15)
             if classObj.range in possibleRanges:
                 modified = rangeImages[possibleRanges.index(classObj.range)]
             else:
@@ -1267,7 +1282,10 @@ def draw() -> None:
             screen.blit(font.render(f'{towerType.name} (${towerType.price})', True, 0), (810, 10 + 80 * n + info.shopScroll))
 
             pygame.draw.rect(screen, (187, 187, 187), (945, 30 + 80 * n + info.shopScroll, 42, 42))
-            pygame.draw.circle(screen, towerType.color, (966, 51 + 80 * n + info.shopScroll), 15)
+            if towerImages[towerType.name] is not None:
+                screen.blit(towerImages[towerType.name], (951, 36 + 80 * n + info.shopScroll))
+            else:
+                pygame.draw.circle(screen, towerType.color, (966, 51 + 80 * n + info.shopScroll), 15)
 
             pygame.draw.line(screen, 0, (800, 80 + 80 * n + info.shopScroll), (1000, 80 + 80 * n + info.shopScroll), 3)
             pygame.draw.line(screen, 0, (800, 80 * n + info.shopScroll), (1000, 80 * n + info.shopScroll), 3)
@@ -2520,6 +2538,13 @@ for possibleRange in possibleRanges:
     alphaImage = rangeImage.copy()
     alphaImage.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
     rangeImages.append(alphaImage)
+
+towerImages = {}
+for towerType in Towers.__subclasses__():
+    try:
+        towerImages[towerType.name] = pygame.image.load(os.path.join(resource_path, towerType.imageName))
+    except (FileNotFoundError, AttributeError):
+        towerImages[towerType.name] = None
 
 healthImage = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'heart.png')), (16, 16))
 
