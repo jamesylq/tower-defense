@@ -2582,17 +2582,22 @@ for possibleRange in possibleRanges:
 towerImages = {}
 for towerType in Towers.__subclasses__():
     try:
-        if towerType.name == 'Turret':
-            original = pygame.image.load(os.path.join(resource_path, 'turret.png'))
-            original45 = pygame.image.load(os.path.join(resource_path, 'turret45.png'))
-            towerImages['Turret'] = []
-            for n in range(4):
-                towerImages['Turret'].append(pygame.transform.rotate(original, 90 * n))
-                towerImages['Turret'].append(pygame.transform.rotate(original45, 90 * n))
-        else:
-            towerImages[towerType.name] = pygame.image.load(os.path.join(resource_path, towerType.imageName))
+        split = towerType.imageName.split('.')
+        section1 = '.'.join(split[:-1])
+        section2 = split[-1]
 
-    except (FileNotFoundError, AttributeError):
+        original = pygame.image.load(os.path.join(resource_path, towerType.imageName))
+        try:
+            original45 = pygame.image.load(os.path.join(resource_path, f'{section1}45.{section2}'))
+        except FileNotFoundError:
+            towerImages[towerType.name] = pygame.image.load(os.path.join(resource_path, towerType.imageName))
+        else:
+            towerImages[towerType.name] = []
+            for n in range(4):
+                towerImages[towerType.name].append(pygame.transform.rotate(original, 90 * n))
+                towerImages[towerType.name].append(pygame.transform.rotate(original45, 90 * n))
+
+    except FileNotFoundError:
         towerImages[towerType.name] = None
 
 healthImage = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'heart.png')), (16, 16))
