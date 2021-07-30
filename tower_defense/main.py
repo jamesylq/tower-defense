@@ -635,7 +635,7 @@ class InfernoTower(Towers):
             self.visibleTicks = 50
 
         def draw(self):
-            pygame.draw.line(screen, (255, 69, 0), (self.parent.x, self.parent.y), (self.target.x, self.target.y), 2)
+            pygame.draw.line(screen, (255, 69, 0), (self.parent.x, self.parent.y - 5), (self.target.x, self.target.y), 2)
             self.visibleTicks -= 1
             if self.visibleTicks == 0:
                 self.parent.inferno.renders.remove(self)
@@ -685,8 +685,8 @@ class InfernoTower(Towers):
         self.inferno = self.Inferno(self)
 
     def draw(self):
-        super().draw()
         self.inferno.draw()
+        super().draw()
 
     def attack(self):
         if self.stun > 0:
@@ -702,6 +702,11 @@ class InfernoTower(Towers):
     def update(self):
         self.range = [100, 125, 160, 200][self.upgrades[0]]
         self.cooldown = [500, 375, 250, 200][self.upgrades[1]]
+
+    def getImageFrame(self) -> int:
+        if self.inferno.renders:
+            return 0
+        return 1
 
 
 class Village(Towers):
@@ -2588,9 +2593,14 @@ for towerType in Towers.__subclasses__():
 
         original = pygame.image.load(os.path.join(resource_path, towerType.imageName))
         try:
-            original45 = pygame.image.load(os.path.join(resource_path, f'{section1}45.{section2}'))
+            original45 = pygame.image.load(os.path.join(resource_path, f'{section1}_45.{section2}'))
+
         except FileNotFoundError:
-            towerImages[towerType.name] = pygame.image.load(os.path.join(resource_path, towerType.imageName))
+            if towerType.name == 'Inferno':
+                towerImages[towerType.name] = [pygame.image.load(os.path.join(resource_path, towerType.imageName)), pygame.image.load(os.path.join(resource_path, 'inactive_' + towerType.imageName))]
+            else:
+                towerImages[towerType.name] = pygame.image.load(os.path.join(resource_path, towerType.imageName))
+
         else:
             towerImages[towerType.name] = []
             for n in range(4):
