@@ -1,4 +1,3 @@
-import builtins
 import os
 import pygame
 import pickle
@@ -59,7 +58,10 @@ class Towers:
 
     def draw(self):
         if towerImages[self.name] is not None:
-            screen.blit(towerImages[self.name], (self.x - 15, self.y - 15))
+            try:
+                screen.blit(towerImages[self.name], (self.x - 15, self.y - 15))
+            except TypeError:
+                screen.blit(towerImages[self.name][self.getImageFrame()], (self.x - 15, self.y - 15))
         else:
             pygame.draw.circle(screen, self.color, (self.x, self.y), 15)
 
@@ -94,6 +96,7 @@ class Turret(Towers):
 
     def __init__(self, x: int, y: int):
         super().__init__(x, y)
+        self.rotation = 0
 
     def attack(self):
         if self.stun > 0:
@@ -104,8 +107,34 @@ class Turret(Towers):
             try:
                 closest = getTarget(self)
                 explosiveRadius = 30 if self.upgrades[2] >= 1 else 0
-                info.projectiles.append(Projectile(self, self.x, self.y, closest.x, closest.y, bossDamage=(10 if self.upgrades[2] == 3 else 1), explosiveRadius=explosiveRadius))
+
+                proj = Projectile(self, self.x, self.y, closest.x, closest.y, bossDamage=(10 if self.upgrades[2] == 3 else 1), explosiveRadius=explosiveRadius)
+                proj.move(0)
+
+                try:
+                    if 1 >= proj.dx >= 0.5 >= proj.dy >= 0:
+                        self.rotation = 0
+                    elif 1 >= proj.dx >= 0.5 >= proj.dy >= 0:
+                        self.rotation = 1
+                    elif -0.5 <= proj.dx <= 0 <= 0.5 <= proj.dy <= 1:
+                        self.rotation = 7
+                    elif 1 >= proj.dx >= 0.5 >= 0 >= proj.dy >= -0.5:
+                        self.rotation = 2
+                    elif -1 <= proj.dx <= -0.5 <= 0 <= proj.dy <= 0.5:
+                        self.rotation = 6
+                    elif -1 <= proj.dx <= -0.5 <= proj.dy <= 0:
+                        self.rotation = 5
+                    elif 0.5 >= proj.dx >= 0 >= -0.5 >= proj.dy >= -1:
+                        self.rotation = 3
+                    elif 0 >= proj.dx >= -0.5 >= proj.dy >= -1:
+                        self.rotation = 4
+
+                except TypeError:
+                    pass
+
+                info.projectiles.append(proj)
                 self.timer = 0
+
             except AttributeError:
                 pass
         else:
@@ -114,6 +143,9 @@ class Turret(Towers):
     def update(self):
         self.range = [100, 130, 165, 200][self.upgrades[0]]
         self.cooldown = [60, 35, 20, 10][self.upgrades[1]]
+
+    def getImageFrame(self) -> int:
+        return self.rotation
 
 
 class IceTower(Towers):
@@ -819,18 +851,18 @@ class Projectile:
         else:
             self.color = (187, 187, 187)
 
-    def move(self):
+    def move(self, speed: int = 5):
         try:
             if self.dx is None:
                 dx, dy = self.x - self.tx, self.y - self.ty
-                self.dx = abs(dx / (dx + dy)) * (-1 if self.tx < self.x else 1) * 5
-                self.dy = abs(dy / (dx + dy)) * (-1 if self.ty < self.y else 1) * 5
+                self.dx = abs(dx / (abs(dx) + abs(dy))) * (-1 if self.tx < self.x else 1)
+                self.dy = abs(dy / (abs(dx) + abs(dy))) * (-1 if self.ty < self.y else 1)
 
-                self.x += self.dx
-                self.y += self.dy
+                self.x += self.dx * speed
+                self.y += self.dy * speed
             else:
-                self.x += self.dx
-                self.y += self.dy
+                self.x += self.dx * speed
+                self.y += self.dy * speed
 
             if self.x < 0 or self.x > 800 or self.y < 0 or self.y > 450:
                 raise ZeroDivisionError
@@ -1256,6 +1288,7 @@ def draw() -> None:
     if info.placing != '':
         centredBlit(font, f'Click anywhere on the map to place the {info.placing}!', (0, 0, 0), (400, 400))
         centredBlit(font, f'Press [ESC] to cancel!', (0, 0, 0), (400, 425))
+
         if 0 <= mx <= 800 and 0 <= my <= 450:
             classObj = None
             for tower in Towers.__subclasses__():
@@ -1263,9 +1296,13 @@ def draw() -> None:
                     classObj = tower
 
             if towerImages[classObj.name] is not None:
-                screen.blit(towerImages[classObj.name], (mx - 15, my - 15))
+                try:
+                    screen.blit(towerImages[classObj.name], (mx - 15, my - 15))
+                except TypeError:
+                    screen.blit(towerImages[classObj.name][0], (mx - 15, my - 15))
             else:
                 pygame.draw.circle(screen, classObj.color, (mx, my), 15)
+
             if classObj.range in possibleRanges:
                 modified = rangeImages[possibleRanges.index(classObj.range)]
             else:
@@ -1283,7 +1320,10 @@ def draw() -> None:
 
             pygame.draw.rect(screen, (187, 187, 187), (945, 30 + 80 * n + info.shopScroll, 42, 42))
             if towerImages[towerType.name] is not None:
-                screen.blit(towerImages[towerType.name], (951, 36 + 80 * n + info.shopScroll))
+                try:
+                    screen.blit(towerImages[towerType.name], (951, 36 + 80 * n + info.shopScroll))
+                except TypeError:
+                    screen.blit(towerImages[towerType.name][0], (951, 36 + 80 * n + info.shopScroll))
             else:
                 pygame.draw.circle(screen, towerType.color, (966, 51 + 80 * n + info.shopScroll), 15)
 
@@ -2424,8 +2464,8 @@ onlyExplosiveTiers = [7, 8, 'C']
 
 trueHP = {
     'A': 500,
-    'B': 1500,
-    'C': 2500
+    'B': 2000,
+    'C': 5000
 }
 
 bossCoins = {
@@ -2542,7 +2582,16 @@ for possibleRange in possibleRanges:
 towerImages = {}
 for towerType in Towers.__subclasses__():
     try:
-        towerImages[towerType.name] = pygame.image.load(os.path.join(resource_path, towerType.imageName))
+        if towerType.name == 'Turret':
+            original = pygame.image.load(os.path.join(resource_path, 'turret.png'))
+            original45 = pygame.image.load(os.path.join(resource_path, 'turret45.png'))
+            towerImages['Turret'] = []
+            for n in range(4):
+                towerImages['Turret'].append(pygame.transform.rotate(original, 90 * n))
+                towerImages['Turret'].append(pygame.transform.rotate(original45, 90 * n))
+        else:
+            towerImages[towerType.name] = pygame.image.load(os.path.join(resource_path, towerType.imageName))
+
     except (FileNotFoundError, AttributeError):
         towerImages[towerType.name] = None
 
