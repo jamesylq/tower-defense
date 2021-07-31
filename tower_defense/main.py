@@ -168,7 +168,7 @@ class IceTower(Towers):
             for enemy in info.enemies:
                 if abs(enemy.x - self.x) ** 2 + abs(enemy.y - self.y) ** 2 <= self.parent.range ** 2:
                     if type(enemy.tier) is int:
-                        enemy.freezeTimer = self.freezeDuration
+                        enemy.freezeTimer = max(enemy.freezeTimer, self.freezeDuration)
 
         def update(self):
             self.freezeDuration = [100, 150, 150, 199][self.parent.upgrades[2]]
@@ -651,7 +651,8 @@ class InfernoTower(Towers):
                 if (abs(enemy.x - self.parent.x) ** 2 + abs(enemy.y - self.parent.y) ** 2 <= self.parent.range ** 2) and (not enemy.camo or canSeeCamo(self.parent)):
                     enemy.fireTicks = (500 if self.parent.upgrades[2] else 300)
                     enemy.fireIgnitedBy = self.parent
-                    enemy.freezeTimer = max(enemy.freezeTimer, [0, 0, 25, 75][self.parent.upgrades[1]])
+                    if type(enemy.tier) is int:
+                        enemy.freezeTimer = max(enemy.freezeTimer, [0, 0, 25, 75][self.parent.upgrades[1]])
                     self.renders.append(InfernoTower.AttackRender(self.parent, enemy))
                     found = True
 
@@ -954,8 +955,8 @@ class Enemy:
         elif self.tier == 'B':
             self.timer = 250
             info.enemies.append(Enemy(False, 3, [self.x, self.y], self.lineIndex))
-        elif self.tier == 'C':
-            self.timer = 250
+        elif self.tier == 'D':
+            self.timer = 100
             info.enemies.append(Enemy(False, 7, [self.x, self.y], self.lineIndex))
 
         if self.freezeTimer > 0:
@@ -2425,7 +2426,12 @@ waves = [
     '18' * 75,
     '0A' * 3,
     '0A' * 5,
-    '0C'
+    '0A' * 8,
+    '0C',
+    '0C' * 2,
+    '0C' * 3,
+    '0C' * 5,
+    '0D'
 ]
 
 enemyColors = {
@@ -2440,7 +2446,8 @@ enemyColors = {
     '8': (110, 38, 14),
     'A': (146, 43, 62),
     'B': (191, 64, 191),
-    'C': (64, 64, 64)
+    'C': (211, 47, 47),
+    'D': (64, 64, 64)
 }
 
 damages = {
@@ -2455,7 +2462,8 @@ damages = {
     '8': 9,
     'A': 30,
     'B': 69,
-    'C': 100
+    'C': 30,
+    'D': 100
 }
 
 speed = {
@@ -2468,29 +2476,33 @@ speed = {
     '6': 3,
     '7': 2,
     '8': 2,
-    'A': 1,
-    'B': 1,
-    'C': 1
+    'A': 1,     # True Speed: 1/3 (0.33...)
+    'B': 1,     # True Speed: 1/5 (0.2)
+    'C': 1,
+    'D': 1      # True Speed: 1/2 (0.5)
 }
 
-onlyExplosiveTiers = [7, 8, 'C']
+onlyExplosiveTiers = [7, 8, 'D']
 
 trueHP = {
     'A': 500,
     'B': 2000,
-    'C': 5000
+    'C': 1000,
+    'D': 10000
 }
 
 bossCoins = {
     'A': 150,
     'B': 250,
-    'C': 500
+    'C': 100,
+    'D': 500
 }
 
 bossFreeze = {
     'A': 3,
     'B': 5,
-    'C': 5
+    'C': 0,
+    'D': 2
 }
 
 defaults = {
