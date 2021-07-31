@@ -304,7 +304,7 @@ class SpikeTower(Towers):
     price = 125
     upgradePrices = [
         [50, 100, 150],
-        [75, 350, 500],
+        [100, 400, 1000],
         [100, 125, 200]
     ]
     upgradeNames = [
@@ -406,7 +406,7 @@ class BananaFarm(Towers):
     upgradePrices = [
         [30, 50, 65],
         [30, 45, 60],
-        [40, 75, 115]
+        [50, 150, 300]
     ]
     upgradeNames = [
         ['Banana Cannon', 'More Banana Shots', 'Super Range'],
@@ -1079,8 +1079,8 @@ class Enemy:
                 color = (255, 0, 0)
 
             pygame.draw.rect(screen, (128, 128, 128), (self.x - 50, self.y - 25, 100, 5))
-            pygame.draw.rect(screen, (0, 0, 0), (self.x - 50, self.y - 25, 100, 5), 1)
             pygame.draw.rect(screen, color, (self.x - 50, self.y - 25, round(self.HP / self.MaxHP * 100), 5))
+            pygame.draw.rect(screen, (0, 0, 0), (self.x - 50, self.y - 25, 100, 5), 1)
             centredBlit(font, f'{math.ceil(self.HP / self.MaxHP * 100)}%', (0, 0, 0), (self.x, self.y - 35))
 
         pygame.draw.circle(screen, enemyColors[str(self.tier)], (self.x, self.y), 20 if type(self.tier) is str else 10)
