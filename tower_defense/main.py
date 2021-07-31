@@ -1300,6 +1300,14 @@ def draw() -> None:
                 if tower.name == info.placing:
                     classObj = tower
 
+            if info.placing in ['Village', 'Banana Farm']:
+                for tower in info.towers:
+                    if tower == info.selected:
+                        continue
+
+                    if abs(tower.x - mx) ** 2 + abs(tower.y - my) ** 2 < classObj.range ** 2:
+                        pygame.draw.circle(screen, classObj.color, (tower.x, tower.y), 17, 2)
+
             if towerImages[classObj.name] is not None:
                 try:
                     screen.blit(towerImages[classObj.name], (mx - 15, my - 15))
