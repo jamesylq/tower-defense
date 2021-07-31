@@ -411,7 +411,7 @@ class BananaFarm(Towers):
     upgradeNames = [
         ['Banana Cannon', 'More Banana Shots', 'Super Range'],
         ['Increased Income', 'Money Farm', 'Money Factory'],
-        ['Double Coin Drop', '5x Coin Drop', '10x Coin Drop']
+        ['Double Coin Drop', '3x Coin Drop', '5x Coin Drop']
     ]
     range = 100
     cooldown = 0
@@ -1173,7 +1173,7 @@ def income() -> float:
     total = 0.001
     for tower in info.towers:
         if type(tower) is BananaFarm:
-            total += [0.001, 0.003, 0.0075, 0.015][tower.upgrades[1]]
+            total += [0.001, 0.005, 0.01, 0.025][tower.upgrades[1]]
 
     return total
 
@@ -1183,7 +1183,7 @@ def getCoinMultiplier(Tower: Towers) -> int:
     maxCoinMult = 1
     for bananaFarm in bananaFarms:
         if abs(Tower.x - bananaFarm.x) ** 2 + abs(Tower.y - bananaFarm.y) ** 2 < bananaFarm.range ** 2:
-            maxCoinMult = max(maxCoinMult, [1, 2, 5, 10][bananaFarm.upgrades[2]])
+            maxCoinMult = max(maxCoinMult, [1, 2, 3, 5][bananaFarm.upgrades[2]])
 
     return maxCoinMult
 
