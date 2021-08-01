@@ -56,7 +56,6 @@ class Rune:
     def roll(self) -> bool:
         if random.randint(1, 100) <= self.dropChance and self.name not in info.runes:
             return True
-
         return False
 
     def draw(self, x: int, y: int, size: int = 99):
@@ -162,7 +161,7 @@ class data:
 
     def reset(self):
         for attr, default in defaults.items():
-            if attr in ['PBs', 'FinalHP', 'totalWaves', 'status', 'sandboxMode', 'Map', 'statistics', 'achievements', 'mapsBeat', 'runes', 'equippedRune']:
+            if attr in ['PBs', 'FinalHP', 'totalWaves', 'status', 'sandboxMode', 'Map', 'statistics', 'achievements', 'mapsBeat', 'runes', 'equippedRune', 'newRunes']:
                 continue
 
             if type(default) in [dict, list]:
@@ -2429,10 +2428,10 @@ def app() -> None:
                             info.statistics['totalWins'] += 1
                             info.statistics['mapsBeat'] = len([m for m in info.PBs.keys() if type(info.PBs[m]) is int])
 
-                        for rune in Runes:
-                            if rune.roll():
-                                info.runes.append(rune.name)
-                                info.newRunes += 1
+                            for rune in Runes:
+                                if rune.roll():
+                                    info.runes.append(rune.name)
+                                    info.newRunes += 1
 
                     else:
                         info.spawndelay = 20
