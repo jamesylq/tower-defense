@@ -1238,6 +1238,9 @@ class Enemy:
 
                     return new
 
+            if not ignoreBoss:
+                RuneEffects.createEffects(self.x, self.y)
+
         elif type(self.tier) is str:
             self.HP -= 10 if burn else bossDamage
             if self.HP <= 0:
@@ -1249,7 +1252,7 @@ class Enemy:
                 except AttributeError:
                     pass
 
-        RuneEffects.createEffects(self.x, self.y)
+                RuneEffects.createEffects(self.x, self.y)
 
 
 def reset() -> None:
@@ -2341,6 +2344,9 @@ def app() -> None:
                 centredBlit(font, 'Click on a Rune to equip!', (0, 0, 0), (500, 75))
 
                 pygame.draw.rect(screen, (160, 160, 160), (50, 250, 900, 225))
+                if len(info.runes) == 0:
+                    centredBlit(font, 'You have no runes!', (0, 0, 0), (500, 362))
+                    centredBlit(tinyFont, 'Win some battles to earn some runes!', (0, 0, 0), (500, 390))
 
                 x = 0
                 y = 0
