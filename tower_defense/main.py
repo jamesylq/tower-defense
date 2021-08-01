@@ -53,9 +53,11 @@ class Rune:
 
         Runes.append(self)
 
-    def roll(self):
+    def roll(self) -> bool:
         if random.randint(1, 100) <= self.dropChance and self.name not in info.runes:
-            info.runes.append(self.name)
+            return True
+
+        return False
 
     def draw(self, x: int, y: int, size: int = 99):
         if size == 99:
@@ -1783,6 +1785,11 @@ def app() -> None:
             else:
                 pygame.draw.rect(screen, (0, 0, 0), (825, 510, 150, 30), 3)
 
+            if info.newRunes > 0:
+                pygame.draw.circle(screen, (255, 0, 0), (975, 510), 10)
+                pygame.draw.circle(screen, (0, 0, 0), (975, 510), 10, 2)
+                centredBlit(font, str(info.newRunes), (255, 255, 255), (975, 508))
+
             n = 0
             for Map in Maps:
                 if info.PBs[Map.name] != LOCKED or info.sandboxMode:
@@ -1841,6 +1848,7 @@ def app() -> None:
 
                         if 825 <= mx <= 975 and 510 <= my <= 540:
                             info.status = 'cosmetics'
+                            info.newRunes = 0
 
                         if 200 <= mx <= 400 and 550 <= my <= 580:
                             if hasAllUnlocked():
@@ -2415,6 +2423,11 @@ def app() -> None:
                             info.statistics['totalWins'] += 1
                             info.statistics['mapsBeat'] = len([m for m in info.PBs.keys() if type(info.PBs[m]) is int])
 
+                        for rune in Runes:
+                            if rune.roll():
+                                info.runes.append(rune.name)
+                                info.newRunes += 1
+
                     else:
                         info.spawndelay = 20
                         info.nextWave = 300
@@ -2758,7 +2771,8 @@ defaults = {
     },
     'mapsBeat': 0,
     'runes': [],
-    'equippedRune': None
+    'equippedRune': None,
+    'newRunes': 0
 }
 
 achievementRequirements = {
