@@ -1663,6 +1663,8 @@ def load() -> None:
 
         info.statistics['mapsBeat'] = len([m for m in info.PBs.keys() if type(info.PBs[m]) is int])
 
+        info.PBs['The End'] = 100
+
         foundUnlocked = False
         for Map in Maps:
             if Map.name not in info.PBs.keys():
