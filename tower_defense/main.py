@@ -12,6 +12,8 @@ current_path = os.path.dirname(__file__)
 resource_path = os.path.join(current_path, 'resources')
 
 MaxFPS = 100
+Maps = []
+Runes = []
 
 
 class Map:
@@ -26,8 +28,6 @@ class Map:
     def __str__(self):
         return self.name
 
-Maps = []
-
 RACE_TRACK = Map([[25, 0], [25, 375], [775, 375], [775, 25], [40, 25], [40, 360], [760, 360], [760, 40], [55, 40], [55, 345], [745, 345], [745, 55], [0, 55]], "Race Track", (19, 109, 21), (189, 22, 44), (189, 22, 44))
 WIZARDS_LAIR = Map([[0, 25], [775, 25], [775, 425], [25, 425], [25, 75], [725, 75], [725, 375], [0, 375]], "Wizard's Lair", (187, 11, 255), (153, 153, 153))
 POND = Map([[0, 25], [700, 25], [700, 375], [100, 375], [100, 75], [800, 75]], "Pond", (6, 50, 98), (0, 0, 255))
@@ -35,6 +35,118 @@ LAVA_SPIRAL = Map([[300, 225], [575, 225], [575, 325], [125, 325], [125, 125], [
 PLAINS = Map([[25, 0], [25, 425], [525, 425], [525, 25], [275, 25], [275, 275], [750, 275], [750, 0]], "Plains", (19, 109, 21), (155, 118, 83))
 DESERT = Map([[0, 25], [750, 25], [750, 200], [25, 200], [25, 375], [800, 375]], "Desert", (170, 108, 35), (178, 151, 5))
 THE_END = Map([[0, 225], [800, 225]], "The End", (100, 100, 100), (200, 200, 200))
+
+
+class Rune:
+    def __init__(self, name: str, dropChance: float, lore: str, imageName: str = 'rune.png'):
+        self.name = name
+        self.ID = len(Runes)
+        self.dropChance = dropChance
+        self.lore = lore
+
+        try:
+            self.imageTexture = pygame.image.load(os.path.join(resource_path, imageName))
+        except FileNotFoundError:
+            self.imageTexture = pygame.image.load(os.path.join(resource_path, 'rune.png'))
+
+        self.smallImageTexture = pygame.transform.scale(self.imageTexture, (66, 66))
+
+        Runes.append(self)
+
+    def roll(self):
+        if random.randint(1, 100) <= self.dropChance and self.name not in info.runes:
+            info.runes.append(self.name)
+
+    def draw(self, x: int, y: int, size: int = 99):
+        if size == 99:
+            texture = self.imageTexture
+        elif size == 66:
+            texture = self.smallImageTexture
+        else:
+            texture = pygame.transform.scale(self.imageTexture, (size, size))
+
+        screen.blit(texture, texture.get_rect(center=[x, y]))
+
+
+class RuneEffect:
+    class BloodRuneEffect:
+        def __init__(self, x: int, y: int):
+            self.x = x
+            self.y = y
+            self.visibleTicks = 50
+
+        def draw(self):
+            pygame.draw.circle(screen, (255, 0, 0), (self.x, self.y), 2)
+
+    class IceRuneEffect:
+        def __init__(self, x: int, y: int):
+            self.x = x
+            self.y = y
+            self.visibleTicks = 50
+
+        def draw(self):
+            pygame.draw.circle(screen, (0, 0, 255), (self.x, self.y), 2)
+
+    class GoldRuneEffect:
+        def __init__(self, x: int, y: int):
+            self.x = x
+            self.y = y
+            self.visibleTicks = 50
+
+        def draw(self):
+            pygame.draw.circle(screen, (255, 255, 0), (self.x, self.y), 2)
+
+    class LightningRuneEffect:
+        def __init__(self, x: int, y: int):
+            self.x = x
+            self.y = y
+            self.visibleTicks = 50
+
+        def draw(self):
+            pygame.draw.line(screen, (191, 0, 255), (self.x, self.y), (500, -200), 3)
+
+    def __init__(self):
+        self.rune = info.equippedRune
+        self.effects = []
+        self.x = 0
+        self.y = 0
+
+    def createEffects(self, x: int, y: int):
+        self.x = x
+        self.y = y
+
+        if self.rune == 'Blood Rune':
+            for n in range(5):
+                self.effects.append(self.BloodRuneEffect(self.x + random.randint(-3, 3), self.y + random.randint(-3, 3)))
+
+        elif self.rune == 'Ice Rune':
+            for n in range(5):
+                self.effects.append(self.IceRuneEffect(self.x + random.randint(-3, 3), self.y + random.randint(-3, 3)))
+
+        elif self.rune == 'Gold Rune':
+            for n in range(5):
+                self.effects.append(self.GoldRuneEffect(self.x + random.randint(-3, 3), self.y + random.randint(-3, 3)))
+
+        elif self.rune == 'Lightning Rune':
+            self.effects.append(self.LightningRuneEffect(self.x, self.y))
+
+    def draw(self):
+        for effect in self.effects:
+            effect.draw()
+            effect.visibleTicks -= 1
+
+            if effect.visibleTicks == 0:
+                self.effects.remove(effect)
+
+    def update(self):
+        self.rune = info.equippedRune
+
+
+RUNE = Rune('null', 0, 'A glitched rune. How did you get this?')
+BLOOD_RUNE = Rune('Blood Rune', 12, 'The rune forged by the Blood Gods.', 'blood_rune.png')
+ICE_RUNE = Rune('Ice Rune', 8, 'A rune as cold as ice.', 'ice_rune.png')
+GOLD_RUNE = Rune('Gold Rune', 5, 'The rune of the wealthy - Classy!', 'gold_rune.png')
+LIGHTNING_RUNE = Rune('Lightning Rune', 3, 'Legends say it was created by Zeus himself.', 'lightning_rune.png')
 
 
 class data:
@@ -48,7 +160,7 @@ class data:
 
     def reset(self):
         for attr, default in defaults.items():
-            if attr in ['PBs', 'FinalHP', 'totalWaves', 'status', 'sandboxMode', 'Map', 'statistics', 'achievements', 'mapsBeat']:
+            if attr in ['PBs', 'FinalHP', 'totalWaves', 'status', 'sandboxMode', 'Map', 'statistics', 'achievements', 'mapsBeat', 'runes', 'equippedRune']:
                 continue
 
             if type(default) in [dict, list]:
@@ -736,7 +848,7 @@ class Village(Towers):
             self.timer = 0
 
         def attack(self):
-            closest = getTarget(Towers(self.x, self.y), overrideRange=self.parent.range)
+            closest = getTarget(Towers(self.x, self.y, overrideAddToTowers=True), overrideRange=self.parent.range)
             if closest is None:
                 self.parent.timer = 100
             else:
@@ -754,7 +866,7 @@ class Village(Towers):
             if self.dx is None:
                 if self.tx is None:
                     if self.moveCooldown >= 250:
-                        closest = getTarget(Towers(self.x, self.y), overrideRange=self.parent.range, ignore=self.parent.targets)
+                        closest = getTarget(Towers(self.x, self.y, overrideAddToTowers=True), overrideRange=self.parent.range, ignore=self.parent.targets)
                         if closest is None:
                             self.tx = self.parent.x
                             self.ty = self.parent.y
@@ -765,7 +877,7 @@ class Village(Towers):
                             self.moveCooldown = 0
                             self.parent.targets = [villager.target for villager in self.parent.villagers]
 
-                    elif getTarget(Towers(self.x, self.y), overrideRange=self.parent.range) is None or (self.x - self.parent.x) ** 2 + (self.y - self.parent.y) ** 2 < 625:
+                    elif getTarget(Towers(self.x, self.y, overrideAddToTowers=True), overrideRange=self.parent.range) is None or (self.x - self.parent.x) ** 2 + (self.y - self.parent.y) ** 2 < 625:
                         self.moveCooldown += 1
 
                 else:
@@ -1135,6 +1247,8 @@ class Enemy:
                 except AttributeError:
                     pass
 
+        RuneEffects.createEffects(self.x, self.y)
+
 
 def reset() -> None:
     try:
@@ -1275,6 +1389,12 @@ def hexToRGB(hexString: str) -> Tuple[int]:
     return int(r, 16), int(g, 16), int(b, 16)
 
 
+def getRune(name: str) -> Rune:
+    for rune in Runes:
+        if rune.name == name:
+            return rune
+
+
 def draw() -> None:
     mx, my = pygame.mouse.get_pos()
 
@@ -1283,6 +1403,8 @@ def draw() -> None:
     for i in range(len(info.Map.path) - 1):
         pygame.draw.line(screen, info.Map.pathColor, info.Map.path[i], info.Map.path[i + 1], 10)
     pygame.draw.circle(screen, info.Map.pathColor, info.Map.path[0], 10)
+
+    RuneEffects.draw()
 
     for tower in info.towers:
         tower.draw()
@@ -1654,6 +1776,13 @@ def app() -> None:
             else:
                 pygame.draw.rect(screen, (0, 0, 0), (825, 550, 150, 30), 3)
 
+            pygame.draw.rect(screen, (200, 200, 200), (825, 510, 150, 30))
+            centredBlit(font, 'Cosmetics', (0, 0, 0), (900, 525))
+            if 825 <= mx <= 975 and 510 < my <= 540:
+                pygame.draw.rect(screen, (128, 128, 128), (825, 510, 150, 30), 5)
+            else:
+                pygame.draw.rect(screen, (0, 0, 0), (825, 510, 150, 30), 3)
+
             n = 0
             for Map in Maps:
                 if info.PBs[Map.name] != LOCKED or info.sandboxMode:
@@ -1709,6 +1838,9 @@ def app() -> None:
 
                         if 825 <= mx <= 975 and 550 <= my <= 580:
                             info.status = 'achievements'
+
+                        if 825 <= mx <= 975 and 510 <= my <= 540:
+                            info.status = 'cosmetics'
 
                         if 200 <= mx <= 400 and 550 <= my <= 580:
                             if hasAllUnlocked():
@@ -2184,6 +2316,72 @@ def app() -> None:
 
                     clock.tick(100)
 
+        elif info.status == 'cosmetics':
+            while True:
+                mx, my = pygame.mouse.get_pos()
+
+                screen.fill((200, 200, 200))
+
+                pygame.draw.rect(screen, (255, 0, 0), (30, 550, 100, 30))
+                centredBlit(font, 'Cancel', (0, 0, 0), (80, 565))
+                if 30 <= mx <= 130 and 550 <= my <= 580:
+                    pygame.draw.rect(screen, (64, 64, 64), (30, 550, 100, 30), 3)
+                else:
+                    pygame.draw.rect(screen, (0, 0, 0), (30, 550, 100, 30), 3)
+
+                pygame.draw.rect(screen, (160, 160, 160), (440, 100, 120, 120))
+                centredBlit(font, 'Click on a Rune to equip!', (0, 0, 0), (500, 75))
+
+                pygame.draw.rect(screen, (160, 160, 160), (50, 250, 900, 225))
+
+                x = 0
+                y = 0
+                for rune in info.runes:
+                    try:
+                        getRune(rune).draw(x * 75 + 87, y * 75 + 287, 66)
+
+                        x += 1
+                        if x == 12:
+                            x = 0
+                            y += 1
+
+                    except AttributeError:
+                        print('tower-defense.core: There seems to be a removed rune in your inventory and it has been deleted!')
+                        info.runes.remove(rune)
+
+                if info.equippedRune is not None:
+                    try:
+                        getRune(info.equippedRune).draw(500, 160)
+                        leftAlignBlit(font, info.equippedRune, (0, 0, 0), (600, 120))
+                        leftAlignBlit(tinyFont, getRune(info.equippedRune).lore, (0, 0, 0), (600, 150))
+
+                    except AttributeError:
+                        print('tower-defense.core: You seem to have a removed rune equipped and it has been deleted!')
+
+                cont = True
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        save()
+                        quit()
+
+                    elif event.type == pygame.MOUSEBUTTONDOWN:
+                        if event.button == 1:
+                            if 30 <= mx <= 130 and 550 <= my <= 580:
+                                info.status = 'mapSelect'
+                                cont = False
+
+                            elif 50 <= mx <= 950:
+                                try:
+                                    info.equippedRune = info.runes[(mx - 50) // 75 + 12 * ((my - 250) // 75)]
+
+                                except IndexError:
+                                    pass
+
+                if not cont:
+                    break
+
+                pygame.display.update()
+
         elif info.status == 'game':
             if info.spawndelay == 0 and len(info.spawnleft) > 0:
                 if type(info.spawnleft[1]) is str:
@@ -2235,6 +2433,8 @@ def app() -> None:
 
             draw()
             move()
+
+            RuneEffects.update()
 
             if info.HP <= 0:
                 info.status = 'lose'
@@ -2556,7 +2756,9 @@ defaults = {
         'spendCoins': 0,
         'beatMaps': 0
     },
-    'mapsBeat': 0
+    'mapsBeat': 0,
+    'runes': [],
+    'equippedRune': None
 }
 
 achievementRequirements = {
@@ -2641,6 +2843,8 @@ healthImage = pygame.transform.scale(pygame.image.load(os.path.join(resource_pat
 SIN45 = COS45 = math.sqrt(2) / 2
 
 info = data()
+RuneEffects = RuneEffect()
+
 if __name__ == '__main__':
     app()
     print('tower-defense.core: An unexpected error occured.')
