@@ -148,6 +148,7 @@ BLOOD_RUNE = Rune('Blood Rune', 12, 'The rune forged by the Blood Gods.', 'blood
 ICE_RUNE = Rune('Ice Rune', 8, 'A rune as cold as ice.', 'ice_rune.png')
 GOLD_RUNE = Rune('Gold Rune', 5, 'The rune of the wealthy - Classy!', 'gold_rune.png')
 LIGHTNING_RUNE = Rune('Lightning Rune', 3, 'Legends say it was created by Zeus himself.', 'lightning_rune.png')
+RAINBOW_RUNE = Rune('Rainbow Rune', 2, 'A rainbow tail forms behind your cursor!', 'rainbow_rune.png')
 
 
 class data:
@@ -2335,7 +2336,7 @@ def app() -> None:
                 screen.fill((200, 200, 200))
 
                 pygame.draw.rect(screen, (255, 0, 0), (30, 550, 100, 30))
-                centredBlit(font, 'Cancel', (0, 0, 0), (80, 565))
+                centredBlit(font, 'Close', (0, 0, 0), (80, 565))
                 if 30 <= mx <= 130 and 550 <= my <= 580:
                     pygame.draw.rect(screen, (64, 64, 64), (30, 550, 100, 30), 3)
                 else:
@@ -2353,7 +2354,11 @@ def app() -> None:
                 y = 0
                 for rune in info.runes:
                     try:
+                        pygame.draw.rect(screen, (64, 64, 64), (x * 75 + 52, y * 75 + 252, 70, 70))
                         getRune(rune).draw(x * 75 + 87, y * 75 + 287, 66)
+
+                        if rune == info.equippedRune:
+                            pygame.draw.rect(screen, (128, 128, 128), (x * 75 + 52, y * 75 + 252, 70, 70), 5)
 
                         x += 1
                         if x == 12:
@@ -2392,12 +2397,34 @@ def app() -> None:
                                 except IndexError:
                                     pass
 
+                    elif event.type == pygame.KEYDOWN:
+                        if info.equippedRune is not None:
+                            try:
+                                newIndex = info.runes.index(info.equippedRune)
+
+                                if event.key == pygame.K_UP:
+                                    newIndex -= 12
+                                elif event.key == pygame.K_DOWN:
+                                    newIndex += 12
+                                elif event.key == pygame.K_LEFT:
+                                    newIndex -= 1
+                                elif event.key == pygame.K_RIGHT:
+                                    newIndex += 1
+
+                                if 0 <= newIndex < len(info.runes):
+                                    info.equippedRune = info.runes[newIndex]
+
+                            except ValueError:
+                                print('tower-defense.core: Fatal - There seems to be a problem with your equipped rune.')
+
                 if not cont:
                     break
 
                 pygame.display.update()
 
         elif info.status == 'game':
+            global mouseTrail, rainbowShiftCount, rainbowShiftIndex
+
             if info.spawndelay == 0 and len(info.spawnleft) > 0:
                 if type(info.spawnleft[1]) is str:
                     info.enemies.append(Enemy(True if info.spawnleft[0] == '1' else False, info.spawnleft[1], info.Map.path[0], 0))
@@ -2448,11 +2475,26 @@ def app() -> None:
 
             mx, my = pygame.mouse.get_pos()
 
+            mouseTrail.append([mx, my])
+            if len(mouseTrail) >= 10:
+                mouseTrail = mouseTrail[:-10]
+
             clock.tick(MaxFPS)
             info.coins += income()
 
             draw()
             move()
+
+            if info.equippedRune == 'Rainbow Rune':
+                rainbowShiftCount += 1
+                if rainbowShiftCount > 1000:
+                    rainbowShiftIndex = (rainbowShiftIndex + 1) % 7
+                    rainbowShiftCount = 0
+
+                for n in range(len(mouseTrail) - 1):
+                    pygame.draw.line(screen, [rainbowColors[rainbowShiftIndex][n] + rainbowShift[rainbowShiftIndex][n] * rainbowShiftCount for n in range(3)], mouseTrail[n], mouseTrail[n + 1], 5)
+
+            pygame.display.update()
 
             RuneEffects.update()
 
@@ -2865,6 +2907,12 @@ SIN45 = COS45 = math.sqrt(2) / 2
 
 info = data()
 RuneEffects = RuneEffect()
+mouseTrail = []
+
+rainbowColors = [[255, 0, 0], [0, 127, 0], [255, 255, 0], [0, 255, 0], [0, 0, 255], [46, 43, 95], [139, 0, 255]]
+rainbowShift = [[0, 0.127, 0], [0.255, 0.127, 0], [-0.255, 0, 0], [0, -0.255, 0.255], [0.046, 0.043, -0.16], [0.093, -0.043, 0.16], [0.116, 0, -0.255]]
+rainbowShiftCount = 0
+rainbowShiftIndex = 0
 
 if __name__ == '__main__':
     app()
