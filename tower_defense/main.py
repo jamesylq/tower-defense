@@ -2390,7 +2390,7 @@ def app() -> None:
                                 info.status = 'mapSelect'
                                 cont = False
 
-                            elif 50 <= mx <= 950:
+                            elif 50 <= mx <= 950 and 250 <= my <= 475:
                                 try:
                                     info.equippedRune = info.runes[(mx - 50) // 75 + 12 * ((my - 250) // 75)]
 
