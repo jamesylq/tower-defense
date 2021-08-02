@@ -2911,8 +2911,8 @@ mouseTrail = []
 
 rainbowColors = [[255, 0, 0], [0, 127, 0], [255, 255, 0], [0, 255, 0], [0, 0, 255], [46, 43, 95], [139, 0, 255]]
 rainbowShift = [[0, 0.127, 0], [0.255, 0.127, 0], [-0.255, 0, 0], [0, -0.255, 0.255], [0.046, 0.043, -0.16], [0.093, -0.043, 0.16], [0.116, 0, -0.255]]
-rainbowShiftCount = 0
-rainbowShiftIndex = 0
+rainbowShiftCount = random.randint(0, 999)
+rainbowShiftIndex = random.randint(0, 6)
 
 if __name__ == '__main__':
     app()
