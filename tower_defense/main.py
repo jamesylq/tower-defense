@@ -106,30 +106,53 @@ class RuneEffect:
         def draw(self):
             pygame.draw.line(screen, (191, 0, 255), (self.x, self.y), (500, -200), 3)
 
+    class ShrinkRuneEffect:
+        def __init__(self, x: int, y: int, radius: int, color: Tuple[int]):
+            self.x = x
+            self.y = y
+            self.radius = radius
+            self.color = color
+            self.visibleTicks = 50
+
+        def draw(self):
+            pygame.draw.circle(screen, self.color, (self.x, self.y), self.radius * self.visibleTicks // 50)
+
+    class LeapRuneEffect:
+        def __init__(self, x: int, y: int, radius: int, color: Tuple[int]):
+            self.x = x
+            self.y = y
+            self.radius = radius
+            self.color = color
+            self.visibleTicks = 50
+
+        def draw(self):
+            pygame.draw.circle(screen, self.color, (self.x, self.y - 600 + 12 * self.visibleTicks), self.radius)
+
     def __init__(self):
         self.rune = info.equippedRune
         self.effects = []
-        self.x = 0
-        self.y = 0
 
-    def createEffects(self, x: int, y: int):
-        self.x = x
-        self.y = y
-
+    def createEffects(self, target):
         if self.rune == 'Blood Rune':
             for n in range(5):
-                self.effects.append(self.BloodRuneEffect(self.x + random.randint(-3, 3), self.y + random.randint(-3, 3)))
+                self.effects.append(self.BloodRuneEffect(target.x + random.randint(-3, 3), target.y + random.randint(-3, 3)))
 
         elif self.rune == 'Ice Rune':
             for n in range(5):
-                self.effects.append(self.IceRuneEffect(self.x + random.randint(-3, 3), self.y + random.randint(-3, 3)))
+                self.effects.append(self.IceRuneEffect(target.x + random.randint(-3, 3), target.y + random.randint(-3, 3)))
 
         elif self.rune == 'Gold Rune':
             for n in range(5):
-                self.effects.append(self.GoldRuneEffect(self.x + random.randint(-3, 3), self.y + random.randint(-3, 3)))
+                self.effects.append(self.GoldRuneEffect(target.x + random.randint(-3, 3), target.y + random.randint(-3, 3)))
 
         elif self.rune == 'Lightning Rune':
-            self.effects.append(self.LightningRuneEffect(self.x, self.y))
+            self.effects.append(self.LightningRuneEffect(target.x, target.y))
+
+        elif self.rune == 'Shrink Rune':
+            self.effects.append(self.ShrinkRuneEffect(target.x, target.y, 20 if type(target.tier) is str else 10, enemyColors[str(target.tier)]))
+
+        elif self.rune == 'Leap Rune':
+            self.effects.append(self.LeapRuneEffect(target.x, target.y, 20 if type(target.tier) is str else 10, enemyColors[str(target.tier)]))
 
     def draw(self):
         for effect in self.effects:
@@ -144,10 +167,12 @@ class RuneEffect:
 
 
 RUNE = Rune('null', 0, 'A glitched rune. How did you get this?')
-BLOOD_RUNE = Rune('Blood Rune', 12, 'The rune forged by the Blood Gods.', 'blood_rune.png')
-ICE_RUNE = Rune('Ice Rune', 8, 'A rune as cold as ice.', 'ice_rune.png')
-GOLD_RUNE = Rune('Gold Rune', 5, 'The rune of the wealthy - Classy!', 'gold_rune.png')
-LIGHTNING_RUNE = Rune('Lightning Rune', 3, 'Legends say it was created by Zeus himself.', 'lightning_rune.png')
+BLOOD_RUNE = Rune('Blood Rune', 15, 'The rune forged by the Blood Gods.', 'blood_rune.png')
+ICE_RUNE = Rune('Ice Rune', 12, 'A rune as cold as ice.', 'ice_rune.png')
+GOLD_RUNE = Rune('Gold Rune', 8, 'The rune of the wealthy - Classy!', 'gold_rune.png')
+LEAP_RUNE = Rune('Leap Rune', 8, 'Jump!', 'leap_rune.png')
+LIGHTNING_RUNE = Rune('Lightning Rune', 5, 'Legends say it was created by Zeus himself.', 'lightning_rune.png')
+SHRINK_RUNE = Rune('Shrink Rune', 3, 'This magical rune compresses its foes!', 'shrink_rune.png')
 RAINBOW_RUNE = Rune('Rainbow Rune', 2, 'A rainbow tail forms behind your cursor!', 'rainbow_rune.png')
 
 
@@ -1239,7 +1264,7 @@ class Enemy:
                     return new
 
             if not ignoreBoss:
-                RuneEffects.createEffects(self.x, self.y)
+                RuneEffects.createEffects(self)
 
         elif type(self.tier) is str:
             self.HP -= 10 if burn else bossDamage
@@ -1252,7 +1277,7 @@ class Enemy:
                 except AttributeError:
                     pass
 
-                RuneEffects.createEffects(self.x, self.y)
+                RuneEffects.createEffects(self)
 
 
 def reset() -> None:
