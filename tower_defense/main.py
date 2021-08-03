@@ -785,7 +785,7 @@ class InfernoTower(Towers):
             self.visibleTicks = 50
 
         def draw(self):
-            pygame.draw.line(screen, (255, 69, 0), (self.parent.x, self.parent.y - 5), (self.target.x, self.target.y), 2)
+            pygame.draw.line(screen, (255, 69, 0), (self.parent.x, self.parent.y - 12), (self.target.x, self.target.y), 2)
             self.visibleTicks -= 1
             if self.visibleTicks == 0:
                 self.parent.inferno.renders.remove(self)
@@ -1772,6 +1772,8 @@ def app() -> None:
                 break
 
     while True:
+        global mouseTrail
+
         mx, my = pygame.mouse.get_pos()
 
         if info.status == 'mapSelect':
@@ -1860,11 +1862,13 @@ def app() -> None:
                                     info.Map = Maps[n]
                                     info.status = 'game'
                                     info.coins = 100000 if info.sandboxMode else 50
+                                    mouseTrail.clear()
 
                         if 10 <= mx <= 980 and 40 * len(Maps) + 60 <= my <= 40 * len(Maps) + 90:
                             info.Map = random.choice([Map for Map in Maps if info.PBs[Map.name] != LOCKED])
                             info.status = 'game'
                             info.coins = 100000 if info.sandboxMode else 50
+                            mouseTrail.clear()
 
                         if 25 <= mx <= 150 and 550 <= my <= 580:
                             info.status = 'mapMaker'
@@ -2443,7 +2447,7 @@ def app() -> None:
                 pygame.display.update()
 
         elif info.status == 'game':
-            global mouseTrail, rainbowShiftCount, rainbowShiftIndex
+            global rainbowShiftCount, rainbowShiftIndex
 
             if info.spawndelay == 0 and len(info.spawnleft) > 0:
                 if type(info.spawnleft[1]) is str:
@@ -2764,7 +2768,7 @@ speed = {
     '6': 3,
     '7': 2,
     '8': 2,
-    'A': 1,     # True Speed: 1/3 (0.33...)
+    'A': 1,     # True Speed: 1/3 (0.333...)
     'B': 1,     # True Speed: 1/5 (0.2)
     'C': 1,
     'D': 1      # True Speed: 1/2 (0.5)
