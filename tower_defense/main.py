@@ -2425,19 +2425,14 @@ def app() -> None:
                     elif event.type == pygame.KEYDOWN:
                         if info.equippedRune is not None:
                             try:
-                                newIndex = info.runes.index(info.equippedRune)
-
                                 if event.key == pygame.K_UP:
-                                    newIndex -= 12
+                                    info.equippedRune = info.runes[max(info.runes.index(info.equippedRune) - 12, 0)]
                                 elif event.key == pygame.K_DOWN:
-                                    newIndex += 12
+                                    info.equippedRune = info.runes[min(info.runes.index(info.equippedRune) + 12, len(info.runes) - 1)]
                                 elif event.key == pygame.K_LEFT:
-                                    newIndex -= 1
+                                    info.equippedRune = info.runes[max(info.runes.index(info.equippedRune) - 1, 0)]
                                 elif event.key == pygame.K_RIGHT:
-                                    newIndex += 1
-
-                                if 0 <= newIndex < len(info.runes):
-                                    info.equippedRune = info.runes[newIndex]
+                                    info.equippedRune = info.runes[min(info.runes.index(info.equippedRune) + 1, len(info.runes) - 1)]
 
                             except ValueError:
                                 print('tower-defense.core: Fatal - There seems to be a problem with your equipped rune.')
