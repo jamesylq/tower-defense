@@ -49,6 +49,9 @@ class Rune:
         except FileNotFoundError:
             self.imageTexture = pygame.image.load(os.path.join(resource_path, 'rune.png'))
 
+        if self.imageTexture.get_size() != (99, 99):
+            self.imageTexture = pygame.transform.scale(self.imageTexture, (99, 99))
+
         self.smallImageTexture = pygame.transform.scale(self.imageTexture, (66, 66))
 
         Runes.append(self)
