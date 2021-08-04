@@ -1193,7 +1193,7 @@ class Enemy:
         if self.tier not in onlyExplosiveTiers:
             for projectile in info.piercingProjectiles:
                 if abs(self.x - projectile.x) ** 2 + abs(self.y - projectile.y) ** 2 < (400 if type(self.tier) is str else 100):
-                    if (self not in projectile.ignore) and (not self.camo):
+                    if (self not in projectile.ignore) and (canSeeCamo(projectile.parent) or not self.camo):
                         damage = 1
                         if type(projectile.parent) is Bowler:
                             if projectile.parent.upgrades[0] == 2:
@@ -2428,6 +2428,10 @@ def app() -> None:
 
                     elif event.type == pygame.KEYDOWN:
                         if info.equippedRune is not None:
+                            if event.key == pygame.K_RETURN:
+                                info.status = 'mapSelect'
+                                cont = False
+
                             try:
                                 if event.key == pygame.K_UP:
                                     info.equippedRune = info.runes[max(info.runes.index(info.equippedRune) - 12, 0)]
