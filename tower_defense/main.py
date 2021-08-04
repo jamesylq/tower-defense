@@ -32,6 +32,7 @@ RACE_TRACK = Map([[25, 0], [25, 375], [775, 375], [775, 25], [40, 25], [40, 360]
 WIZARDS_LAIR = Map([[0, 25], [775, 25], [775, 425], [25, 425], [25, 75], [725, 75], [725, 375], [0, 375]], "Wizard's Lair", (187, 11, 255), (153, 153, 153))
 POND = Map([[0, 25], [700, 25], [700, 375], [100, 375], [100, 75], [800, 75]], "Pond", (6, 50, 98), (0, 0, 255))
 LAVA_SPIRAL = Map([[300, 225], [575, 225], [575, 325], [125, 325], [125, 125], [675, 125], [675, 425], [25, 425], [25, 0]], "Lava Spiral", (207, 16, 32), (255, 140, 0), (178, 66, 0))
+THE_MOON = Map([[0, 400], [725, 400], [725, 325], [650, 325], [650, 375], [750, 375], [750, 75], [650, 75], [650, 125], [725, 125], [725, 50], [0, 50]], "The Moon", (100, 100, 100), (255, 255, 102), (52, 52, 52))
 PLAINS = Map([[25, 0], [25, 425], [525, 425], [525, 25], [275, 25], [275, 275], [750, 275], [750, 0]], "Plains", (19, 109, 21), (155, 118, 83))
 DESERT = Map([[0, 25], [750, 25], [750, 200], [25, 200], [25, 375], [800, 375]], "Desert", (170, 108, 35), (178, 151, 5))
 THE_END = Map([[0, 225], [800, 225]], "The End", (100, 100, 100), (200, 200, 200))
@@ -1704,6 +1705,18 @@ def load() -> None:
 
             elif not foundUnlocked:
                 info.PBs[Map.name] = None
+
+        Maps.reverse()
+
+        foundCompleted = False
+        for Map in Maps:
+            if foundCompleted and info.PBs[Map.name] == LOCKED:
+                info.PBs[Map.name] = None
+
+            elif type(info.PBs[Map.name]) is int:
+                foundCompleted = True
+
+        Maps.reverse()
 
         if info.totalWaves != len(waves):
             info.totalWaves = len(waves)
