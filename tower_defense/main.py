@@ -2871,7 +2871,7 @@ defaults = {
 achievementRequirements = {
     'beatMaps': {
         'attr': 'mapsBeat',
-        'tiers': [1, 3, 7]
+        'tiers': [1, math.floor(len(Maps) / 2), len(Maps)]
     },
     'pops': {
         'attr': 'pops',
@@ -2889,7 +2889,7 @@ achievementRequirements = {
 
 achievements = {
     'beatMaps': {
-        'names': ['First map!', 'Third time\'s the charm', 'Master of The End'],
+        'names': ['First Map!', 'Map Conqueror', 'Master of The End'],
         'lore': 'Beat [%] unique maps!'
     },
     'pops': {
