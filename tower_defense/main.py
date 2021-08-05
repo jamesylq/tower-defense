@@ -32,7 +32,7 @@ RACE_TRACK = Map([[25, 0], [25, 375], [775, 375], [775, 25], [40, 25], [40, 360]
 WIZARDS_LAIR = Map([[0, 25], [775, 25], [775, 425], [25, 425], [25, 75], [725, 75], [725, 375], [0, 375]], "Wizard's Lair", (187, 11, 255), (153, 153, 153))
 POND = Map([[0, 25], [700, 25], [700, 375], [100, 375], [100, 75], [800, 75]], "Pond", (6, 50, 98), (0, 0, 255))
 LAVA_SPIRAL = Map([[300, 225], [575, 225], [575, 325], [125, 325], [125, 125], [675, 125], [675, 425], [25, 425], [25, 0]], "Lava Spiral", (207, 16, 32), (255, 140, 0), (178, 66, 0))
-THE_MOON = Map([[0, 400], [725, 400], [725, 325], [650, 325], [650, 375], [750, 375], [750, 75], [650, 75], [650, 125], [725, 125], [725, 50], [0, 50]], "The Moon", (100, 100, 100), (255, 255, 102), (52, 52, 52))
+THE_MOON = Map([[0, 400], [725, 400], [725, 325], [650, 325], [650, 375], [750, 375], [750, 75], [650, 75], [650, 125], [725, 125], [725, 50], [0, 50]], "The Moon", (100, 100, 100), (255, 255, 102), (152, 152, 152))
 PLAINS = Map([[25, 0], [25, 425], [525, 425], [525, 25], [275, 25], [275, 275], [750, 275], [750, 0]], "Plains", (19, 109, 21), (155, 118, 83))
 DESERT = Map([[0, 25], [750, 25], [750, 200], [25, 200], [25, 375], [800, 375]], "Desert", (170, 108, 35), (178, 151, 5))
 THE_END = Map([[0, 225], [800, 225]], "The End", (100, 100, 100), (200, 200, 200))
@@ -1841,28 +1841,29 @@ def app() -> None:
             n = 0
             for Map in Maps:
                 if info.PBs[Map.name] != LOCKED or info.sandboxMode:
-                    pygame.draw.rect(screen, Map.displayColor, (10, 40 * n + 60, 980, 30))
-                    if 10 <= mx <= 980 and 40 * n + 60 <= my <= 40 * n + 90:
-                        pygame.draw.rect(screen, (128, 128, 128), (10, 40 * n + 60, 980, 30), 5)
+                    pygame.draw.rect(screen, Map.displayColor, (10, 40 * n + 60, 825, 30))
+                    if 10 <= mx <= 835 and 40 * n + 60 <= my <= 40 * n + 90:
+                        pygame.draw.rect(screen, (128, 128, 128), (10, 40 * n + 60, 825, 30), 5)
                     else:
-                        pygame.draw.rect(screen, (0, 0, 0), (10, 40 * n + 60, 980, 30), 3)
+                        pygame.draw.rect(screen, (0, 0, 0), (10, 40 * n + 60, 825, 30), 3)
 
                     leftAlignBlit(font, Map.name.upper(), (0, 0, 0), (20, 74 + n * 40))
-                    centredBlit(font, f'(Best: {info.PBs[Map.name]})', (225, 225, 0) if info.PBs[Map.name] == 100 else (0, 0, 0), (900, 74 + n * 40))
+                    centredBlit(font, f'[Best: {info.PBs[Map.name]}]', (225, 225, 0) if info.PBs[Map.name] == 100 else (0, 0, 0), (900, 74 + n * 40))
                 else:
-                    pygame.draw.rect(screen, (32, 32, 32), (10, 40 * n + 60, 980, 30))
-                    pygame.draw.rect(screen, (0, 0, 0), (10, 40 * n + 60, 980, 30), 3)
+                    pygame.draw.rect(screen, (32, 32, 32), (10, 40 * n + 60, 925, 30))
+                    pygame.draw.rect(screen, (0, 0, 0), (10, 40 * n + 60, 925, 30), 3)
                     screen.blit(font.render(Map.name.upper(), True, (0, 0, 0)), (20, 62 + n * 40))
-                    screen.blit(font.render(LOCKED, True, (0, 0, 0)), (830, 62 + n * 40))
+                    screen.blit(font.render(LOCKED, True, (0, 0, 0)), (753, 62 + n * 40))
 
                 n += 1
 
-            pygame.draw.rect(screen, (200, 200, 200), (10, 40 * n + 60, 980, 30))
-            if 10 <= mx <= 980 and 40 * n + 60 <= my <= 40 * n + 90:
-                pygame.draw.rect(screen, (128, 128, 128), (10, 40 * n + 60, 980, 30), 5)
+            pygame.draw.rect(screen, (200, 200, 200), (10, 40 * n + 60, 825, 30))
+            if 10 <= mx <= 835 and 40 * n + 60 <= my <= 40 * n + 90:
+                pygame.draw.rect(screen, (128, 128, 128), (10, 40 * n + 60, 825, 30), 5)
             else:
-                pygame.draw.rect(screen, (0, 0, 0), (10, 40 * n + 60, 980, 30), 3)
-            centredBlit(font, 'Random Map', (0, 0, 0), (500, 40 * n + 75))
+                pygame.draw.rect(screen, (0, 0, 0), (10, 40 * n + 60, 825, 30), 3)
+
+            centredBlit(font, 'Random Map', (0, 0, 0), (413, 40 * n + 75))
 
             pygame.display.update()
 
@@ -1872,7 +1873,7 @@ def app() -> None:
                     quit()
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if event.button == 1:
-                        if 10 <= mx <= 980:
+                        if 10 <= mx <= 935:
                             for n in range(len(Maps)):
                                 if 40 * n + 60 <= my <= 40 * n + 90 and (list(info.PBs.values())[n] != LOCKED or info.sandboxMode):
                                     info.Map = Maps[n]
@@ -1880,7 +1881,7 @@ def app() -> None:
                                     info.coins = 100000 if info.sandboxMode else 50
                                     mouseTrail.clear()
 
-                        if 10 <= mx <= 980 and 40 * len(Maps) + 60 <= my <= 40 * len(Maps) + 90:
+                        if 10 <= mx <= 935 and 40 * len(Maps) + 60 <= my <= 40 * len(Maps) + 90:
                             info.Map = random.choice([Map for Map in Maps if info.PBs[Map.name] != LOCKED])
                             info.status = 'game'
                             info.coins = 100000 if info.sandboxMode else 50
