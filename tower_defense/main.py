@@ -136,7 +136,7 @@ class RuneEffect:
         self.rune = info.equippedRune
         self.effects = []
 
-    def createEffects(self, target):
+    def createEffects(self, target, *, color: Tuple[int] = None):
         if self.rune == 'Blood Rune':
             for n in range(5):
                 self.effects.append(self.BloodRuneEffect(target.x + random.randint(-3, 3), target.y + random.randint(-3, 3)))
@@ -153,10 +153,10 @@ class RuneEffect:
             self.effects.append(self.LightningRuneEffect(target.x, target.y))
 
         elif self.rune == 'Shrink Rune':
-            self.effects.append(self.ShrinkRuneEffect(target.x, target.y, 20 if type(target.tier) is str else 10, enemyColors[str(target.tier)]))
+            self.effects.append(self.ShrinkRuneEffect(target.x, target.y, 20 if type(target.tier) is str else 10, enemyColors[str(target.tier)] if color is None else color))
 
         elif self.rune == 'Leap Rune':
-            self.effects.append(self.LeapRuneEffect(target.x, target.y, 20 if type(target.tier) is str else 10, enemyColors[str(target.tier)]))
+            self.effects.append(self.LeapRuneEffect(target.x, target.y, 20 if type(target.tier) is str else 10, enemyColors[str(target.tier)] if color is None else color))
 
     def draw(self):
         for effect in self.effects:
@@ -420,13 +420,22 @@ class SpikeTower(Towers):
                         enemy.fireTicks = 300
                         enemy.fireIgnitedBy = self.parent
 
-                    new = enemy.kill(coinMultiplier=getCoinMultiplier(self.parent))
-                    if self.parent.upgrades[2] >= 1 and new is not None:
-                        new = new.kill(coinMultiplier=getCoinMultiplier(self.parent))
+                    color = enemyColors[str(enemy.tier)]
+                    new = enemy
+
+                    if self.parent.upgrades[2] == 0:
+                        damage = 1
+                    else:
+                        damage = 2
+
+                    for n in range(damage):
+                        new = new.kill(coinMultiplier=getCoinMultiplier(self.parent), overrideRuneColor=color)
                         info.statistics['pops'] += 1
-                    self.ignore.append(new if type(enemy.tier) is int else enemy)
-                    self.parent.hits += 1
-                    info.statistics['pops'] += 1
+                        self.parent.hits += 1
+                        self.ignore.append(new if type(enemy.tier) is int else enemy)
+
+                        if new is None:
+                            break
 
         def draw(self):
             if not self.visible:
@@ -533,12 +542,16 @@ class BombTower(Towers):
         if self.timer >= self.cooldown:
             try:
                 explosionRadius = 60 if self.upgrades[2] >= 1 else 30
+                impactDamage = 2 if self.upgrades[2] == 3 else 1
+
                 closest = getTarget(self)
-                Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=explosionRadius)
-                if self.upgrades[2] == 3:
-                    twin = Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=explosionRadius)
+
+                Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=explosionRadius, impactDamage=impactDamage)
+                if self.upgrades[1] == 3:
+                    twin = Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=explosionRadius, impactDamage=impactDamage)
                     for n in range(5):
                         twin.move()
+
                 self.timer = 0
 
             except AttributeError:
@@ -1001,6 +1014,7 @@ class Projectile:
         self.bossDamage = bossDamage
         self.impactDamage = impactDamage
         self.fireTicks = fireTicks
+
         if not overrideAddToProjectiles:
             info.projectiles.append(self)
 
@@ -1178,16 +1192,23 @@ class Enemy:
                     if projectile.explosiveRadius > 0:
                         projectile.explode(self)
                         if self.tier in onlyExplosiveTiers:
+                            color = enemyColors[str(self.tier)]
                             new = self
+
                             for n in range(projectile.impactDamage):
-                                new = new.kill(coinMultiplier=projectile.coinMultiplier, bossDamage=projectile.bossDamage)
+                                new = new.kill(coinMultiplier=projectile.coinMultiplier, bossDamage=projectile.bossDamage, overrideRuneColor=color)
                                 projectile.parent.hits += 1
                                 info.statistics['pops'] += 1
 
+                                if new is None:
+                                    break
+
                     if self.tier not in onlyExplosiveTiers:
+                        color = enemyColors[str(self.tier)]
                         new = self
+
                         for n in range(projectile.impactDamage):
-                            new = new.kill(coinMultiplier=projectile.coinMultiplier, bossDamage=projectile.bossDamage)
+                            new = new.kill(coinMultiplier=projectile.coinMultiplier, bossDamage=projectile.bossDamage, overrideRuneColor=color)
                             projectile.parent.hits += 1
                             info.statistics['pops'] += 1
 
@@ -1198,6 +1219,7 @@ class Enemy:
             for projectile in info.piercingProjectiles:
                 if abs(self.x - projectile.x) ** 2 + abs(self.y - projectile.y) ** 2 < (400 if type(self.tier) is str else 100):
                     if (self not in projectile.ignore) and (canSeeCamo(projectile.parent) or not self.camo):
+                        color = enemyColors[str(self.tier)]
                         damage = 1
                         if type(projectile.parent) is Bowler:
                             if projectile.parent.upgrades[0] == 2:
@@ -1207,7 +1229,7 @@ class Enemy:
 
                         new = self
                         for n in range(damage):
-                            new = new.kill(coinMultiplier=projectile.coinMultiplier)
+                            new = new.kill(coinMultiplier=projectile.coinMultiplier, overrideRuneColor=color)
                             projectile.parent.hits += 1
                             info.statistics['pops'] += 1
 
@@ -1245,7 +1267,7 @@ class Enemy:
         if self.camo:
             pygame.draw.circle(screen, (0, 0, 0), (self.x, self.y), 20 if type(self.tier) is str else 10, 2)
 
-    def kill(self, *, spawnNew: bool = True, coinMultiplier: int = 1, ignoreBoss: bool = False, burn: bool = False, bossDamage: int = 1):
+    def kill(self, *, spawnNew: bool = True, coinMultiplier: int = 1, ignoreBoss: bool = False, burn: bool = False, bossDamage: int = 1, overrideRuneColor: Tuple[int] = None):
         if type(self.tier) is int or ignoreBoss:
             try:
                 info.enemies.remove(self)
@@ -1268,7 +1290,7 @@ class Enemy:
                     return new
 
             if not ignoreBoss:
-                RuneEffects.createEffects(self)
+                RuneEffects.createEffects(self, color=overrideRuneColor)
 
         elif type(self.tier) is str:
             self.HP -= 10 if burn else bossDamage
@@ -1281,7 +1303,7 @@ class Enemy:
                 except AttributeError:
                     pass
 
-                RuneEffects.createEffects(self)
+                RuneEffects.createEffects(self, color=overrideRuneColor)
 
 
 def reset() -> None:
