@@ -172,14 +172,14 @@ class RuneEffect:
         self.rune = info.equippedRune
 
 
-RUNE = Rune('null', 0, 'A glitched rune. How did you get this?')
-BLOOD_RUNE = Rune('Blood Rune', 15, 'The rune forged by the Blood Gods.', 'blood_rune.png')
-ICE_RUNE = Rune('Ice Rune', 12, 'A rune as cold as ice.', 'ice_rune.png')
-GOLD_RUNE = Rune('Gold Rune', 8, 'The rune of the wealthy - Classy!', 'gold_rune.png')
-LEAP_RUNE = Rune('Leap Rune', 8, 'Jump!', 'leap_rune.png')
-LIGHTNING_RUNE = Rune('Lightning Rune', 5, 'Legends say it was created by Zeus himself.', 'lightning_rune.png')
-SHRINK_RUNE = Rune('Shrink Rune', 3, 'This magical rune compresses its foes!', 'shrink_rune.png')
-RAINBOW_RUNE = Rune('Rainbow Rune', 2, 'A rainbow tail forms behind your cursor!', 'rainbow_rune.png')
+Rune('null', 0, 'A glitched rune. How did you get this?')
+Rune('Blood Rune', 15, 'The rune forged by the Blood Gods.', 'blood_rune.png')
+Rune('Ice Rune', 12, 'A rune as cold as ice.', 'ice_rune.png')
+Rune('Gold Rune', 8, 'The rune of the wealthy - Classy!', 'gold_rune.png')
+Rune('Leap Rune', 8, 'Jump!', 'leap_rune.png')
+Rune('Lightning Rune', 5, 'Legends say it was created by Zeus himself.', 'lightning_rune.png')
+Rune('Shrink Rune', 3, 'This magical rune compresses its foes!', 'shrink_rune.png')
+Rune('Rainbow Rune', 2, 'A rainbow tail forms behind your cursor!', 'rainbow_rune.png')
 
 
 class data:
@@ -1289,7 +1289,7 @@ class Enemy:
                     info.coins += bossCoins[self.tier]
 
                 else:
-                    new = Enemy(self.tier - 1, (self.x, self.y), self.lineIndex, camo=self.camo)
+                    new = Enemy(self.tier - 1, (self.x, self.y), self.lineIndex, camo=self.camo, regen=self.regen)
                     new.fireTicks = self.fireTicks
                     new.fireIgnitedBy = self.fireIgnitedBy
                     info.enemies.append(new)
