@@ -37,6 +37,7 @@ Map([[0, 400], [725, 400], [725, 325], [650, 325], [650, 375], [750, 375], [750,
 Map([[300, 225], [575, 225], [575, 325], [125, 325], [125, 125], [675, 125], [675, 425], [25, 425], [25, 0]], "Lava Spiral", (207, 16, 32), (255, 140, 0), (178, 66, 0))
 Map([[25, 0], [25, 425], [525, 425], [525, 25], [275, 25], [275, 275], [750, 275], [750, 0]], "Plains", (19, 109, 21), (155, 118, 83))
 Map([[0, 25], [750, 25], [750, 200], [25, 200], [25, 375], [800, 375]], "Desert", (170, 108, 35), (178, 151, 5))
+Map([[125, 0], [125, 500], [400, 500], [400, -50], [675, -50], [675, 500]], "Disconnected", (64, 64, 64), (100, 100, 100), (100, 0, 0))
 Map([[0, 225], [800, 225]], "The End", (100, 100, 100), (200, 200, 200))
 
 
@@ -1836,120 +1837,144 @@ def app() -> None:
     while True:
         global mouseTrail
 
-        mx, my = pygame.mouse.get_pos()
-
         if info.status == 'mapSelect':
-            screen.fill((68, 68, 68))
+            scroll = 0
 
-            centredBlit(font, 'Map Select', (255, 255, 255), (500, 30))
+            while True:
+                mx, my = pygame.mouse.get_pos()
 
-            pygame.draw.rect(screen, (200, 200, 200), (25, 550, 125, 30))
-            centredBlit(font, 'Map Maker', (0, 0, 0), (87, 565))
-            if 25 <= mx <= 150 and 550 < my <= 580:
-                pygame.draw.rect(screen, (128, 128, 128), (25, 550, 125, 30), 5)
-            else:
-                pygame.draw.rect(screen, (0, 0, 0), (25, 550, 125, 30), 3)
+                screen.fill((68, 68, 68))
 
-            if hasAllUnlocked():
-                pygame.draw.rect(screen, (0, 225, 0) if info.sandboxMode else (255, 0, 0), (200, 550, 200, 30))
-                centredBlit(font, 'Sandbox Mode: ' + ('ON' if info.sandboxMode else 'OFF'), (0, 0, 0), (300, 565))
-                if 200 <= mx <= 400 and 550 <= my <= 580:
-                    pygame.draw.rect(screen, (128, 128, 128), (200, 550, 200, 30), 5)
-                else:
-                    pygame.draw.rect(screen, (0, 0, 0), (200, 550, 200, 30), 3)
+                n = 0
+                for Map in Maps:
+                    if info.PBs[Map.name] != LOCKED or info.sandboxMode:
+                        pygame.draw.rect(screen, Map.displayColor, (10, 40 * n + 60 - scroll, 825, 30))
+                        if 10 <= mx <= 835 and 40 * n + 60 - scroll <= my <= 40 * n + 90 - scroll:
+                            pygame.draw.rect(screen, (128, 128, 128), (10, 40 * n + 60 - scroll, 825, 30), 5)
+                        else:
+                            pygame.draw.rect(screen, (0, 0, 0), (10, 40 * n + 60 - scroll, 825, 30), 3)
 
-            pygame.draw.rect(screen, (200, 200, 200), (675, 550, 125, 30))
-            centredBlit(font, 'Stats', (0, 0, 0), (737, 565))
-            if 675 <= mx <= 800 and 550 < my <= 580:
-                pygame.draw.rect(screen, (128, 128, 128), (675, 550, 125, 30), 5)
-            else:
-                pygame.draw.rect(screen, (0, 0, 0), (675, 550, 125, 30), 3)
+                        leftAlignBlit(font, Map.name.upper(), (0, 0, 0), (20, 74 + n * 40 - scroll))
+                        centredBlit(font, f'[Best: {info.PBs[Map.name]}]', (225, 225, 0) if info.PBs[Map.name] == 100 else (0, 0, 0), (900, 74 + n * 40 - scroll))
 
-            pygame.draw.rect(screen, (200, 200, 200), (825, 550, 150, 30))
-            centredBlit(font, 'Achievements', (0, 0, 0), (900, 565))
-            if 825 <= mx <= 975 and 550 < my <= 580:
-                pygame.draw.rect(screen, (128, 128, 128), (825, 550, 150, 30), 5)
-            else:
-                pygame.draw.rect(screen, (0, 0, 0), (825, 550, 150, 30), 3)
-
-            pygame.draw.rect(screen, (200, 200, 200), (825, 510, 150, 30))
-            centredBlit(font, 'Cosmetics', (0, 0, 0), (900, 525))
-            if 825 <= mx <= 975 and 510 < my <= 540:
-                pygame.draw.rect(screen, (128, 128, 128), (825, 510, 150, 30), 5)
-            else:
-                pygame.draw.rect(screen, (0, 0, 0), (825, 510, 150, 30), 3)
-
-            if info.newRunes > 0:
-                pygame.draw.circle(screen, (255, 0, 0), (975, 510), 10)
-                pygame.draw.circle(screen, (0, 0, 0), (975, 510), 10, 2)
-                centredBlit(font, str(info.newRunes), (255, 255, 255), (975, 508))
-
-            n = 0
-            for Map in Maps:
-                if info.PBs[Map.name] != LOCKED or info.sandboxMode:
-                    pygame.draw.rect(screen, Map.displayColor, (10, 40 * n + 60, 825, 30))
-                    if 10 <= mx <= 835 and 40 * n + 60 <= my <= 40 * n + 90:
-                        pygame.draw.rect(screen, (128, 128, 128), (10, 40 * n + 60, 825, 30), 5)
                     else:
-                        pygame.draw.rect(screen, (0, 0, 0), (10, 40 * n + 60, 825, 30), 3)
+                        pygame.draw.rect(screen, (32, 32, 32), (10, 40 * n + 60 - scroll, 925, 30))
+                        pygame.draw.rect(screen, (0, 0, 0), (10, 40 * n + 60 - scroll, 925, 30), 3)
+                        screen.blit(font.render(Map.name.upper(), True, (0, 0, 0)), (20, 62 + n * 40 - scroll))
+                        screen.blit(font.render(LOCKED, True, (0, 0, 0)), (753, 62 + n * 40 - scroll))
 
-                    leftAlignBlit(font, Map.name.upper(), (0, 0, 0), (20, 74 + n * 40))
-                    centredBlit(font, f'[Best: {info.PBs[Map.name]}]', (225, 225, 0) if info.PBs[Map.name] == 100 else (0, 0, 0), (900, 74 + n * 40))
+                    n += 1
+
+                pygame.draw.rect(screen, (68, 68, 68), (0, 0, 1000, 50))
+                centredBlit(font, 'Map Select', (255, 255, 255), (500, 30))
+
+                pygame.draw.rect(screen, (200, 200, 200), (10, 40 * n + 60 - scroll, 825, 30))
+                if 10 <= mx <= 835 and 40 * n + 60 <= my <= 40 * n + 90:
+                    pygame.draw.rect(screen, (128, 128, 128), (10, 40 * n + 60 - scroll, 825, 30), 5)
                 else:
-                    pygame.draw.rect(screen, (32, 32, 32), (10, 40 * n + 60, 925, 30))
-                    pygame.draw.rect(screen, (0, 0, 0), (10, 40 * n + 60, 925, 30), 3)
-                    screen.blit(font.render(Map.name.upper(), True, (0, 0, 0)), (20, 62 + n * 40))
-                    screen.blit(font.render(LOCKED, True, (0, 0, 0)), (753, 62 + n * 40))
+                    pygame.draw.rect(screen, (0, 0, 0), (10, 40 * n + 60 - scroll, 825, 30), 3)
 
-                n += 1
+                centredBlit(font, 'Random Map', (0, 0, 0), (413, 40 * n + 75 - scroll))
 
-            pygame.draw.rect(screen, (200, 200, 200), (10, 40 * n + 60, 825, 30))
-            if 10 <= mx <= 835 and 40 * n + 60 <= my <= 40 * n + 90:
-                pygame.draw.rect(screen, (128, 128, 128), (10, 40 * n + 60, 825, 30), 5)
-            else:
-                pygame.draw.rect(screen, (0, 0, 0), (10, 40 * n + 60, 825, 30), 3)
+                pygame.draw.rect(screen, (68, 68, 68), (0, 500, 1000, 100))
 
-            centredBlit(font, 'Random Map', (0, 0, 0), (413, 40 * n + 75))
+                pygame.draw.rect(screen, (200, 200, 200), (25, 550, 125, 30))
+                centredBlit(font, 'Map Maker', (0, 0, 0), (87, 565))
+                if 25 <= mx <= 150 and 550 < my <= 580:
+                    pygame.draw.rect(screen, (128, 128, 128), (25, 550, 125, 30), 5)
+                else:
+                    pygame.draw.rect(screen, (0, 0, 0), (25, 550, 125, 30), 3)
 
-            pygame.display.update()
+                if hasAllUnlocked():
+                    pygame.draw.rect(screen, (0, 225, 0) if info.sandboxMode else (255, 0, 0), (200, 550, 200, 30))
+                    centredBlit(font, 'Sandbox Mode: ' + ('ON' if info.sandboxMode else 'OFF'), (0, 0, 0), (300, 565))
+                    if 200 <= mx <= 400 and 550 <= my <= 580:
+                        pygame.draw.rect(screen, (128, 128, 128), (200, 550, 200, 30), 5)
+                    else:
+                        pygame.draw.rect(screen, (0, 0, 0), (200, 550, 200, 30), 3)
 
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    save()
-                    quit()
-                elif event.type == pygame.MOUSEBUTTONDOWN:
-                    if event.button == 1:
-                        if 10 <= mx <= 835:
-                            for n in range(len(Maps)):
-                                if 40 * n + 60 <= my <= 40 * n + 90 and (list(info.PBs.values())[n] != LOCKED or info.sandboxMode):
-                                    info.Map = Maps[n]
-                                    info.status = 'game'
-                                    info.coins = 100000 if info.sandboxMode else 50
-                                    mouseTrail.clear()
+                pygame.draw.rect(screen, (200, 200, 200), (675, 550, 125, 30))
+                centredBlit(font, 'Stats', (0, 0, 0), (737, 565))
+                if 675 <= mx <= 800 and 550 < my <= 580:
+                    pygame.draw.rect(screen, (128, 128, 128), (675, 550, 125, 30), 5)
+                else:
+                    pygame.draw.rect(screen, (0, 0, 0), (675, 550, 125, 30), 3)
 
-                        if 10 <= mx <= 935 and 40 * len(Maps) + 60 <= my <= 40 * len(Maps) + 90:
-                            info.Map = random.choice([Map for Map in Maps if info.PBs[Map.name] != LOCKED])
-                            info.status = 'game'
-                            info.coins = 100000 if info.sandboxMode else 50
-                            mouseTrail.clear()
+                pygame.draw.rect(screen, (200, 200, 200), (825, 550, 150, 30))
+                centredBlit(font, 'Achievements', (0, 0, 0), (900, 565))
+                if 825 <= mx <= 975 and 550 < my <= 580:
+                    pygame.draw.rect(screen, (128, 128, 128), (825, 550, 150, 30), 5)
+                else:
+                    pygame.draw.rect(screen, (0, 0, 0), (825, 550, 150, 30), 3)
 
-                        if 25 <= mx <= 150 and 550 <= my <= 580:
-                            info.status = 'mapMaker'
+                pygame.draw.rect(screen, (200, 200, 200), (825, 510, 150, 30))
+                centredBlit(font, 'Cosmetics', (0, 0, 0), (900, 525))
+                if 825 <= mx <= 975 and 510 < my <= 540:
+                    pygame.draw.rect(screen, (128, 128, 128), (825, 510, 150, 30), 5)
+                else:
+                    pygame.draw.rect(screen, (0, 0, 0), (825, 510, 150, 30), 3)
 
-                        if 675 <= mx <= 800 and 550 <= my <= 580:
-                            info.status = 'statistics'
-                            info.statistics['wins'] = updateDict(info.statistics['wins'], [Map.name for Map in Maps])
+                if info.newRunes > 0:
+                    pygame.draw.circle(screen, (255, 0, 0), (975, 510), 10)
+                    pygame.draw.circle(screen, (0, 0, 0), (975, 510), 10, 2)
+                    centredBlit(font, str(info.newRunes), (255, 255, 255), (975, 508))
 
-                        if 825 <= mx <= 975 and 550 <= my <= 580:
-                            info.status = 'achievements'
+                pygame.display.update()
 
-                        if 825 <= mx <= 975 and 510 <= my <= 540:
-                            info.status = 'cosmetics'
-                            info.newRunes = 0
+                cont = True
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        save()
+                        quit()
 
-                        if 200 <= mx <= 400 and 550 <= my <= 580:
-                            if hasAllUnlocked():
-                                info.sandboxMode = not info.sandboxMode
+                    elif event.type == pygame.MOUSEBUTTONDOWN:
+                        if event.button == 1:
+                            if 10 <= mx <= 835:
+                                for n in range(len(Maps)):
+                                    if 50 <= 40 * n + 60 - scroll <= my <= 40 * n + 90 - scroll <= 500 and list(info.PBs.values())[n] != LOCKED:
+                                        info.Map = Maps[n]
+                                        info.status = 'game'
+                                        info.coins = 100000 if info.sandboxMode else 50
+                                        mouseTrail.clear()
+                                        cont = False
+
+                            if 10 <= mx <= 935 and 40 * len(Maps) + 60 <= my + scroll <= 40 * len(Maps) + 90 + scroll <= 500:
+                                info.Map = random.choice([Map for Map in Maps if info.PBs[Map.name] != LOCKED])
+                                info.status = 'game'
+                                info.coins = 100000 if info.sandboxMode else 50
+                                mouseTrail.clear()
+                                cont = False
+
+                            if 25 <= mx <= 150 and 550 <= my <= 580:
+                                info.status = 'mapMaker'
+                                cont = False
+
+                            if 675 <= mx <= 800 and 550 <= my <= 580:
+                                info.status = 'statistics'
+                                info.statistics['wins'] = updateDict(info.statistics['wins'], [Map.name for Map in Maps])
+                                cont = False
+
+                            if 825 <= mx <= 975 and 550 <= my <= 580:
+                                info.status = 'achievements'
+                                cont = False
+
+                            if 825 <= mx <= 975 and 510 <= my <= 540:
+                                info.status = 'cosmetics'
+                                info.newRunes = 0
+                                cont = False
+
+                            if 200 <= mx <= 400 and 550 <= my <= 580:
+                                if hasAllUnlocked():
+                                    info.sandboxMode = not info.sandboxMode
+
+                        elif event.button == 4:
+                            scroll = max(scroll - 5, 0)
+
+                        elif event.button == 5:
+                            scroll = min(scroll + 5, max(40 * n + 90 - 490, 0))
+
+                if not cont:
+                    break
 
         elif info.status == 'achievements':
             for achievement, requirement in achievementRequirements.items():
@@ -2509,6 +2534,12 @@ def app() -> None:
         elif info.status == 'game':
             global rainbowShiftCount, rainbowShiftIndex
 
+            mx, my = pygame.mouse.get_pos()
+
+            mouseTrail.append([mx, my])
+            if len(mouseTrail) >= 10:
+                mouseTrail = mouseTrail[:-10]
+
             if info.spawndelay == 0 and len(info.spawnleft) > 0:
                 info.enemies.append(Enemy(info.spawnleft[1], info.Map.path[0], 0, camo=info.spawnleft[0] == '1', regen=info.spawnleft[0] == '2'))
 
@@ -2553,12 +2584,6 @@ def app() -> None:
                         info.statistics['wavesPlayed'] += 1
 
                     info.nextWave -= 1
-
-            mx, my = pygame.mouse.get_pos()
-
-            mouseTrail.append([mx, my])
-            if len(mouseTrail) >= 10:
-                mouseTrail = mouseTrail[:-10]
 
             clock.tick(MaxFPS)
             info.coins += income()
