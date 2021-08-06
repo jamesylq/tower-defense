@@ -28,14 +28,16 @@ class Map:
     def __str__(self):
         return self.name
 
-RACE_TRACK = Map([[25, 0], [25, 375], [775, 375], [775, 25], [40, 25], [40, 360], [760, 360], [760, 40], [55, 40], [55, 345], [745, 345], [745, 55], [0, 55]], "Race Track", (19, 109, 21), (189, 22, 44), (189, 22, 44))
-WIZARDS_LAIR = Map([[0, 25], [775, 25], [775, 425], [25, 425], [25, 75], [725, 75], [725, 375], [0, 375]], "Wizard's Lair", (187, 11, 255), (153, 153, 153))
-POND = Map([[0, 25], [700, 25], [700, 375], [100, 375], [100, 75], [800, 75]], "Pond", (6, 50, 98), (0, 0, 255))
-LAVA_SPIRAL = Map([[300, 225], [575, 225], [575, 325], [125, 325], [125, 125], [675, 125], [675, 425], [25, 425], [25, 0]], "Lava Spiral", (207, 16, 32), (255, 140, 0), (178, 66, 0))
-THE_MOON = Map([[0, 400], [725, 400], [725, 325], [650, 325], [650, 375], [750, 375], [750, 75], [650, 75], [650, 125], [725, 125], [725, 50], [0, 50]], "The Moon", (100, 100, 100), (255, 255, 102), (255, 255, 102))
-PLAINS = Map([[25, 0], [25, 425], [525, 425], [525, 25], [275, 25], [275, 275], [750, 275], [750, 0]], "Plains", (19, 109, 21), (155, 118, 83))
-DESERT = Map([[0, 25], [750, 25], [750, 200], [25, 200], [25, 375], [800, 375]], "Desert", (170, 108, 35), (178, 151, 5))
-THE_END = Map([[0, 225], [800, 225]], "The End", (100, 100, 100), (200, 200, 200))
+Map([[25, 0], [25, 375], [775, 375], [775, 25], [40, 25], [40, 360], [760, 360], [760, 40], [55, 40], [55, 345], [745, 345], [745, 55], [0, 55]], "Race Track", (19, 109, 21), (189, 22, 44), (189, 22, 44))
+Map([[0, 25], [775, 25], [775, 425], [25, 425], [25, 75], [725, 75], [725, 375], [0, 375]], "Wizard's Lair", (187, 11, 255), (153, 153, 153))
+Map([[0, 25], [700, 25], [700, 375], [100, 375], [100, 75], [800, 75]], "Pond", (6, 50, 98), (0, 0, 255))
+Map([[400, 225], [400, 50], [50, 50], [50, 400], [50, 50], [750, 50], [750, 400], [750, 50], [400, 50], [400, 225]], "The Sky", (171, 205, 239), (255, 255, 255))
+Map([[350, 0], [350, 150], [25, 150], [25, 300], [350, 300], [350, 450], [450, 450], [450, 300], [775, 300], [775, 150], [450, 150], [450, 0]], "Candyland", (255, 105, 180), (199, 21, 133))
+Map([[0, 400], [725, 400], [725, 325], [650, 325], [650, 375], [750, 375], [750, 75], [650, 75], [650, 125], [725, 125], [725, 50], [0, 50]], "The Moon", (100, 100, 100), (255, 255, 102), (255, 255, 102))
+Map([[300, 225], [575, 225], [575, 325], [125, 325], [125, 125], [675, 125], [675, 425], [25, 425], [25, 0]], "Lava Spiral", (207, 16, 32), (255, 140, 0), (178, 66, 0))
+Map([[25, 0], [25, 425], [525, 425], [525, 25], [275, 25], [275, 275], [750, 275], [750, 0]], "Plains", (19, 109, 21), (155, 118, 83))
+Map([[0, 25], [750, 25], [750, 200], [25, 200], [25, 375], [800, 375]], "Desert", (170, 108, 35), (178, 151, 5))
+Map([[0, 225], [800, 225]], "The End", (100, 100, 100), (200, 200, 200))
 
 
 class Rune:
@@ -417,7 +419,7 @@ class SpikeTower(Towers):
                 if abs(enemy.x - self.x) ** 2 + abs(enemy.y - self.y) ** 2 < (144 if type(enemy.tier) is int else 484):
                     self.visible = False
                     if self.parent.upgrades[2] == 3:
-                        enemy.fireTicks = 300
+                        enemy.fireTicks = max(enemy.fireTicks, 300)
                         enemy.fireIgnitedBy = self.parent
 
                     color = enemyColors[str(enemy.tier)]
@@ -542,13 +544,14 @@ class BombTower(Towers):
         if self.timer >= self.cooldown:
             try:
                 explosionRadius = 60 if self.upgrades[2] >= 1 else 30
+                fireTicks = 200 if self.upgrades[2] >= 2 else 0
                 impactDamage = 2 if self.upgrades[2] == 3 else 1
 
                 closest = getTarget(self)
 
-                Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=explosionRadius, impactDamage=impactDamage)
+                Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=explosionRadius, impactDamage=impactDamage, fireTicks=fireTicks)
                 if self.upgrades[1] == 3:
-                    twin = Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=explosionRadius, impactDamage=impactDamage)
+                    twin = Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=explosionRadius, impactDamage=impactDamage, fireTicks=fireTicks)
                     for n in range(5):
                         twin.move()
 
@@ -816,7 +819,7 @@ class InfernoTower(Towers):
             found = False
             for enemy in info.enemies:
                 if (abs(enemy.x - self.parent.x) ** 2 + abs(enemy.y - self.parent.y) ** 2 <= self.parent.range ** 2) and (not enemy.camo or canSeeCamo(self.parent)):
-                    enemy.fireTicks = (500 if self.parent.upgrades[2] else 300)
+                    enemy.fireTicks = max(enemy.fireTicks, (500 if self.parent.upgrades[2] else 300))
                     enemy.fireIgnitedBy = self.parent
                     if type(enemy.tier) is int:
                         enemy.freezeTimer = max(enemy.freezeTimer, [0, 0, 25, 75][self.parent.upgrades[1]])
@@ -1101,7 +1104,7 @@ class PiercingProjectile:
 
 
 class Enemy:
-    def __init__(self, camo: bool, tier: str or int, spawn: List[int], lineIndex: int):
+    def __init__(self, tier: str or int, spawn: List[int], lineIndex: int, *, camo: bool = False, regen: bool = False):
         try:
             self.tier = int(tier)
         except ValueError:
@@ -1115,6 +1118,8 @@ class Enemy:
         self.fireIgnitedBy = None
         self.timer = 0
         self.camo = camo
+        self.regen = regen
+        self.regenTimer = 0
 
         if self.tier in trueHP.keys():
             self.HP = self.MaxHP = trueHP[self.tier]
@@ -1126,10 +1131,10 @@ class Enemy:
             self.timer -= 1
         elif self.tier == 'B':
             self.timer = 250
-            info.enemies.append(Enemy(False, 3, [self.x, self.y], self.lineIndex))
+            info.enemies.append(Enemy(3, [self.x, self.y], self.lineIndex))
         elif self.tier == 'D':
             self.timer = 100
-            info.enemies.append(Enemy(False, 7, [self.x, self.y], self.lineIndex))
+            info.enemies.append(Enemy(7, [self.x, self.y], self.lineIndex))
 
         if self.freezeTimer > 0:
             self.freezeTimer -= 1
@@ -1266,6 +1271,8 @@ class Enemy:
         pygame.draw.circle(screen, enemyColors[str(self.tier)], (self.x, self.y), 20 if type(self.tier) is str else 10)
         if self.camo:
             pygame.draw.circle(screen, (0, 0, 0), (self.x, self.y), 20 if type(self.tier) is str else 10, 2)
+        if self.regen:
+            pygame.draw.circle(screen, (255, 105, 180), (self.x, self.y), 20 if type(self.tier) is str else 10, 2)
 
     def kill(self, *, spawnNew: bool = True, coinMultiplier: int = 1, ignoreBoss: bool = False, burn: bool = False, bossDamage: int = 1, overrideRuneColor: Tuple[int] = None):
         if type(self.tier) is int or ignoreBoss:
@@ -1282,7 +1289,7 @@ class Enemy:
                     info.coins += bossCoins[self.tier]
 
                 else:
-                    new = Enemy(self.camo, self.tier - 1, (self.x, self.y), self.lineIndex)
+                    new = Enemy(self.tier - 1, (self.x, self.y), self.lineIndex, camo=self.camo)
                     new.fireTicks = self.fireTicks
                     new.fireIgnitedBy = self.fireIgnitedBy
                     info.enemies.append(new)
@@ -1304,6 +1311,23 @@ class Enemy:
                     pass
 
                 RuneEffects.createEffects(self, color=overrideRuneColor)
+
+    def updateRegen(self):
+        if not self.regen:
+            return
+
+        if self.regenTimer >= 100:
+            if type(self.tier) is int:
+                self.tier += 1
+                if str(self.tier) not in enemyColors.keys():
+                    self.tier -= 1
+            else:
+                self.HP = min(self.MaxHP, self.HP + 50)
+
+            self.regenTimer = 0
+
+        else:
+            self.regenTimer += 1
 
 
 def reset() -> None:
@@ -1895,7 +1919,7 @@ def app() -> None:
                     quit()
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if event.button == 1:
-                        if 10 <= mx <= 935:
+                        if 10 <= mx <= 835:
                             for n in range(len(Maps)):
                                 if 40 * n + 60 <= my <= 40 * n + 90 and (list(info.PBs.values())[n] != LOCKED or info.sandboxMode):
                                     info.Map = Maps[n]
@@ -2378,16 +2402,9 @@ def app() -> None:
                                     info.mapMakerData['path'].clear()
 
                                 elif 940 < mx and 570 < my:
-                                    mapVarName = ''
-                                    for char in info.mapMakerData['name']:
-                                        if char.lower() in 'abcdefghijklmnopqrstuvwxyz':
-                                            mapVarName += char.upper()
-                                        elif char in ' _-':
-                                            mapVarName += '_'
-
                                     mapShiftedPath = [[point[0] - 100, point[1] - 125] for point in info.mapMakerData['path']]
 
-                                    print(f'This is the map code for your map!\n\n{mapVarName} = Map({mapShiftedPath}, \"{info.mapMakerData["name"]}\", {tuple(info.mapMakerData["backgroundColor"])}, {tuple(info.mapMakerData["pathColor"])})')
+                                    print(f'This is the map code for your map!\n\nMap({mapShiftedPath}, \"{info.mapMakerData["name"]}\", {tuple(info.mapMakerData["backgroundColor"])}, {tuple(info.mapMakerData["pathColor"])})')
                                     info.status = 'mapSelect'
                                     info.mapMakerData = defaults['mapMakerData'].copy()
                                     cont = False
@@ -2493,10 +2510,7 @@ def app() -> None:
             global rainbowShiftCount, rainbowShiftIndex
 
             if info.spawndelay == 0 and len(info.spawnleft) > 0:
-                if type(info.spawnleft[1]) is str:
-                    info.enemies.append(Enemy(True if info.spawnleft[0] == '1' else False, info.spawnleft[1], info.Map.path[0], 0))
-                else:
-                    info.enemies.append(Enemy(True if info.spawnleft[0] == '1' else False, int(info.spawnleft[1]), info.Map.path[0], 0))
+                info.enemies.append(Enemy(info.spawnleft[1], info.Map.path[0], 0, camo=info.spawnleft[0] == '1', regen=info.spawnleft[0] == '2'))
 
                 info.spawnleft = info.spawnleft[2:]
                 info.spawndelay = 20
@@ -2548,6 +2562,9 @@ def app() -> None:
 
             clock.tick(MaxFPS)
             info.coins += income()
+
+            for enemy in info.enemies:
+                enemy.updateRegen()
 
             draw()
             move()
@@ -2762,6 +2779,11 @@ waves = [
     '0A' * 3,
     '0A' * 5,
     '0A' * 8,
+    '21' * 3,
+    '25' * 25,
+    '26' * 25,
+    '27' * 25,
+    '28' * 25,
     '0C',
     '0C' * 2,
     '0C' * 3,
