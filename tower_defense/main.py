@@ -1430,6 +1430,9 @@ def getTarget(tower: Towers, *, ignore: [Enemy] = None, overrideRange: int = Non
     maxDistance = None
 
     for enemy in info.enemies:
+        if not (0 <= enemy.x <= 800 and 0 <= enemy.y <= 450):
+            continue
+
         if (abs(enemy.x - tower.x) ** 2 + abs(enemy.y - tower.y) ** 2 <= rangeRadius ** 2) and (enemy not in ignore):
             if (enemy.camo and canSeeCamo(tower)) or not enemy.camo:
                 try:
@@ -1918,6 +1921,12 @@ def app() -> None:
                     pygame.draw.circle(screen, (255, 0, 0), (975, 510), 10)
                     pygame.draw.circle(screen, (0, 0, 0), (975, 510), 10, 2)
                     centredBlit(font, str(info.newRunes), (255, 255, 255), (975, 508))
+
+                pressed = pygame.key.get_pressed()
+                if pressed[pygame.K_UP]:
+                    scroll = max(0, scroll - 2)
+                if pressed[pygame.K_DOWN]:
+                    scroll = min(scroll + 2, max(40 * n + 90 - 490, 0))
 
                 pygame.display.update()
 
@@ -2688,12 +2697,11 @@ def app() -> None:
 
             pressed = pygame.key.get_pressed()
             if pressed[pygame.K_UP]:
-                info.shopScroll = min(0, info.shopScroll + 10)
-
+                info.shopScroll = min(0, info.shopScroll + 5)
             elif pressed[pygame.K_DOWN]:
                 maxScroll = len([tower for tower in Towers.__subclasses__() if (info.wave >= tower.req or info.sandboxMode)]) * 80 - 450
                 if maxScroll > 0:
-                    info.shopScroll = max(-maxScroll, info.shopScroll - 10)
+                    info.shopScroll = max(-maxScroll, info.shopScroll - 5)
 
         elif info.status == 'statistics':
             scroll = 0
@@ -2734,6 +2742,12 @@ def app() -> None:
                     pygame.draw.rect(screen, (128, 128, 128), (25, 550, 100, 30), 3)
                 else:
                     pygame.draw.rect(screen, (0, 0, 0), (25, 550, 100, 30), 3)
+
+                pressed = pygame.key.get_pressed()
+                if pressed[pygame.K_UP]:
+                    scroll = max(0, scroll - 2)
+                if pressed[pygame.K_DOWN]:
+                    scroll = min(scroll + 2, max(30 * numMaps - 85, 0))
 
                 cont = True
                 for event in pygame.event.get():
