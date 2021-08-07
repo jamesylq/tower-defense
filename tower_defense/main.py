@@ -1743,8 +1743,6 @@ def load() -> None:
 
         info.statistics['mapsBeat'] = len([m for m in info.PBs.keys() if type(info.PBs[m]) is int])
 
-        info.PBs['The End'] = 100
-
         foundUnlocked = False
         for Map in Maps:
             if Map.name not in info.PBs.keys():
@@ -1844,6 +1842,8 @@ def app() -> None:
             scroll = 0
 
             while True:
+                clock.tick(MaxFPS)
+
                 mx, my = pygame.mouse.get_pos()
 
                 screen.fill((68, 68, 68))
@@ -1861,10 +1861,10 @@ def app() -> None:
                         centredBlit(font, f'[Best: {info.PBs[Map.name]}]', (225, 225, 0) if info.PBs[Map.name] == 100 else (0, 0, 0), (900, 74 + n * 40 - scroll))
 
                     else:
-                        pygame.draw.rect(screen, (32, 32, 32), (10, 40 * n + 60 - scroll, 925, 30))
-                        pygame.draw.rect(screen, (0, 0, 0), (10, 40 * n + 60 - scroll, 925, 30), 3)
-                        screen.blit(font.render(Map.name.upper(), True, (0, 0, 0)), (20, 62 + n * 40 - scroll))
-                        screen.blit(font.render(LOCKED, True, (0, 0, 0)), (753, 62 + n * 40 - scroll))
+                        pygame.draw.rect(screen, (32, 32, 32), (10, 40 * n + 60 - scroll, 825, 30))
+                        pygame.draw.rect(screen, (0, 0, 0), (10, 40 * n + 60 - scroll, 825, 30), 3)
+                        leftAlignBlit(font, Map.name.upper(), (0, 0, 0), (20, 74 + n * 40 - scroll))
+                        centredBlit(font, LOCKED, (0, 0, 0), (900, 74 + n * 40 - scroll))
 
                     n += 1
 
@@ -2061,25 +2061,6 @@ def app() -> None:
                     break
 
         elif info.status == 'win':
-            try:
-                nextMap = Maps[[m.name for m in Maps].index(info.Map.name) + 1].name
-                if info.PBs[nextMap] == LOCKED:
-                    info.PBs[nextMap] = None
-
-            except IndexError:
-                pass
-
-            cont = False
-            if not info.sandboxMode:
-                if info.PBs[info.Map.name] is None or info.PBs[info.Map.name] == LOCKED:
-                    info.PBs[info.Map.name] = info.HP
-                elif info.PBs[info.Map.name] < info.HP:
-                    info.PBs[info.Map.name] = info.HP
-
-            info.FinalHP = info.HP
-            info.reset()
-            save()
-
             while True:
                 screen.fill((32, 32, 32))
                 centredBlit(largeFont, 'You Win!', (255, 255, 255), (500, 125))
@@ -2091,17 +2072,18 @@ def app() -> None:
 
                 pygame.display.update()
 
+                cont = True
                 for event in pygame.event.get():
                     if event.type == pygame.KEYDOWN:
                         if event.key == pygame.K_SPACE:
                             info.status = 'mapSelect'
-                            cont = True
+                            cont = False
                     elif event.type == pygame.QUIT:
                         save()
                         quit()
 
                 clock.tick(MaxFPS)
-                if cont:
+                if not cont:
                     break
 
         elif info.status == 'lose':
@@ -2575,12 +2557,31 @@ def app() -> None:
                             info.statistics['wins'][info.Map.name] = 1
                         finally:
                             info.statistics['totalWins'] += 1
-                            info.statistics['mapsBeat'] = len([m for m in info.PBs.keys() if type(info.PBs[m]) is int])
 
                             for rune in Runes:
                                 if rune.roll():
                                     info.runes.append(rune.name)
                                     info.newRunes += 1
+
+                            try:
+                                nextMap = Maps[[m.name for m in Maps].index(info.Map.name) + 1].name
+                                if info.PBs[nextMap] == LOCKED:
+                                    info.PBs[nextMap] = None
+
+                            except IndexError:
+                                pass
+
+                            if not info.sandboxMode:
+                                if info.PBs[info.Map.name] is None or info.PBs[info.Map.name] == LOCKED:
+                                    info.PBs[info.Map.name] = info.HP
+                                elif info.PBs[info.Map.name] < info.HP:
+                                    info.PBs[info.Map.name] = info.HP
+
+                            info.statistics['mapsBeat'] = len([m for m in info.PBs.keys() if type(info.PBs[m]) is int])
+
+                            info.FinalHP = info.HP
+                            info.reset()
+                            save()
 
                     else:
                         info.spawndelay = 20
@@ -2706,6 +2707,8 @@ def app() -> None:
             scroll = 0
 
             while True:
+                clock.tick(MaxFPS)
+
                 mx, my = pygame.mouse.get_pos()
 
                 screen.fill((200, 200, 200))
