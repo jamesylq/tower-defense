@@ -1872,11 +1872,10 @@ def app() -> None:
                 centredBlit(font, 'Map Select', (255, 255, 255), (500, 30))
 
                 pygame.draw.rect(screen, (200, 200, 200), (10, 40 * n + 60 - scroll, 825, 30))
-                if 10 <= mx <= 835 and 40 * n + 60 <= my <= 40 * n + 90:
+                if 10 <= mx <= 835 and 40 * n + 60 <= my + scroll <= 40 * n + 90:
                     pygame.draw.rect(screen, (128, 128, 128), (10, 40 * n + 60 - scroll, 825, 30), 5)
                 else:
                     pygame.draw.rect(screen, (0, 0, 0), (10, 40 * n + 60 - scroll, 825, 30), 3)
-
                 centredBlit(font, 'Random Map', (0, 0, 0), (413, 40 * n + 75 - scroll))
 
                 pygame.draw.rect(screen, (68, 68, 68), (0, 500, 1000, 100))
@@ -1947,7 +1946,7 @@ def app() -> None:
                                         mouseTrail.clear()
                                         cont = False
 
-                            if 10 <= mx <= 935 and 40 * len(Maps) + 60 <= my + scroll <= 40 * len(Maps) + 90 + scroll <= 500:
+                            if 10 <= mx <= 935 and 40 * len(Maps) + 60 <= my + scroll <= 40 * len(Maps) + 90 and my <= 500:
                                 info.Map = random.choice([Map for Map in Maps if info.PBs[Map.name] != LOCKED])
                                 info.status = 'game'
                                 info.coins = 100000 if info.sandboxMode else 50
