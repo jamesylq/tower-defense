@@ -2668,6 +2668,10 @@ def app() -> None:
                                     info.runes.append(rune.name)
                                     info.newRunes += 1
 
+                            for powerUp in defaults['powerUps'].keys():
+                                if random.randint(0, 1) == 0:
+                                    info.powerUps[powerUp] += 1
+
                             try:
                                 nextMap = Maps[[m.name for m in Maps].index(info.Map.name) + 1].name
                                 if info.PBs[nextMap] == LOCKED:
@@ -2735,7 +2739,7 @@ def app() -> None:
                     if event.button == 1:
                         if mx <= 800 and my <= 450:
                             if info.placing == 'spikes':
-                                for n in range(12):
+                                for n in range(25):
                                     PowerUps.objects.append(PhysicalPowerUp.Spike(mx + random.randint(-25, 25), my + random.randint(-25, 25), PowerUps))
                                 info.placing = ''
 
@@ -2778,6 +2782,7 @@ def app() -> None:
                             if 875 <= mx <= 925 and info.powerUps['lightning'] > 0:
                                 if not info.sandboxMode:
                                     info.powerUps['lightning'] -= 1
+
                                 n = 0
                                 for enemy in info.enemies:
                                     if not enemy.camo:
