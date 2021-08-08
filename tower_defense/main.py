@@ -75,6 +75,9 @@ class Rune:
 
         screen.blit(texture, texture.get_rect(center=[x, y]))
 
+    def __str__(self):
+        return self.name
+
 
 class RuneEffect:
     class BloodRuneEffect:
@@ -183,6 +186,56 @@ Rune('Shrink Rune', 3, 'This magical rune compresses its foes!', 'shrink_rune.pn
 Rune('Rainbow Rune', 2, 'A rainbow tail forms behind your cursor!', 'rainbow_rune.png')
 
 
+class PhysicalPowerUp:
+    class Spike:
+        def __init__(self, x, y, parent):
+            self.x = x
+            self.y = y
+            self.parent = parent
+
+        def update(self):
+            for enemy in info.enemies:
+                if type(enemy.tier) is str:
+                    if abs(self.x - enemy.x) ** 2 + abs(self.y - enemy.y) ** 2 <= 484:
+                        enemy.kill(bossDamage=25)
+                        self.parent.objects.remove(self)
+                        break
+                else:
+                    if abs(self.x - enemy.x) ** 2 + abs(self.y - enemy.y) ** 2 <= 144:
+                        enemy.kill()
+                        self.parent.objects.remove(self)
+                        break
+
+        def draw(self):
+            pygame.draw.circle(screen, (0, 0, 0), (self.x, self.y), 3)
+
+    class Lightning:
+        def __init__(self, x, y, parent):
+            self.x = x
+            self.y = y
+            self.parent = parent
+            self.visibleTicks = 50
+
+        def update(self):
+            self.visibleTicks -= 1
+            if self.visibleTicks == 0:
+                self.parent.objects.remove(self)
+
+        def draw(self):
+            pygame.draw.line(screen, (191, 0, 255), (500, -200), (self.x, self.y), 3)
+
+    def __init__(self):
+        self.objects = []
+
+    def update(self):
+        for obj in self.objects:
+            obj.update()
+
+    def draw(self):
+        for obj in self.objects:
+            obj.draw()
+
+
 class data:
     def __init__(self):
         self.PBs = {Map.name: (LOCKED if Map != Maps[0] else None) for Map in Maps}
@@ -193,9 +246,8 @@ class data:
                 setattr(self, attr, default)
 
     def reset(self):
-        for attr, default in defaults.items():
-            if attr in ['PBs', 'FinalHP', 'totalWaves', 'status', 'sandboxMode', 'Map', 'statistics', 'achievements', 'mapsBeat', 'runes', 'equippedRune', 'newRunes']:
-                continue
+        for attr in ['enemies', 'projectiles', 'piercingProjectiles', 'towers', 'HP', 'coins', 'selected', 'placing', 'nextWave', 'wave', 'shopScroll', 'spawnleft', 'spawndelay', 'ticksSinceNoEnemies']:
+            default = defaults[attr]
 
             if type(default) in [dict, list]:
                 setattr(self, attr, default.copy())
@@ -1267,7 +1319,7 @@ class Enemy:
             pygame.draw.rect(screen, (128, 128, 128), (self.x - 50, self.y - 25, 100, 5))
             pygame.draw.rect(screen, color, (self.x - 50, self.y - 25, round(self.HP / self.MaxHP * 100), 5))
             pygame.draw.rect(screen, (0, 0, 0), (self.x - 50, self.y - 25, 100, 5), 1)
-            centredBlit(font, f'{math.ceil(self.HP / self.MaxHP * 100)}%', (0, 0, 0), (self.x, self.y - 35))
+            centredPrint(font, f'{math.ceil(self.HP / self.MaxHP * 100)}%', (self.x, self.y - 35))
 
         pygame.draw.circle(screen, enemyColors[str(self.tier)], (self.x, self.y), 20 if type(self.tier) is str else 10)
         if self.camo:
@@ -1364,19 +1416,23 @@ def getSellPrice(tower: Towers) -> float:
     return price * 0.5
 
 
-def leftAlignBlit(font: pygame.font.Font, text: str, color: Tuple[int], pos: Tuple[int]) -> None:
+def leftAlignPrint(font: pygame.font.Font, text: str, pos: Tuple[int], color: Tuple[int] = (0, 0, 0)) -> None:
     textObj = font.render(text, True, color)
     screen.blit(textObj, textObj.get_rect(center=[pos[0] + font.size(text)[0] / 2, pos[1]]))
 
 
-def centredBlit(font: pygame.font.Font, text: str, color: Tuple[int], pos: Tuple[int]) -> None:
+def centredPrint(font: pygame.font.Font, text: str, pos: Tuple[int], color: Tuple[int] = (0, 0, 0)) -> None:
     textObj = font.render(text, True, color)
     screen.blit(textObj, textObj.get_rect(center=pos))
 
 
-def rightAlignBlit(font: pygame.font.Font, text: str, color: Tuple[int], pos: Tuple[int]) -> None:
+def rightAlignPrint(font: pygame.font.Font, text: str, pos: Tuple[int], color: Tuple[int] = (0, 0, 0)) -> None:
     textObj = font.render(text, True, color)
     screen.blit(textObj, textObj.get_rect(center=[pos[0] - font.size(text)[0] / 2, pos[1]]))
+
+
+def centredBlit(image: pygame.Surface, pos: Tuple[int]):
+    screen.blit(image, image.get_rect(center=pos))
 
 
 def income() -> float:
@@ -1489,6 +1545,7 @@ def draw() -> None:
     pygame.draw.circle(screen, info.Map.pathColor, info.Map.path[0], 10)
 
     RuneEffects.draw()
+    PowerUps.draw()
 
     for tower in info.towers:
         tower.draw()
@@ -1513,45 +1570,49 @@ def draw() -> None:
         screen.blit(modified, (info.selected.x - info.selected.range, info.selected.y - info.selected.range))
 
     if info.placing != '':
-        centredBlit(font, f'Click anywhere on the map to place the {info.placing}!', (0, 0, 0), (400, 400))
-        centredBlit(font, f'Press [ESC] to cancel!', (0, 0, 0), (400, 425))
+        centredPrint(font, f'Click anywhere on the map to place the {info.placing}!', (400, 400))
+        centredPrint(font, f'Press [ESC] to cancel!', (400, 425))
 
         if 0 <= mx <= 800 and 0 <= my <= 450:
-            classObj = None
-            for tower in Towers.__subclasses__():
-                if tower.name == info.placing:
-                    classObj = tower
+            if info.placing == 'spikes':
+                screen.blit(powerUps['spikes'], (mx - 25, my - 25))
 
-            if info.placing in ['Village', 'Banana Farm']:
-                for tower in info.towers:
-                    if tower == info.selected:
-                        continue
-
-                    if abs(tower.x - mx) ** 2 + abs(tower.y - my) ** 2 < classObj.range ** 2:
-                        pygame.draw.circle(screen, classObj.color, (tower.x, tower.y), 17, 2)
-
-            if towerImages[classObj.name] is not None:
-                try:
-                    screen.blit(towerImages[classObj.name], (mx - 15, my - 15))
-                except TypeError:
-                    screen.blit(towerImages[classObj.name][0], (mx - 15, my - 15))
             else:
-                pygame.draw.circle(screen, classObj.color, (mx, my), 15)
+                classObj = None
+                for tower in Towers.__subclasses__():
+                    if tower.name == info.placing:
+                        classObj = tower
 
-            if classObj.range in possibleRanges:
-                modified = rangeImages[possibleRanges.index(classObj.range)]
-            else:
-                original = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'range.png')), (classObj.range * 2, classObj.range * 2))
-                modified = original.copy()
-                modified.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
-            screen.blit(modified, (mx - classObj.range, my - classObj.range))
+                if info.placing in ['Village', 'Banana Farm']:
+                    for tower in info.towers:
+                        if tower == info.selected:
+                            continue
+
+                        if abs(tower.x - mx) ** 2 + abs(tower.y - my) ** 2 < classObj.range ** 2:
+                            pygame.draw.circle(screen, classObj.color, (tower.x, tower.y), 17, 2)
+
+                if towerImages[classObj.name] is not None:
+                    try:
+                        screen.blit(towerImages[classObj.name], (mx - 15, my - 15))
+                    except TypeError:
+                        screen.blit(towerImages[classObj.name][0], (mx - 15, my - 15))
+                else:
+                    pygame.draw.circle(screen, classObj.color, (mx, my), 15)
+
+                if classObj.range in possibleRanges:
+                    modified = rangeImages[possibleRanges.index(classObj.range)]
+                else:
+                    original = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'range.png')), (classObj.range * 2, classObj.range * 2))
+                    modified = original.copy()
+                    modified.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
+                screen.blit(modified, (mx - classObj.range, my - classObj.range))
 
     pygame.draw.rect(screen, (221, 221, 221), (800, 0, 200, 450))
 
     n = 0
     for towerType in Towers.__subclasses__():
         if info.wave >= towerType.req or info.sandboxMode:
-            screen.blit(font.render(f'{towerType.name} (${towerType.price})', True, 0), (810, 10 + 80 * n + info.shopScroll))
+            leftAlignPrint(font, f'{towerType.name} (${towerType.price})', (810, 20 + 80 * n + info.shopScroll))
 
             pygame.draw.rect(screen, (187, 187, 187), (945, 30 + 80 * n + info.shopScroll, 42, 42))
             if towerImages[towerType.name] is not None:
@@ -1566,7 +1627,7 @@ def draw() -> None:
             pygame.draw.line(screen, 0, (800, 80 * n + info.shopScroll), (1000, 80 * n + info.shopScroll), 3)
 
             pygame.draw.rect(screen, (200, 200, 200), (810, 40 + 80 * n + info.shopScroll, 100, 30))
-            centredBlit(font, 'Buy New', (0, 0, 0), (860, 55 + 80 * n + info.shopScroll))
+            centredPrint(font, 'Buy New', (860, 55 + 80 * n + info.shopScroll))
 
             if 810 <= mx <= 910 and 40 + 80 * n + info.shopScroll <= my <= 70 + 80 * n + info.shopScroll:
                 pygame.draw.rect(screen, (128, 128, 128), (810, 40 + 80 * n + info.shopScroll, 100, 30), 3)
@@ -1577,11 +1638,38 @@ def draw() -> None:
 
     pygame.draw.rect(screen, (170, 170, 170), (0, 450, 1000, 150))
 
-    screen.blit(font.render(f'FPS: {round(clock.get_fps(), 1)}', True, (0, 0, 0)), (10, 545))
-    screen.blit(font.render(str(info.HP), True, 0), (10, 520))
+    leftAlignPrint(font, f'FPS: {round(clock.get_fps(), 1)}', (10, 555))
+    leftAlignPrint(font, str(info.HP), (10, 530))
     screen.blit(healthImage, (font.size(str(info.HP))[0] + 17, 523))
-    screen.blit(font.render(f'Coins: {math.floor(info.coins)}', True, 0), (10, 570))
-    screen.blit(font.render(f'Wave {max(info.wave, 1)} of {len(waves)}', True, 0), (825, 570))
+    leftAlignPrint(font, f'Coins: {math.floor(info.coins)}', (10, 580))
+    leftAlignPrint(font, f'Wave {max(info.wave, 1)} of {len(waves)}', (825, 580))
+
+    pygame.draw.rect(screen, (200, 200, 200), (810, 470, 50, 50))
+    centredBlit(powerUps['spikes'], (835, 495))
+    if 810 <= mx <= 860 and 470 <= my <= 520:
+        pygame.draw.rect(screen, (128, 128, 128), (810, 470, 50, 50), 3)
+    else:
+        pygame.draw.rect(screen, (0, 0, 0), (810, 470, 50, 50), 3)
+    if info.powerUps['spikes'] > 0:
+        centredPrint(tinyFont, str(info.powerUps['spikes']), (835, 530))
+
+    pygame.draw.rect(screen, (200, 200, 200), (875, 470, 50, 50))
+    centredBlit(powerUps['lightning'], (900, 495))
+    if 875 <= mx <= 925 and 470 <= my <= 520:
+        pygame.draw.rect(screen, (128, 128, 128), (875, 470, 50, 50), 3)
+    else:
+        pygame.draw.rect(screen, (0, 0, 0), (875, 470, 50, 50), 3)
+    if info.powerUps['lightning'] > 0:
+        centredPrint(tinyFont, str(info.powerUps['lightning']), (900, 530))
+
+    pygame.draw.rect(screen, (200, 200, 200), (940, 470, 50, 50))
+    centredBlit(powerUps['antiCamo'], (965, 495))
+    if 940 <= mx <= 990 and 470 <= my <= 520:
+        pygame.draw.rect(screen, (128, 128, 128), (940, 470, 50, 50), 3)
+    else:
+        pygame.draw.rect(screen, (0, 0, 0), (940, 470, 50, 50), 3)
+    if info.powerUps['antiCamo'] > 0:
+        centredPrint(tinyFont, str(info.powerUps['antiCamo']), (965, 530))
 
     pygame.draw.rect(screen, (255, 0, 0), (0, 450, 20, 20))
     pygame.draw.line(screen, (0, 0, 0), (3, 453), (17, 467), 2)
@@ -1592,8 +1680,8 @@ def draw() -> None:
         pygame.draw.rect(screen, (0, 0, 0), (0, 450, 20, 20), 3)
 
     if issubclass(type(info.selected), Towers):
-        screen.blit(font.render('Upgrades:', True, 0), (200, 487))
-        screen.blit(font.render(f'Pops: {info.selected.hits}', True, 0), (200, 460))
+        leftAlignPrint(font, 'Upgrades:', (200, 497))
+        leftAlignPrint(font, f'Pops: {info.selected.hits}', (200, 470))
 
         for n in range(3):
             if 295 <= mx <= 595 and 485 + 30 * n <= my <= 515 + 30 * n:
@@ -1604,11 +1692,11 @@ def draw() -> None:
             if info.selected.upgrades[n] == 3:
                 pygame.draw.rect(screen, (255, 255, 191), (295, 485 + 30 * n, 300, 30))
                 pygame.draw.rect(screen, (0, 0, 0), (295, 485 + 30 * n, 300, 30), 3)
-                centredBlit(font, 'MAX', (0, 0, 0), (445, 500 + 30 * n))
+                centredPrint(font, 'MAX', (445, 500 + 30 * n))
             else:
                 pygame.draw.rect(screen, (0, 0, 0), (295, 485 + 30 * n, 300, 30), 3)
 
-                leftAlignBlit(font, f'{info.selected.upgradeNames[n][info.selected.upgrades[n]]} [${info.selected.upgradePrices[n][info.selected.upgrades[n]]}]', (32, 32, 32), (300, 500 + n * 30))
+                leftAlignPrint(font, f'{info.selected.upgradeNames[n][info.selected.upgrades[n]]} [${info.selected.upgradePrices[n][info.selected.upgrades[n]]}]', (300, 500 + n * 30), (32, 32, 32))
 
             for m in range(3):
                 if info.selected.upgrades[n] > m:
@@ -1622,12 +1710,15 @@ def draw() -> None:
         else:
             pygame.draw.rect(screen, (0, 0, 0), (620, 545, 150, 25), 3)
 
-        centredBlit(font, f'Sell: ${round(getSellPrice(info.selected))}', (0, 0, 0), (695, 557))
+        centredPrint(font, f'Sell: ${round(getSellPrice(info.selected))}', (695, 557))
 
         if type(info.selected) is IceTower:
             pygame.draw.rect(screen, (0, 255, 0) if info.selected.enabled else (255, 0, 0), (620, 500, 150, 25))
-            pygame.draw.rect(screen, (200, 200, 200) if 620 < mx < 770 and 500 < my < 525 else (0, 0, 0), (620, 500, 150, 25), 3)
-            centredBlit(font, 'ENABLED' if info.selected.enabled else 'DISABLED', (0, 0, 0), (695, 512))
+            if 620 <= mx <= 770:
+                pygame.draw.rect(screen, (200, 200, 200), (620, 500, 150, 25), 3)
+            else:
+                pygame.draw.rect(screen, (0, 0, 0), (620, 500, 150, 25), 3)
+            centredPrint(font, 'ENABLED' if info.selected.enabled else 'DISABLED', (695, 512))
 
     pygame.display.update()
 
@@ -1739,6 +1830,12 @@ def load() -> None:
             except KeyError:
                 info.achievements[attr] = default
 
+        for powerUp, default in defaults['powerUps'].items():
+            try:
+                info.powerUps[powerUp] = info.powerUps[powerUp]
+            except KeyError:
+                info.powerUps[powerUp] = default
+
         info.PBs = updateDict(info.PBs, [Map.name for Map in Maps])
 
         info.statistics['mapsBeat'] = len([m for m in info.PBs.keys() if type(info.PBs[m]) is int])
@@ -1801,11 +1898,11 @@ def app() -> None:
             screen.fill((64, 64, 64))
             pygame.draw.rect(screen, (255, 0, 0), (225, 375, 175, 50))
             pygame.draw.rect(screen, (124, 252, 0), (600, 375, 175, 50))
-            centredBlit(mediumFont, 'Do you want to load saved game?', (0, 0, 0), (500, 150))
-            centredBlit(font, 'If you encounter an error, you should choose \"No\" because', (0, 0, 0), (500, 200))
-            centredBlit(font, 'tower-defense might not be compatible with earlier versions.', (0, 0, 0), (500, 230))
-            centredBlit(mediumFont, 'Yes', (0, 0, 0), (687, 400))
-            centredBlit(mediumFont, 'No', (0, 0, 0), (313, 400))
+            centredPrint(mediumFont, 'Do you want to load saved game?', (500, 150))
+            centredPrint(font, 'If you encounter an error, you should choose \"No\" because', (500, 200))
+            centredPrint(font, 'tower-defense might not be compatible with earlier versions.', (500, 230))
+            centredPrint(mediumFont, 'Yes', (687, 400))
+            centredPrint(mediumFont, 'No', (313, 400))
             pygame.draw.rect(screen, (0, 0, 0), (225, 375, 175, 50), 5)
             pygame.draw.rect(screen, (0, 0, 0), (600, 375, 175, 50), 5)
 
@@ -1857,31 +1954,34 @@ def app() -> None:
                         else:
                             pygame.draw.rect(screen, (0, 0, 0), (10, 40 * n + 60 - scroll, 825, 30), 3)
 
-                        leftAlignBlit(font, Map.name.upper(), (0, 0, 0), (20, 74 + n * 40 - scroll))
-                        centredBlit(font, f'[Best: {info.PBs[Map.name]}]', (225, 225, 0) if info.PBs[Map.name] == 100 else (0, 0, 0), (900, 74 + n * 40 - scroll))
+                        leftAlignPrint(font, Map.name.upper(), (20, 74 + n * 40 - scroll))
+                        if info.PBs[Map.name] == 100:
+                            centredPrint(font, f'[Best: 100]', (900, 74 + n * 40 - scroll), (225, 225, 0))
+                        else:
+                            centredPrint(font, f'[Best: {info.PBs[Map.name]}]', (900, 74 + n * 40 - scroll))
 
                     else:
                         pygame.draw.rect(screen, (32, 32, 32), (10, 40 * n + 60 - scroll, 825, 30))
                         pygame.draw.rect(screen, (0, 0, 0), (10, 40 * n + 60 - scroll, 825, 30), 3)
-                        leftAlignBlit(font, Map.name.upper(), (0, 0, 0), (20, 74 + n * 40 - scroll))
-                        centredBlit(font, LOCKED, (0, 0, 0), (900, 74 + n * 40 - scroll))
+                        leftAlignPrint(font, Map.name.upper(), (20, 74 + n * 40 - scroll))
+                        centredPrint(font, LOCKED, (900, 74 + n * 40 - scroll))
 
                     n += 1
 
                 pygame.draw.rect(screen, (68, 68, 68), (0, 0, 1000, 50))
-                centredBlit(font, 'Map Select', (255, 255, 255), (500, 30))
+                centredPrint(font, 'Map Select', (500, 30), (255, 255, 255))
 
                 pygame.draw.rect(screen, (200, 200, 200), (10, 40 * n + 60 - scroll, 825, 30))
                 if 10 <= mx <= 835 and 40 * n + 60 <= my + scroll <= 40 * n + 90:
                     pygame.draw.rect(screen, (128, 128, 128), (10, 40 * n + 60 - scroll, 825, 30), 5)
                 else:
                     pygame.draw.rect(screen, (0, 0, 0), (10, 40 * n + 60 - scroll, 825, 30), 3)
-                centredBlit(font, 'Random Map', (0, 0, 0), (413, 40 * n + 75 - scroll))
+                centredPrint(font, 'Random Map', (413, 40 * n + 75 - scroll))
 
                 pygame.draw.rect(screen, (68, 68, 68), (0, 500, 1000, 100))
 
                 pygame.draw.rect(screen, (200, 200, 200), (25, 550, 125, 30))
-                centredBlit(font, 'Map Maker', (0, 0, 0), (87, 565))
+                centredPrint(font, 'Map Maker', (87, 565))
                 if 25 <= mx <= 150 and 550 < my <= 580:
                     pygame.draw.rect(screen, (128, 128, 128), (25, 550, 125, 30), 5)
                 else:
@@ -1889,28 +1989,28 @@ def app() -> None:
 
                 if hasAllUnlocked():
                     pygame.draw.rect(screen, (0, 225, 0) if info.sandboxMode else (255, 0, 0), (200, 550, 200, 30))
-                    centredBlit(font, 'Sandbox Mode: ' + ('ON' if info.sandboxMode else 'OFF'), (0, 0, 0), (300, 565))
+                    centredPrint(font, 'Sandbox Mode: ' + ('ON' if info.sandboxMode else 'OFF'), (300, 565))
                     if 200 <= mx <= 400 and 550 <= my <= 580:
                         pygame.draw.rect(screen, (128, 128, 128), (200, 550, 200, 30), 5)
                     else:
                         pygame.draw.rect(screen, (0, 0, 0), (200, 550, 200, 30), 3)
 
                 pygame.draw.rect(screen, (200, 200, 200), (675, 550, 125, 30))
-                centredBlit(font, 'Stats', (0, 0, 0), (737, 565))
+                centredPrint(font, 'Stats', (737, 565))
                 if 675 <= mx <= 800 and 550 < my <= 580:
                     pygame.draw.rect(screen, (128, 128, 128), (675, 550, 125, 30), 5)
                 else:
                     pygame.draw.rect(screen, (0, 0, 0), (675, 550, 125, 30), 3)
 
                 pygame.draw.rect(screen, (200, 200, 200), (825, 550, 150, 30))
-                centredBlit(font, 'Achievements', (0, 0, 0), (900, 565))
+                centredPrint(font, 'Achievements', (900, 565))
                 if 825 <= mx <= 975 and 550 < my <= 580:
                     pygame.draw.rect(screen, (128, 128, 128), (825, 550, 150, 30), 5)
                 else:
                     pygame.draw.rect(screen, (0, 0, 0), (825, 550, 150, 30), 3)
 
                 pygame.draw.rect(screen, (200, 200, 200), (825, 510, 150, 30))
-                centredBlit(font, 'Cosmetics', (0, 0, 0), (900, 525))
+                centredPrint(font, 'Cosmetics', (900, 525))
                 if 825 <= mx <= 975 and 510 < my <= 540:
                     pygame.draw.rect(screen, (128, 128, 128), (825, 510, 150, 30), 5)
                 else:
@@ -1919,7 +2019,7 @@ def app() -> None:
                 if info.newRunes > 0:
                     pygame.draw.circle(screen, (255, 0, 0), (975, 510), 10)
                     pygame.draw.circle(screen, (0, 0, 0), (975, 510), 10, 2)
-                    centredBlit(font, str(info.newRunes), (255, 255, 255), (975, 508))
+                    centredPrint(font, str(info.newRunes), (975, 508), (255, 255, 255))
 
                 pressed = pygame.key.get_pressed()
                 if pressed[pygame.K_UP]:
@@ -1999,13 +2099,13 @@ def app() -> None:
 
                 screen.fill((200, 200, 200))
 
-                centredBlit(mediumFont, 'Achievements', (0, 0, 0), (500, 50))
+                centredPrint(mediumFont, 'Achievements', (500, 50))
 
                 n = 0
                 for achievement, information in achievements.items():
                     pygame.draw.rect(screen, (100, 100, 100), (10, 80 + 110 * n, 980, 100))
-                    leftAlignBlit(font, information['names'][min(info.achievements[achievement], 2)], (0, 0, 0), (20, 93 + 110 * n))
-                    leftAlignBlit(tinyFont, information['lore'].replace('[%]', str(achievementRequirements[achievement]['tiers'][min(info.achievements[achievement], 2)])), (0, 0, 0), (20, 120 + 110 * n))
+                    leftAlignPrint(font, information['names'][min(info.achievements[achievement], 2)], (20, 93 + 110 * n))
+                    leftAlignPrint(tinyFont, information['lore'].replace('[%]', str(achievementRequirements[achievement]['tiers'][min(info.achievements[achievement], 2)])), (20, 120 + 110 * n))
 
                     for m in range(3):
                         if info.achievements[achievement] > m:
@@ -2021,7 +2121,7 @@ def app() -> None:
                         if 10 <= mx <= 990 and 80 + 110 * n <= my <= 180 + 110 * n:
                             txt += f' ({current} / {target})'
 
-                        centredBlit(font, txt, (0, 0, 0), (440, 150 + 110 * n))
+                        centredPrint(font, txt, (440, 150 + 110 * n))
                     else:
                         current = info.statistics[achievementRequirements[achievement]['attr']]
                         target = achievementRequirements[achievement]['tiers'][info.achievements[achievement] - 1]
@@ -2030,14 +2130,14 @@ def app() -> None:
                             txt += f' ({current} / {target})'
 
                         pygame.draw.rect(screen, (0, 255, 0), (40, 140 + 110 * n, 800, 20))
-                        centredBlit(font, txt, (0, 0, 0), (440, 150 + 110 * n))
+                        centredPrint(font, txt, (440, 150 + 110 * n))
 
                     pygame.draw.rect(screen, (0, 0, 0), (40, 140 + 110 * n, 800, 20), 3)
 
                     n += 1
 
                 pygame.draw.rect(screen, (255, 0, 0), (20, 550, 100, 30))
-                centredBlit(font, 'Close', (0, 0, 0), (70, 565))
+                centredPrint(font, 'Close', (70, 565))
                 if 20 <= mx <= 120 and 550 <= my <= 580:
                     pygame.draw.rect(screen, (0, 0, 0), (20, 550, 100, 30), 3)
                 else:
@@ -2063,12 +2163,12 @@ def app() -> None:
         elif info.status == 'win':
             while True:
                 screen.fill((32, 32, 32))
-                centredBlit(largeFont, 'You Win!', (255, 255, 255), (500, 125))
-                centredBlit(font, f'Your Final Score: {info.FinalHP}', (255, 255, 255), (500, 250))
-                centredBlit(font, f'Press [SPACE] to continue!', (255, 255, 255), (500, 280))
+                centredPrint(largeFont, 'You Win!', (500, 125), (255, 255, 255))
+                centredPrint(font, f'Your Final Score: {info.FinalHP}', (500, 250), (255, 255, 255))
+                centredPrint(font, f'Press [SPACE] to continue!', (500, 280), (255, 255, 255))
 
                 if info.sandboxMode:
-                    centredBlit(font, 'You were playing on Sandbox Mode!', (255, 255, 255), (500, 350))
+                    centredPrint(font, 'You were playing on Sandbox Mode!', (500, 350), (255, 255, 255))
 
                 pygame.display.update()
 
@@ -2093,8 +2193,8 @@ def app() -> None:
 
             while True:
                 screen.fill((32, 32, 32))
-                centredBlit(largeFont, 'You Lost!', (255, 255, 255), (500, 125))
-                centredBlit(font, 'Press [SPACE] to continue!', (255, 255, 255), (500, 250))
+                centredPrint(largeFont, 'You Lost!', (500, 125), (255, 255, 255))
+                centredPrint(font, 'Press [SPACE] to continue!', (500, 250), (255, 255, 255))
                 pygame.display.update()
 
                 for event in pygame.event.get():
@@ -2169,10 +2269,10 @@ def app() -> None:
 
                     screen.fill((200, 200, 200))
 
-                    centredBlit(mediumFont, 'Map Maker', (0, 0, 0), (500, 75))
+                    centredPrint(mediumFont, 'Map Maker', (500, 75))
                     n = 0
                     for txt in ['Map name:', 'Background Color:', 'Path Color:']:
-                        rightAlignBlit(font, txt, (0, 0, 0), (200, 160 + n * 100))
+                        rightAlignPrint(font, txt, (200, 160 + n * 100))
                         n += 1
 
                     pygame.draw.rect(screen, (100, 100, 100), (225, 150, 675, 30))
@@ -2211,7 +2311,7 @@ def app() -> None:
 
                     if validBGColor and validPathColor and info.mapMakerData['name'] != '':
                         pygame.draw.rect(screen, (44, 255, 44), (800, 450, 100, 30))
-                        centredBlit(font, 'Next Step', (0, 0, 0), (850, 465))
+                        centredPrint(font, 'Next Step', (850, 465))
 
                         if 800 < mx < 900 and 450 < my < 480:
                             pygame.draw.rect(screen, (128, 128, 128), (800, 450, 100, 30), 3)
@@ -2219,7 +2319,7 @@ def app() -> None:
                             pygame.draw.rect(screen, (0, 0, 0), (800, 450, 100, 30), 3)
 
                     pygame.draw.rect(screen, (255, 0, 0), (30, 550, 100, 30))
-                    centredBlit(font, 'Cancel', (0, 0, 0), (80, 565))
+                    centredPrint(font, 'Cancel', (80, 565))
 
                     if 30 < mx < 130 and 550 < my < 580:
                         pygame.draw.rect(screen, (128, 128, 128), (30, 550, 100, 30), 3)
@@ -2346,7 +2446,7 @@ def app() -> None:
                             length = font.size(txt[:charInsertIndex])[0]
                             pygame.draw.line(screen, (0, 0, 0), (length + 230, y), (length + 230, y + 20))
 
-                        leftAlignBlit(font, txt, (0, 0, 0), (230, y + 10))
+                        leftAlignPrint(font, txt, (230, y + 10))
 
                     pygame.display.update()
                     ticks = (ticks + 1) % 50
@@ -2365,7 +2465,7 @@ def app() -> None:
                             cx, cy = getClosestPoint(mx, my)
 
                     screen.fill((200, 200, 200))
-                    centredBlit(mediumFont, 'Map Maker', (0, 0, 0), (500, 75))
+                    centredPrint(mediumFont, 'Map Maker', (500, 75))
                     pygame.draw.rect(screen, (0, 0, 0), (100, 125, 800, 450), 5)
                     pygame.draw.rect(screen, info.mapMakerData['backgroundColor'], (100, 125, 800, 450))
 
@@ -2384,7 +2484,7 @@ def app() -> None:
                     pygame.draw.rect(screen, (200, 200, 200), (900, 125, 10, 450))
 
                     pygame.draw.rect(screen, (100, 100, 100), (0, 570, 60, 30))
-                    centredBlit(font, 'Clear', (0, 0, 0), (30, 585))
+                    centredPrint(font, 'Clear', (30, 585))
 
                     if mx <= 60 and 570 <= my:
                         pygame.draw.rect(screen, (128, 128, 128), (0, 570, 60, 30), 3)
@@ -2393,7 +2493,7 @@ def app() -> None:
 
                     if len(info.mapMakerData['path']) >= 2:
                         pygame.draw.rect(screen, (44, 255, 44), (940, 570, 60, 30))
-                        centredBlit(font, 'Done', (0, 0, 0), (970, 585))
+                        centredPrint(font, 'Done', (970, 585))
 
                         if mx >= 940 and my >= 570:
                             pygame.draw.rect(screen, (128, 128, 128), (940, 570, 60, 30), 3)
@@ -2436,19 +2536,20 @@ def app() -> None:
                 screen.fill((200, 200, 200))
 
                 pygame.draw.rect(screen, (255, 0, 0), (30, 550, 100, 30))
-                centredBlit(font, 'Close', (0, 0, 0), (80, 565))
+                centredPrint(font, 'Close', (80, 565))
                 if 30 <= mx <= 130 and 550 <= my <= 580:
                     pygame.draw.rect(screen, (64, 64, 64), (30, 550, 100, 30), 3)
                 else:
                     pygame.draw.rect(screen, (0, 0, 0), (30, 550, 100, 30), 3)
 
                 pygame.draw.rect(screen, (160, 160, 160), (440, 100, 120, 120))
-                centredBlit(font, 'Click on a Rune to equip!', (0, 0, 0), (500, 75))
+                centredPrint(font, 'Click on a Rune to equip!' if info.equippedRune is None else 'Equipped Rune:',
+                             (500, 75))
 
                 pygame.draw.rect(screen, (160, 160, 160), (50, 250, 900, 225))
                 if len(info.runes) == 0:
-                    centredBlit(font, 'You have no runes!', (0, 0, 0), (500, 362))
-                    centredBlit(tinyFont, 'Win some battles to earn some runes!', (0, 0, 0), (500, 390))
+                    centredPrint(font, 'You have no runes!', (500, 362))
+                    centredPrint(tinyFont, 'Win some battles to earn some runes!', (500, 390))
 
                 x = 0
                 y = 0
@@ -2472,11 +2573,12 @@ def app() -> None:
                 if info.equippedRune is not None:
                     try:
                         getRune(info.equippedRune).draw(500, 160)
-                        leftAlignBlit(font, info.equippedRune, (0, 0, 0), (600, 120))
-                        leftAlignBlit(tinyFont, getRune(info.equippedRune).lore, (0, 0, 0), (600, 150))
+                        leftAlignPrint(font, info.equippedRune, (600, 120))
+                        leftAlignPrint(tinyFont, getRune(info.equippedRune).lore, (600, 150))
 
                     except AttributeError:
                         print('tower-defense.core: You seem to have a removed rune equipped and it has been deleted!')
+                        info.equippedRune = None
 
                 cont = True
                 for event in pygame.event.get():
@@ -2489,6 +2591,9 @@ def app() -> None:
                             if 30 <= mx <= 130 and 550 <= my <= 580:
                                 info.status = 'mapSelect'
                                 cont = False
+
+                            elif 440 <= mx <= 560 and 100 <= my <= 220:
+                                info.equippedRune = None
 
                             elif 50 <= mx <= 950 and 250 <= my <= 475:
                                 try:
@@ -2615,6 +2720,7 @@ def app() -> None:
             pygame.display.update()
 
             RuneEffects.update()
+            PowerUps.update()
 
             if info.HP <= 0:
                 info.status = 'lose'
@@ -2628,20 +2734,26 @@ def app() -> None:
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if event.button == 1:
                         if mx <= 800 and my <= 450:
-                            for towerType in Towers.__subclasses__():
-                                if towerType.name == info.placing:
-                                    info.placing = ''
-                                    towerType(mx, my)
-                                    info.statistics['towersPlaced'] += 1
+                            if info.placing == 'spikes':
+                                for n in range(12):
+                                    PowerUps.objects.append(PhysicalPowerUp.Spike(mx + random.randint(-25, 25), my + random.randint(-25, 25), PowerUps))
+                                info.placing = ''
 
-                            found = False
-                            for tower in info.towers:
-                                if abs(tower.x - mx) ** 2 + abs(tower.y - my) ** 2 <= 225:
-                                    info.selected = tower
-                                    found = True
+                            else:
+                                for towerType in Towers.__subclasses__():
+                                    if towerType.name == info.placing:
+                                        info.placing = ''
+                                        towerType(mx, my)
+                                        info.statistics['towersPlaced'] += 1
 
-                            if not found:
-                                info.selected = None
+                                found = False
+                                for tower in info.towers:
+                                    if abs(tower.x - mx) ** 2 + abs(tower.y - my) ** 2 <= 225:
+                                        info.selected = tower
+                                        found = True
+
+                                if not found:
+                                    info.selected = None
 
                         if 810 <= mx <= 910:
                             n = 0
@@ -2656,6 +2768,32 @@ def app() -> None:
                         if mx <= 20 and 450 <= my <= 470:
                             info.reset()
                             info.status = 'mapSelect'
+
+                        if 470 <= my <= 520:
+                            if 810 <= mx <= 860 and info.powerUps['spikes'] > 0:
+                                if not info.sandboxMode:
+                                    info.powerUps['spikes'] -= 1
+                                info.placing = 'spikes'
+
+                            if 875 <= mx <= 925 and info.powerUps['lightning'] > 0:
+                                if not info.sandboxMode:
+                                    info.powerUps['lightning'] -= 1
+                                n = 0
+                                for enemy in info.enemies:
+                                    if not enemy.camo:
+                                        PowerUps.objects.append(PhysicalPowerUp.Lightning(enemy.x, enemy.y, PowerUps))
+                                        enemy.kill(bossDamage=25)
+
+                                        n += 1
+                                        if n == 10:
+                                            break
+
+                            if 940 <= mx <= 990 and info.powerUps['antiCamo'] > 0:
+                                if not info.sandboxMode:
+                                    info.powerUps['antiCamo'] -= 1
+                                for enemy in info.enemies:
+                                    if enemy.camo:
+                                        enemy.camo = False
 
                         if issubclass(type(info.selected), Towers):
                             if 295 <= mx <= 595 and 485 <= my <= 570:
@@ -2713,16 +2851,16 @@ def app() -> None:
 
                 screen.fill((200, 200, 200))
 
-                centredBlit(mediumFont, 'General Statistics', (0, 0, 0), (500, 20 - scroll))
-                screen.blit(font.render(f'Total Pops: {info.statistics["pops"]}', True, (0, 0, 0)), (20, 70 - scroll))
-                screen.blit(font.render(f'Towers Placed: {info.statistics["towersPlaced"]}', True, (0, 0, 0)), (20, 100 - scroll))
-                screen.blit(font.render(f'Towers Sold: {info.statistics["towersSold"]}', True, (0, 0, 0)), (20, 130 - scroll))
-                screen.blit(font.render(f'Enemies Missed: {info.statistics["enemiesMissed"]}', True, (0, 0, 0)), (20, 160 - scroll))
-                screen.blit(font.render(f'Coins Spent: {info.statistics["coinsSpent"]}', True, (0, 0, 0)), (20, 190 - scroll))
+                centredPrint(mediumFont, 'General Statistics', (500, 20 - scroll))
+                leftAlignPrint(font, f'Total Pops: {info.statistics["pops"]}', (20, 80 - scroll))
+                leftAlignPrint(font, f'Towers Placed: {info.statistics["towersPlaced"]}', (20, 110 - scroll))
+                leftAlignPrint(font, f'Towers Sold: {info.statistics["towersSold"]}', (20, 140 - scroll))
+                leftAlignPrint(font, f'Enemies Missed: {info.statistics["enemiesMissed"]}', (20, 170 - scroll))
+                leftAlignPrint(font, f'Coins Spent: {info.statistics["coinsSpent"]}', (20, 200 - scroll))
 
-                centredBlit(mediumFont, 'Wins and Losses', (0, 0, 0), (500, 240 - scroll))
+                centredPrint(mediumFont, 'Wins and Losses', (500, 240 - scroll))
 
-                screen.blit(font.render(f'Total Losses: {info.statistics["losses"]}', True, (0, 0, 0)), (20, 320 - scroll))
+                leftAlignPrint(font, f'Total Losses: {info.statistics["losses"]}', (20, 330 - scroll))
 
                 numMaps = 0
                 totalWins = 0
@@ -2730,16 +2868,17 @@ def app() -> None:
                     numMaps += 1
                     totalWins += wins
 
-                    screen.blit(font.render(f'{mapName}: {wins} ' + ('win' if wins == 1 else 'wins'), True, (0, 0, 0)), (20, 390 + 30 * numMaps - scroll))
+                    leftAlignPrint(font, f'{mapName}: {wins} ' + ('win' if wins == 1 else 'wins'),
+                                   (20, 400 + 30 * numMaps - scroll))
 
-                screen.blit(font.render(f'Total Wins: {totalWins}', True, (0, 0, 0)), (20, 290 - scroll))
+                leftAlignPrint(font, f'Total Wins: {totalWins}', (20, 300 - scroll))
                 if totalWins > 0:
-                    centredBlit(mediumFont, 'Wins by map', (0, 0, 0), (500, 370 - scroll))
+                    centredPrint(mediumFont, 'Wins by map', (500, 370 - scroll))
 
                 pygame.draw.rect(screen, (200, 200, 200), (0, 525, 1000, 75))
 
                 pygame.draw.rect(screen, (255, 0, 0), (25, 550, 100, 30))
-                centredBlit(font, 'Close', (0, 0, 0), (75, 565))
+                centredPrint(font, 'Close', (75, 565))
                 if 25 <= mx <= 125 and 550 <= my <= 580:
                     pygame.draw.rect(screen, (128, 128, 128), (25, 550, 100, 30), 3)
                 else:
@@ -2790,8 +2929,8 @@ pygame.display.set_caption('Tower Defense')
 pygame.display.set_icon(pygame.image.load(os.path.join(resource_path, 'icon.png')))
 
 screen.fill((200, 200, 200))
-centredBlit(largeFont, f'Tower Defense v{__version__}', (100, 100, 100), (500, 200))
-centredBlit(mediumFont, 'Loading...', (100, 100, 100), (500, 300))
+centredPrint(largeFont, f'Tower Defense v{__version__}', (500, 200), (100, 100, 100))
+centredPrint(mediumFont, 'Loading...', (500, 300), (100, 100, 100))
 pygame.display.update()
 
 waves = [
@@ -2951,7 +3090,12 @@ defaults = {
     'mapsBeat': 0,
     'runes': [],
     'equippedRune': None,
-    'newRunes': 0
+    'newRunes': 0,
+    'powerUps': {
+        'lightning': 0,
+        'spikes': 0,
+        'antiCamo': 0
+    }
 }
 
 achievementRequirements = {
@@ -2990,6 +3134,12 @@ achievements = {
         'names': ['Money Spender', 'Rich Player', 'Millionaire!'],
         'lore': 'Spend [%] coins!'
     }
+}
+
+powerUps = {
+    'lightning': pygame.image.load('resources/lightning_power_up.png'),
+    'spikes': pygame.image.load('resources/spikes_power_up.png'),
+    'antiCamo': pygame.image.load('resources/anti_camo_power_up.png')
 }
 
 LOCKED = 'LOCKED'
@@ -3037,6 +3187,7 @@ SIN45 = COS45 = math.sqrt(2) / 2
 
 info = data()
 RuneEffects = RuneEffect()
+PowerUps = PhysicalPowerUp()
 mouseTrail = []
 
 rainbowColors = [[255, 0, 0], [0, 127, 0], [255, 255, 0], [0, 255, 0], [0, 0, 255], [46, 43, 95], [139, 0, 255]]
