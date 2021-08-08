@@ -1795,11 +1795,12 @@ def hasAllUnlocked() -> bool:
 
 
 def save() -> None:
+    info.powerUpData = PowerUps
     pickle.dump(info, open('save.txt', 'wb'))
 
 
 def load() -> None:
-    global info
+    global info, PowerUps
 
     try:
         info = pickle.load(open('save.txt', 'rb'))
@@ -1835,6 +1836,8 @@ def load() -> None:
                 info.powerUps[powerUp] = info.powerUps[powerUp]
             except KeyError:
                 info.powerUps[powerUp] = default
+
+        PowerUps = info.powerUpData
 
         info.PBs = updateDict(info.PBs, [Map.name for Map in Maps])
 
@@ -3100,7 +3103,8 @@ defaults = {
         'lightning': 0,
         'spikes': 0,
         'antiCamo': 0
-    }
+    },
+    'powerUpData': None
 }
 
 achievementRequirements = {
