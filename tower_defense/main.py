@@ -2046,6 +2046,7 @@ def app() -> None:
                                         info.Map = Maps[n]
                                         info.status = 'game'
                                         info.coins = 100000 if info.sandboxMode else 50
+                                        PowerUps.objects.clear()
                                         mouseTrail.clear()
                                         cont = False
 
@@ -2053,6 +2054,7 @@ def app() -> None:
                                 info.Map = random.choice([Map for Map in Maps if info.PBs[Map.name] != LOCKED])
                                 info.status = 'game'
                                 info.coins = 100000 if info.sandboxMode else 50
+                                PowerUps.objects.clear()
                                 mouseTrail.clear()
                                 cont = False
 
@@ -2836,9 +2838,14 @@ def app() -> None:
 
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
-                        price = {t.name: t.price for t in Towers.__subclasses__()}[info.placing]
-                        info.coins += price
-                        info.statistics['coinsSpent'] -= price
+                        if info.placing == 'spikes':
+                            if not info.sandboxMode:
+                                info.powerUps['spikes'] += 1
+                        else:
+                            price = {t.name: t.price for t in Towers.__subclasses__()}[info.placing]
+                            info.coins += price
+                            info.statistics['coinsSpent'] -= price
+
                         info.placing = ''
 
             pressed = pygame.key.get_pressed()
