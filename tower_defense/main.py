@@ -1474,7 +1474,7 @@ def canSeeCamo(Tower: Towers) -> bool:
     return False
 
 
-def getTarget(tower: Towers, *, ignore: [Enemy] = None, overrideRange: int = None) -> Enemy:
+def getTarget(tower: Towers, *, ignore: [Enemy] = None, overrideRange: int = None, ignoreBosses: bool = False) -> Enemy:
     if ignore is None:
         ignore = []
 
@@ -1489,7 +1489,13 @@ def getTarget(tower: Towers, *, ignore: [Enemy] = None, overrideRange: int = Non
         if not (0 <= enemy.x <= 800 and 0 <= enemy.y <= 450):
             continue
 
-        if (abs(enemy.x - tower.x) ** 2 + abs(enemy.y - tower.y) ** 2 <= rangeRadius ** 2) and (enemy not in ignore):
+        if enemy in ignore:
+            continue
+
+        if ignoreBosses and type(enemy.tier) is str:
+            continue
+
+        if abs(enemy.x - tower.x) ** 2 + abs(enemy.y - tower.y) ** 2 <= rangeRadius ** 2:
             if (enemy.camo and canSeeCamo(tower)) or not enemy.camo:
                 try:
                     if enemy.totalMovement > maxDistance:
@@ -2786,20 +2792,29 @@ def app() -> None:
                                 info.placing = 'spikes'
 
                             if 875 <= mx <= 925 and info.powerUps['lightning'] > 0:
-                                n = 0
-                                found = False
-                                for enemy in info.enemies:
-                                    if not enemy.camo:
-                                        PowerUps.objects.append(PhysicalPowerUp.Lightning(enemy.x, enemy.y, PowerUps))
-                                        enemy.kill(bossDamage=25)
-                                        found = True
+                                t1 = getTarget(Towers(0, 0, overrideAddToTowers=True), overrideRange=1000, ignoreBosses=True)
+                                if t1 is not None:
+                                    t2 = getTarget(Towers(0, 0, overrideAddToTowers=True), ignore=[t1], overrideRange=1000, ignoreBosses=True)
+                                    t1.kill(spawnNew=False)
+                                    PowerUps.objects.append(PhysicalPowerUp.Lightning(t1.x, t1.y, PowerUps))
+                                    if t2 is not None:
+                                        t3 = getTarget(Towers(0, 0, overrideAddToTowers=True), ignore=[t1, t2], overrideRange=1000, ignoreBosses=True)
+                                        t2.kill(spawnNew=False)
+                                        PowerUps.objects.append(PhysicalPowerUp.Lightning(t2.x, t2.y, PowerUps))
+                                        if t3 is not None:
+                                            t4 = getTarget(Towers(0, 0, overrideAddToTowers=True), ignore=[t1, t2, t3], overrideRange=1000, ignoreBosses=True)
+                                            t3.kill(spawnNew=False)
+                                            PowerUps.objects.append(PhysicalPowerUp.Lightning(t3.x, t3.y, PowerUps))
+                                            if t4 is not None:
+                                                t5 = getTarget(Towers(0, 0, overrideAddToTowers=True), ignore=[t1, t2, t3, t4], overrideRange=1000, ignoreBosses=True)
+                                                t4.kill(spawnNew=False)
+                                                PowerUps.objects.append(PhysicalPowerUp.Lightning(t4.x, t4.y, PowerUps))
+                                                if t5 is not None:
+                                                    t5.kill(spawnNew=False)
+                                                    PowerUps.objects.append(PhysicalPowerUp.Lightning(t5.x, t5.y, PowerUps))
 
-                                        n += 1
-                                        if n == 10:
-                                            break
-
-                                if found and not info.sandboxMode:
-                                    info.powerUps['lightning'] -= 1
+                                    if not info.sandboxMode:
+                                        info.powerUps['lightning'] -= 1
 
                             if 940 <= mx <= 990 and info.powerUps['antiCamo'] > 0:
                                 found = False
