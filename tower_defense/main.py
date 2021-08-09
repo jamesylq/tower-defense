@@ -2782,28 +2782,34 @@ def app() -> None:
                             if 810 <= mx <= 860 and info.powerUps['spikes'] > 0:
                                 if not info.sandboxMode:
                                     info.powerUps['spikes'] -= 1
+
                                 info.placing = 'spikes'
 
                             if 875 <= mx <= 925 and info.powerUps['lightning'] > 0:
-                                if not info.sandboxMode:
-                                    info.powerUps['lightning'] -= 1
-
                                 n = 0
+                                found = False
                                 for enemy in info.enemies:
                                     if not enemy.camo:
                                         PowerUps.objects.append(PhysicalPowerUp.Lightning(enemy.x, enemy.y, PowerUps))
                                         enemy.kill(bossDamage=25)
+                                        found = True
 
                                         n += 1
                                         if n == 10:
                                             break
 
+                                if found and not info.sandboxMode:
+                                    info.powerUps['lightning'] -= 1
+
                             if 940 <= mx <= 990 and info.powerUps['antiCamo'] > 0:
-                                if not info.sandboxMode:
-                                    info.powerUps['antiCamo'] -= 1
+                                found = False
                                 for enemy in info.enemies:
                                     if enemy.camo:
                                         enemy.camo = False
+                                        found = True
+
+                                if found and not info.sandboxMode:
+                                    info.powerUps['antiCamo'] -= 1
 
                         if issubclass(type(info.selected), Towers):
                             if 295 <= mx <= 595 and 485 <= my <= 570:
