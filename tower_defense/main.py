@@ -268,13 +268,17 @@ class Towers:
             info.towers.append(self)
 
     def draw(self):
-        if towerImages[self.name] is not None:
-            try:
-                screen.blit(towerImages[self.name], (self.x - 15, self.y - 15))
-            except TypeError:
-                screen.blit(towerImages[self.name][self.getImageFrame()], (self.x - 15, self.y - 15))
-        else:
-            pygame.draw.circle(screen, self.color, (self.x, self.y), 15)
+        try:
+            if towerImages[self.name] is not None:
+                try:
+                    screen.blit(towerImages[self.name], (self.x - 15, self.y - 15))
+                except TypeError:
+                    screen.blit(towerImages[self.name][self.getImageFrame()], (self.x - 15, self.y - 15))
+            else:
+                pygame.draw.circle(screen, self.color, (self.x, self.y), 15)
+
+        except AttributeError:
+            pygame.draw.circle(screen, (200, 200, 200), (self.x, self.y), 15)
 
     def attack(self):
         pass
@@ -1339,12 +1343,13 @@ class Enemy:
                     info.coins += 3 * coinMultiplier
 
                 elif self.tier in bossCoins.keys():
-                    info.coins += bossCoins[self.tier]
+                    info.coins += bossCoins[self.tier] * max(1, coinMultiplier / 4)
 
                 else:
                     new = Enemy(self.tier - 1, (self.x, self.y), self.lineIndex, camo=self.camo, regen=self.regen)
                     new.fireTicks = self.fireTicks
                     new.fireIgnitedBy = self.fireIgnitedBy
+                    new.totalMovement = self.totalMovement
                     info.enemies.append(new)
 
                     return new
@@ -3174,9 +3179,9 @@ achievements = {
 }
 
 powerUps = {
-    'lightning': pygame.image.load('resources/lightning_power_up.png'),
-    'spikes': pygame.image.load('resources/spikes_power_up.png'),
-    'antiCamo': pygame.image.load('resources/anti_camo_power_up.png')
+    'lightning': pygame.image.load(os.path.join(resource_path, 'lightning_power_up.png')),
+    'spikes': pygame.image.load(os.path.join(resource_path, 'spikes_power_up.png')),
+    'antiCamo': pygame.image.load(os.path.join(resource_path, 'anti_camo_power_up.png'))
 }
 
 LOCKED = 'LOCKED'
