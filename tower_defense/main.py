@@ -1848,7 +1848,8 @@ def load() -> None:
             except KeyError:
                 info.powerUps[powerUp] = default
 
-        PowerUps = info.powerUpData
+        if info.powerUpData is not None:
+            PowerUps = info.powerUpData
 
         info.PBs = updateDict(info.PBs, [Map.name for Map in Maps])
 
