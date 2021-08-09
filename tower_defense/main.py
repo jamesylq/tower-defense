@@ -2057,7 +2057,12 @@ def app() -> None:
                                         info.Map = Maps[n]
                                         info.status = 'game'
                                         info.coins = 100000 if info.sandboxMode else 50
-                                        PowerUps.objects.clear()
+
+                                        try:
+                                            PowerUps.objects.clear()
+                                        except AttributeError:
+                                            pass
+
                                         mouseTrail.clear()
                                         cont = False
 
@@ -2065,7 +2070,12 @@ def app() -> None:
                                 info.Map = random.choice([Map for Map in Maps if info.PBs[Map.name] != LOCKED])
                                 info.status = 'game'
                                 info.coins = 100000 if info.sandboxMode else 50
-                                PowerUps.objects.clear()
+
+                                try:
+                                    PowerUps.objects.clear()
+                                except AttributeError:
+                                    pass
+
                                 mouseTrail.clear()
                                 cont = False
 
