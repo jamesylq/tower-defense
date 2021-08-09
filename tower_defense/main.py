@@ -2695,9 +2695,15 @@ def app() -> None:
                                     info.runes.append(rune.name)
                                     info.newRunes += 1
 
-                            for powerUp in defaults['powerUps'].keys():
-                                if random.randint(0, 1) == 0:
-                                    info.powerUps[powerUp] += 1
+                            if not info.sandboxMode:
+                                for powerUp in defaults['powerUps'].keys():
+                                    result = random.randint(1, 10)
+                                    if result <= 2:
+                                        info.powerUps[powerUp] += 3
+                                    elif result <= 5:
+                                        info.powerUps[powerUp] += 2
+                                    elif result <= 8:
+                                        info.powerUps[powerUp] += 1
 
                             try:
                                 nextMap = Maps[[m.name for m in Maps].index(info.Map.name) + 1].name
