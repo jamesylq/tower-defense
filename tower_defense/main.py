@@ -1336,7 +1336,14 @@ class Enemy:
             pygame.draw.circle(screen, (255, 105, 180), (self.x, self.y), 20 if type(self.tier) is str else 10, 2)
 
     def kill(self, *, spawnNew: bool = True, coinMultiplier: int = 1, ignoreBoss: bool = False, burn: bool = False, bossDamage: int = 1, overrideRuneColor: Tuple[int] = None):
-        if type(self.tier) is int or ignoreBoss:
+        if type(self.tier) is str and ignoreBoss:
+            try:
+                info.enemies.remove(self)
+            except ValueError:
+                pass
+            return
+
+        if type(self.tier) is int:
             if self.HP > 1:
                 self.HP -= 1
                 return self
@@ -1346,7 +1353,7 @@ class Enemy:
             except ValueError:
                 pass
 
-            if not ignoreBoss and str(self.tier) == '0':
+            if str(self.tier) == '0':
                 RuneEffects.createEffects(self, color=overrideRuneColor)
 
         elif type(self.tier) is str:
@@ -3070,6 +3077,7 @@ centredPrint(mediumFont, 'Loading...', (500, 300), (100, 100, 100))
 pygame.display.update()
 
 waves = [
+    '0A',
     '00' * 3,
     '00' * 5 + '01' * 3,
     '00' * 3 + '01' * 5 + '02' * 3,
