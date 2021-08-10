@@ -1179,8 +1179,8 @@ class Enemy:
         self.regen = regen
         self.regenTimer = 0
 
-        if self.tier in trueHP.keys():
-            self.HP = self.MaxHP = trueHP[self.tier]
+        if str(self.tier) in trueHP.keys():
+            self.HP = self.MaxHP = trueHP[str(self.tier)]
         else:
             self.HP = self.MaxHP = 1
 
@@ -1334,28 +1334,16 @@ class Enemy:
 
     def kill(self, *, spawnNew: bool = True, coinMultiplier: int = 1, ignoreBoss: bool = False, burn: bool = False, bossDamage: int = 1, overrideRuneColor: Tuple[int] = None):
         if type(self.tier) is int or ignoreBoss:
+            if self.HP > 1:
+                self.HP -= 1
+                return self
+
             try:
                 info.enemies.remove(self)
             except ValueError:
                 pass
 
-            if spawnNew:
-                if self.tier == 0:
-                    info.coins += 3 * coinMultiplier
-
-                elif self.tier in bossCoins.keys():
-                    info.coins += bossCoins[self.tier] * max(1, coinMultiplier / 4)
-
-                else:
-                    new = Enemy(self.tier - 1, (self.x, self.y), self.lineIndex, camo=self.camo, regen=self.regen)
-                    new.fireTicks = self.fireTicks
-                    new.fireIgnitedBy = self.fireIgnitedBy
-                    new.totalMovement = self.totalMovement
-                    info.enemies.append(new)
-
-                    return new
-
-            if not ignoreBoss:
+            if not ignoreBoss and str(self.tier) == '0':
                 RuneEffects.createEffects(self, color=overrideRuneColor)
 
         elif type(self.tier) is str:
@@ -1370,6 +1358,42 @@ class Enemy:
                     pass
 
                 RuneEffects.createEffects(self, color=overrideRuneColor)
+
+            else:
+                return self
+
+        if spawnNew:
+            if self.camo:
+                newSpawn = enemiesSpawnNew[f'1{self.tier}']
+            elif self.regen:
+                newSpawn = enemiesSpawnNew[f'2{self.tier}']
+            else:
+                newSpawn = enemiesSpawnNew[f'0{self.tier}']
+
+            if self.tier in bossCoins.keys():
+                info.coins += bossCoins[self.tier] * max(1, coinMultiplier / 4)
+            elif self.tier == 0:
+                info.coins += 3 * coinMultiplier
+
+            if newSpawn is not None:
+                new = None
+                for k in range(len(newSpawn) // 2):
+                    newSpawnType = newSpawn[2 * k]
+                    newSpawnTier = newSpawn[2 * k + 1]
+
+                    new = Enemy(str(newSpawnTier), (self.x, self.y), self.lineIndex, camo=newSpawnType == '1', regen=newSpawnType == '2')
+                    new.fireTicks = self.fireTicks
+                    new.fireIgnitedBy = self.fireIgnitedBy
+                    new.totalMovement = self.totalMovement
+                    for n in range(k):
+                        new.move()
+                        new.update()
+
+                    info.enemies.append(new)
+
+                return new
+
+            return None
 
     def updateRegen(self):
         if not self.regen:
@@ -1845,7 +1869,7 @@ def load() -> None:
     try:
         info = pickle.load(open('save.txt', 'rb'))
 
-        for attr in ['win', 'lose', 'mapSelect']:
+        for attr in ['win', 'lose', 'mapSelect', 'totalWaves']:
             if hasattr(info, attr):
                 delattr(info, attr)
 
@@ -1906,13 +1930,6 @@ def load() -> None:
                 foundCompleted = True
 
         Maps.reverse()
-
-        if info.totalWaves != len(waves):
-            info.totalWaves = len(waves)
-            if info.totalWaves < len(waves):
-                for name, PB in info.PBs.items():
-                    if type(PB) is int:
-                        info.PBs[name] = None
 
         if not hasAllUnlocked():
             info.sandboxMode = False
@@ -3132,9 +3149,45 @@ speed = {
     'D': 1      # True Speed: 1/2 (0.5)
 }
 
-onlyExplosiveTiers = [7, 8, 'D']
+enemiesSpawnNew = {
+    '00': None,
+    '01': '00',
+    '02': '01',
+    '03': '02',
+    '04': '03',
+    '05': '04',
+    '06': '05',
+    '07': '06' * 2,
+    '08': '06' * 3,
+    '0A': '00' * 10,
+    '0B': '03' * 15,
+    '0C': '04' * 15,
+    '0D': '0D' * 3,
+    '10': None,
+    '11': '10',
+    '12': '11',
+    '13': '12',
+    '14': '13',
+    '15': '14',
+    '16': '15',
+    '17': '16' * 2,
+    '18': '16' * 3,
+    '1A': '10' * 10,
+    '20': None,
+    '21': '20',
+    '22': '21',
+    '23': '22',
+    '24': '23',
+    '25': '24',
+    '26': '25',
+    '27': '26' * 2,
+    '28': '26' * 3,
+}
+
+onlyExplosiveTiers = [7, 'D']
 
 trueHP = {
+    '8': 4,
     'A': 500,
     'B': 2000,
     'C': 1000,
@@ -3171,7 +3224,6 @@ defaults = {
     'spawnleft': '',
     'spawndelay': 9,
     'Map': None,
-    'totalWaves': len(waves),
     'status': 'mapSelect',
     'mapMakerData': {
         'name': '',
