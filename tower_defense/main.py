@@ -8,8 +8,7 @@ from _pickle import UnpicklingError
 from typing import overload, List, Tuple
 from tower_defense import __version__
 
-current_path = os.path.dirname(__file__)
-resource_path = os.path.join(current_path, 'resources')
+resource_path = os.path.join(os.path.dirname(__file__), 'resources')
 
 MaxFPS = 100
 Maps = []
@@ -2957,9 +2956,12 @@ def app() -> None:
                             if not info.sandboxMode:
                                 info.powerUps['spikes'] += 1
                         else:
-                            price = {t.name: t.price for t in Towers.__subclasses__()}[info.placing]
-                            info.coins += price
-                            info.statistics['coinsSpent'] -= price
+                            try:
+                                price = {t.name: t.price for t in Towers.__subclasses__()}[info.placing]
+                                info.coins += price
+                                info.statistics['coinsSpent'] -= price
+                            except KeyError:
+                                pass
 
                         info.placing = ''
 
