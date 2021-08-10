@@ -24,6 +24,7 @@ class Map:
         self.pathColor = pathColor
         self.displayColor = self.backgroundColor if displayColor is None else displayColor
         Maps.append(self)
+        # print(self.name, sum([abs(self.path[n][0] - self.path[n+1][0]) + abs(self.path[n][1] - self.path[n+1][1]) for n in range(len(self.path) - 1)]))
 
     def __str__(self):
         return self.name
@@ -318,7 +319,7 @@ class Turret(Towers):
             self.stun -= 1
             return
 
-        if self.timer >= self.cooldown:
+        if self.timer >= getActualCooldown(self.cooldown, info.doubleReloadTicks):
             try:
                 closest = getTarget(self)
                 explosiveRadius = 30 if self.upgrades[2] >= 1 else 0
@@ -424,7 +425,7 @@ class IceTower(Towers):
         if not self.enabled:
             return
 
-        if self.timer >= self.cooldown:
+        if self.timer >= getActualCooldown(self.cooldown, info.doubleReloadTicks):
             try:
                 closest = getTarget(self)
                 Projectile(self, self.x, self.y, closest.x, closest.y, freezeDuration=self.freezeDuration)
@@ -555,7 +556,7 @@ class SpikeTower(Towers):
         if True in [s.visible for s in self.spikes.spikes]:
             self.spikes.moveSpikes()
 
-        elif self.timer >= self.cooldown:
+        elif self.timer >= getActualCooldown(self.cooldown, info.doubleReloadTicks):
             for spike in self.spikes.spikes:
                 spike.visible = True
                 spike.x = self.x
@@ -598,7 +599,7 @@ class BombTower(Towers):
             self.stun -= 1
             return
 
-        if self.timer >= self.cooldown:
+        if self.timer >= getActualCooldown(self.cooldown, info.doubleReloadTicks):
             try:
                 explosionRadius = 60 if self.upgrades[2] >= 1 else 30
                 fireTicks = 200 if self.upgrades[2] >= 2 else 0
@@ -652,7 +653,7 @@ class BananaFarm(Towers):
             return
 
         if self.upgrades[0] >= 1:
-            if self.timer >= self.cooldown:
+            if self.timer >= getActualCooldown(self.cooldown, info.doubleReloadTicks):
                 try:
                     closest = getTarget(self)
                     Projectile(self, self.x, self.y, closest.x, closest.y)
@@ -697,7 +698,7 @@ class Bowler(Towers):
             self.stun -= 1
             return
 
-        if self.timer >= self.cooldown:
+        if self.timer >= getActualCooldown(self.cooldown, info.doubleReloadTicks):
             try:
                 for direction in ['left', 'right', 'up', 'down']:
                     PiercingProjectile(self, self.x, self.y, self.pierce, direction)
@@ -827,7 +828,7 @@ class Wizard(Towers):
             self.stun -= 1
             return
 
-        if self.timer >= self.cooldown:
+        if self.timer >= getActualCooldown(self.cooldown, info.doubleReloadTicks):
             try:
                 closest = getTarget(self)
                 Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=60 if self.upgrades[2] else 30)
@@ -921,7 +922,7 @@ class InfernoTower(Towers):
             self.stun -= 1
             return
 
-        if self.timer >= self.cooldown:
+        if self.timer >= getActualCooldown(self.cooldown, info.doubleReloadTicks):
             self.inferno.attack()
             self.timer = 0
         else:
@@ -1041,7 +1042,7 @@ class Village(Towers):
 
     def attack(self):
         for villager in self.villagers:
-            if villager.timer >= self.cooldown:
+            if villager.timer >= getActualCooldown(self.cooldown, info.doubleReloadTicks):
                 villager.attack()
                 villager.timer = 0
             else:
@@ -1649,38 +1650,59 @@ def draw() -> None:
 
     pygame.draw.rect(screen, (170, 170, 170), (0, 450, 1000, 150))
 
-    leftAlignPrint(font, f'FPS: {round(clock.get_fps(), 1)}', (10, 555))
-    leftAlignPrint(font, str(info.HP), (10, 530))
-    screen.blit(healthImage, (font.size(str(info.HP))[0] + 17, 523))
-    leftAlignPrint(font, f'Coins: {math.floor(info.coins)}', (10, 580))
-    leftAlignPrint(font, f'Wave {max(info.wave, 1)} of {len(waves)}', (825, 580))
+    leftAlignPrint(font, f'FPS: {round(clock.get_fps(), 1)}', (10, 525))
+    leftAlignPrint(font, str(info.HP), (10, 500))
+    screen.blit(healthImage, (font.size(str(info.HP))[0] + 17, 493))
+    leftAlignPrint(font, f'Coins: {math.floor(info.coins)}', (10, 550))
+    leftAlignPrint(font, f'Wave {max(info.wave, 1)} of {len(waves)}', (10, 575))
 
-    pygame.draw.rect(screen, (200, 200, 200), (810, 470, 50, 50))
-    centredBlit(powerUps['spikes'], (835, 495))
-    if 810 <= mx <= 860 and 470 <= my <= 520:
-        pygame.draw.rect(screen, (128, 128, 128), (810, 470, 50, 50), 3)
+    pygame.draw.rect(screen, (200, 200, 200), (810, 460, 50, 50))
+    centredBlit(powerUps['spikes'], (835, 485))
+    if 810 <= mx <= 860 and 460 <= my <= 510:
+        pygame.draw.rect(screen, (128, 128, 128), (810, 460, 50, 50), 3)
     else:
-        pygame.draw.rect(screen, (0, 0, 0), (810, 470, 50, 50), 3)
-    if info.powerUps['spikes'] > 0:
-        centredPrint(tinyFont, str(info.powerUps['spikes']), (835, 530))
+        pygame.draw.rect(screen, (0, 0, 0), (810, 460, 50, 50), 3)
+    centredPrint(tinyFont, str(info.powerUps['spikes']), (835, 518))
 
-    pygame.draw.rect(screen, (200, 200, 200), (875, 470, 50, 50))
-    centredBlit(powerUps['lightning'], (900, 495))
-    if 875 <= mx <= 925 and 470 <= my <= 520:
-        pygame.draw.rect(screen, (128, 128, 128), (875, 470, 50, 50), 3)
+    pygame.draw.rect(screen, (200, 200, 200), (875, 460, 50, 50))
+    centredBlit(powerUps['lightning'], (900, 485))
+    if 875 <= mx <= 925 and 460 <= my <= 510:
+        pygame.draw.rect(screen, (128, 128, 128), (875, 460, 50, 50), 3)
     else:
-        pygame.draw.rect(screen, (0, 0, 0), (875, 470, 50, 50), 3)
-    if info.powerUps['lightning'] > 0:
-        centredPrint(tinyFont, str(info.powerUps['lightning']), (900, 530))
+        pygame.draw.rect(screen, (0, 0, 0), (875, 460, 50, 50), 3)
+    centredPrint(tinyFont, str(info.powerUps['lightning']), (900, 518))
 
-    pygame.draw.rect(screen, (200, 200, 200), (940, 470, 50, 50))
-    centredBlit(powerUps['antiCamo'], (965, 495))
-    if 940 <= mx <= 990 and 470 <= my <= 520:
-        pygame.draw.rect(screen, (128, 128, 128), (940, 470, 50, 50), 3)
+    pygame.draw.rect(screen, (200, 200, 200), (940, 460, 50, 50))
+    centredBlit(powerUps['antiCamo'], (965, 485))
+    if 940 <= mx <= 990 and 440 <= my <= 510:
+        pygame.draw.rect(screen, (128, 128, 128), (940, 460, 50, 50), 3)
     else:
-        pygame.draw.rect(screen, (0, 0, 0), (940, 470, 50, 50), 3)
-    if info.powerUps['antiCamo'] > 0:
-        centredPrint(tinyFont, str(info.powerUps['antiCamo']), (965, 530))
+        pygame.draw.rect(screen, (0, 0, 0), (940, 460, 50, 50), 3)
+    centredPrint(tinyFont, str(info.powerUps['antiCamo']), (965, 518))
+
+    pygame.draw.rect(screen, (200, 200, 200), (810, 530, 50, 50))
+    centredBlit(powerUps['heal'], (835, 555))
+    if 810 <= mx <= 860 and 530 <= my <= 580:
+        pygame.draw.rect(screen, (128, 128, 128), (810, 530, 50, 50), 3)
+    else:
+        pygame.draw.rect(screen, (0, 0, 0), (810, 530, 50, 50), 3)
+    centredPrint(tinyFont, str(info.powerUps['heal']), (835, 588))
+
+    pygame.draw.rect(screen, (200, 200, 200), (875, 530, 50, 50))
+    centredBlit(powerUps['freeze'], (900, 555))
+    if 875 <= mx <= 925 and 530 <= my <= 580:
+        pygame.draw.rect(screen, (128, 128, 128), (875, 530, 50, 50), 3)
+    else:
+        pygame.draw.rect(screen, (0, 0, 0), (875, 530, 50, 50), 3)
+    centredPrint(tinyFont, str(info.powerUps['freeze']), (900, 588))
+
+    pygame.draw.rect(screen, (200, 200, 200), (940, 530, 50, 50))
+    centredBlit(powerUps['reload'], (965, 555))
+    if 940 <= mx <= 990 and 530 <= my <= 580:
+        pygame.draw.rect(screen, (128, 128, 128), (940, 530, 50, 50), 3)
+    else:
+        pygame.draw.rect(screen, (0, 0, 0), (940, 530, 50, 50), 3)
+    centredPrint(tinyFont, str(info.powerUps['reload']), (965, 588))
 
     pygame.draw.rect(screen, (255, 0, 0), (0, 450, 20, 20))
     pygame.draw.line(screen, (0, 0, 0), (3, 453), (17, 467), 2)
@@ -1776,6 +1798,13 @@ def getClosestPoint(mx: int, my: int, *, sx: int = None, sy: int = None) -> List
             closestY = y * 25 + 125
 
     return [closestX, closestY]
+
+
+def getActualCooldown(originalCooldown: int, doubleReloadTicks: int) -> int:
+    if doubleReloadTicks > 0:
+        return originalCooldown // 2
+    else:
+        return originalCooldown
 
 
 def updateDict(d: dict, l: list) -> dict:
@@ -2759,6 +2788,9 @@ def app() -> None:
             RuneEffects.update()
             PowerUps.update()
 
+            if info.doubleReloadTicks > 0:
+                info.doubleReloadTicks -= 1
+
             if info.HP <= 0:
                 info.status = 'lose'
                 info.statistics['losses'] += 1
@@ -2806,7 +2838,7 @@ def app() -> None:
                             info.reset()
                             info.status = 'mapSelect'
 
-                        if 470 <= my <= 520:
+                        if 460 <= my <= 510:
                             if 810 <= mx <= 860 and info.powerUps['spikes'] > 0:
                                 if not info.sandboxMode:
                                     info.powerUps['spikes'] -= 1
@@ -2847,6 +2879,29 @@ def app() -> None:
 
                                 if found and not info.sandboxMode:
                                     info.powerUps['antiCamo'] -= 1
+
+                        if 530 <= my <= 580:
+                            if 810 <= mx <= 860 and info.powerUps['heal'] > 0:
+                                if info.HP < 100:
+                                    info.HP = min(100, info.HP + 5)
+
+                                    if not info.sandboxMode:
+                                        info.powerUps['heal'] -= 1
+
+                            if 875 <= mx <= 925 and info.powerUps['freeze'] > 0:
+                                if len(info.enemies) > 0:
+                                    for enemy in info.enemies:
+                                        enemy.freezeTimer = max(500, enemy.freezeTimer)
+
+                                    if not info.sandboxMode:
+                                        info.powerUps['freeze'] -= 1
+
+                            if 940 <= mx <= 990 and info.powerUps['reload'] > 0:
+                                if len(info.towers) > 0:
+                                    info.doubleReloadTicks = 1000
+
+                                    if not info.sandboxMode:
+                                        info.powerUps['reload'] -= 1
 
                         if issubclass(type(info.selected), Towers):
                             if 295 <= mx <= 595 and 485 <= my <= 570:
@@ -3152,9 +3207,13 @@ defaults = {
     'powerUps': {
         'lightning': 0,
         'spikes': 0,
-        'antiCamo': 0
+        'antiCamo': 0,
+        'heal': 0,
+        'freeze': 0,
+        'reload': 0
     },
-    'powerUpData': None
+    'powerUpData': None,
+    'doubleReloadTicks': 0
 }
 
 achievementRequirements = {
@@ -3198,7 +3257,10 @@ achievements = {
 powerUps = {
     'lightning': pygame.image.load(os.path.join(resource_path, 'lightning_power_up.png')),
     'spikes': pygame.image.load(os.path.join(resource_path, 'spikes_power_up.png')),
-    'antiCamo': pygame.image.load(os.path.join(resource_path, 'anti_camo_power_up.png'))
+    'antiCamo': pygame.image.load(os.path.join(resource_path, 'anti_camo_power_up.png')),
+    'heal': pygame.image.load(os.path.join(resource_path, 'heal_power_up.png')),
+    'freeze': pygame.image.load(os.path.join(resource_path, 'freeze_power_up.png')),
+    'reload': pygame.image.load(os.path.join(resource_path, 'reload_power_up.png'))
 }
 
 LOCKED = 'LOCKED'
