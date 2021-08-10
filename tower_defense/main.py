@@ -117,26 +117,38 @@ class RuneEffect:
             pygame.draw.line(screen, (191, 0, 255), (self.x, self.y), (500, -200), 3)
 
     class ShrinkRuneEffect:
-        def __init__(self, x: int, y: int, radius: int, color: Tuple[int]):
+        def __init__(self, x: int, y: int, radius: int, color: Tuple[int], camo: bool, regen: bool):
             self.x = x
             self.y = y
             self.radius = radius
             self.color = color
             self.visibleTicks = 50
+            self.camo = camo
+            self.regen = regen
 
         def draw(self):
             pygame.draw.circle(screen, self.color, (self.x, self.y), self.radius * self.visibleTicks // 50)
+            if self.camo:
+                pygame.draw.circle(screen, (0, 0, 0), (self.x, self.y), self.radius * self.visibleTicks // 50, 2)
+            if self.regen:
+                pygame.draw.circle(screen, (255, 105, 180), (self.x, self.y), self.radius * self.visibleTicks // 50, 2)
 
     class LeapRuneEffect:
-        def __init__(self, x: int, y: int, radius: int, color: Tuple[int]):
+        def __init__(self, x: int, y: int, radius: int, color: Tuple[int], camo: bool, regen: bool):
             self.x = x
             self.y = y
             self.radius = radius
             self.color = color
             self.visibleTicks = 50
+            self.camo = camo
+            self.regen = regen
 
         def draw(self):
             pygame.draw.circle(screen, self.color, (self.x, self.y - 600 + 12 * self.visibleTicks), self.radius)
+            if self.camo:
+                pygame.draw.circle(screen, (0, 0, 0), (self.x, self.y), self.radius * self.visibleTicks // 50, 2)
+            if self.regen:
+                pygame.draw.circle(screen, (255, 105, 180), (self.x, self.y), self.radius * self.visibleTicks // 50, 2)
 
     def __init__(self):
         self.rune = info.equippedRune
@@ -159,10 +171,10 @@ class RuneEffect:
             self.effects.append(self.LightningRuneEffect(target.x, target.y))
 
         elif self.rune == 'Shrink Rune':
-            self.effects.append(self.ShrinkRuneEffect(target.x, target.y, 20 if type(target.tier) is str else 10, enemyColors[str(target.tier)] if color is None else color))
+            self.effects.append(self.ShrinkRuneEffect(target.x, target.y, 20 if type(target.tier) is str else 10, enemyColors[str(target.tier)] if color is None else color, target.camo, target.regen))
 
         elif self.rune == 'Leap Rune':
-            self.effects.append(self.LeapRuneEffect(target.x, target.y, 20 if type(target.tier) is str else 10, enemyColors[str(target.tier)] if color is None else color))
+            self.effects.append(self.LeapRuneEffect(target.x, target.y, 20 if type(target.tier) is str else 10, enemyColors[str(target.tier)] if color is None else color, target.camo, target.regen))
 
     def draw(self):
         for effect in self.effects:
@@ -3175,7 +3187,7 @@ enemiesSpawnNew = {
     '0A': '00' * 10,
     '0B': '03' * 15,
     '0C': '04' * 15,
-    '0D': '0D' * 3,
+    '0D': '0C' * 3,
     '10': None,
     '11': '10',
     '12': '11',
