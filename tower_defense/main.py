@@ -1301,7 +1301,11 @@ class Enemy:
                         projectile.ignore.append(new)
 
                         if projectile.pierce <= 1:
-                            info.piercingProjectiles.remove(projectile)
+                            try:
+                                info.piercingProjectiles.remove(projectile)
+                            except ValueError:
+                                pass
+
                         else:
                             projectile.pierce -= 1
 
@@ -1605,7 +1609,7 @@ def draw() -> None:
         screen.blit(modified, (info.selected.x - info.selected.range, info.selected.y - info.selected.range))
 
     if info.placing != '':
-        centredPrint(font, f'Click anywhere on the map to place the {info.placing}!', (400, 400))
+        centredPrint(font, f'Click anywhere on the map to place the {info.placing.capitalize()}!', (400, 400))
         centredPrint(font, f'Press [ESC] to cancel!', (400, 425))
 
         if 0 <= mx <= 800 and 0 <= my <= 450:
