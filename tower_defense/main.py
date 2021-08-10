@@ -3077,7 +3077,6 @@ centredPrint(mediumFont, 'Loading...', (500, 300), (100, 100, 100))
 pygame.display.update()
 
 waves = [
-    '0A',
     '00' * 3,
     '00' * 5 + '01' * 3,
     '00' * 3 + '01' * 5 + '02' * 3,
