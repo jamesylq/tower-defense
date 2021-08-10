@@ -146,9 +146,9 @@ class RuneEffect:
         def draw(self):
             pygame.draw.circle(screen, self.color, (self.x, self.y - 600 + 12 * self.visibleTicks), self.radius)
             if self.camo:
-                pygame.draw.circle(screen, (0, 0, 0), (self.x, self.y), self.radius * self.visibleTicks // 50, 2)
+                pygame.draw.circle(screen, (0, 0, 0), (self.x, self.y - 600 + 12 * self.visibleTicks), self.radius, 2)
             if self.regen:
-                pygame.draw.circle(screen, (255, 105, 180), (self.x, self.y), self.radius * self.visibleTicks // 50, 2)
+                pygame.draw.circle(screen, (255, 105, 180), (self.x, self.y - 600 + 12 * self.visibleTicks), self.radius, 2)
 
     def __init__(self):
         self.rune = info.equippedRune
