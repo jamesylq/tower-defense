@@ -2878,7 +2878,7 @@ def app() -> None:
                             info.status = 'mapSelect'
 
                         if 460 <= my <= 510:
-                            if 810 <= mx <= 860 and info.powerUps['spikes'] > 0:
+                            if 810 <= mx <= 860 and info.powerUps['spikes'] > 0 and info.placing == '':
                                 if not info.sandboxMode:
                                     info.powerUps['spikes'] -= 1
 
