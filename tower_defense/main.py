@@ -1693,7 +1693,7 @@ def draw() -> None:
 
         if 0 <= mx <= 800 and 0 <= my <= 450:
             if info.placing == 'spikes':
-                screen.blit(powerUps['spikes'], (mx - 25, my - 25))
+                screen.blit(powerUps['spikes'][0], (mx - 25, my - 25))
 
             else:
                 classObj = None
@@ -1763,7 +1763,7 @@ def draw() -> None:
     leftAlignPrint(font, f'Wave {max(info.wave, 1)} of {len(waves)}', (10, 575))
 
     pygame.draw.rect(screen, (200, 200, 200), (810, 460, 50, 50))
-    centredBlit(powerUps['spikes'], (835, 485))
+    centredBlit(powerUps['spikes'][0], (835, 485))
     if 810 <= mx <= 860 and 460 <= my <= 510:
         pygame.draw.rect(screen, (128, 128, 128), (810, 460, 50, 50), 3)
     else:
@@ -1771,7 +1771,7 @@ def draw() -> None:
     centredPrint(tinyFont, str(info.powerUps['spikes']), (835, 518))
 
     pygame.draw.rect(screen, (200, 200, 200), (875, 460, 50, 50))
-    centredBlit(powerUps['lightning'], (900, 485))
+    centredBlit(powerUps['lightning'][0], (900, 485))
     if 875 <= mx <= 925 and 460 <= my <= 510:
         pygame.draw.rect(screen, (128, 128, 128), (875, 460, 50, 50), 3)
     else:
@@ -1779,7 +1779,7 @@ def draw() -> None:
     centredPrint(tinyFont, str(info.powerUps['lightning']), (900, 518))
 
     pygame.draw.rect(screen, (200, 200, 200), (940, 460, 50, 50))
-    centredBlit(powerUps['antiCamo'], (965, 485))
+    centredBlit(powerUps['antiCamo'][0], (965, 485))
     if 940 <= mx <= 990 and 440 <= my <= 510:
         pygame.draw.rect(screen, (128, 128, 128), (940, 460, 50, 50), 3)
     else:
@@ -1787,7 +1787,7 @@ def draw() -> None:
     centredPrint(tinyFont, str(info.powerUps['antiCamo']), (965, 518))
 
     pygame.draw.rect(screen, (200, 200, 200), (810, 530, 50, 50))
-    centredBlit(powerUps['heal'], (835, 555))
+    centredBlit(powerUps['heal'][0], (835, 555))
     if 810 <= mx <= 860 and 530 <= my <= 580:
         pygame.draw.rect(screen, (128, 128, 128), (810, 530, 50, 50), 3)
     else:
@@ -1795,7 +1795,7 @@ def draw() -> None:
     centredPrint(tinyFont, str(info.powerUps['heal']), (835, 588))
 
     pygame.draw.rect(screen, (200, 200, 200), (875, 530, 50, 50))
-    centredBlit(powerUps['freeze'], (900, 555))
+    centredBlit(powerUps['freeze'][0], (900, 555))
     if 875 <= mx <= 925 and 530 <= my <= 580:
         pygame.draw.rect(screen, (128, 128, 128), (875, 530, 50, 50), 3)
     else:
@@ -1803,7 +1803,7 @@ def draw() -> None:
     centredPrint(tinyFont, str(info.powerUps['freeze']), (900, 588))
 
     pygame.draw.rect(screen, (200, 200, 200), (940, 530, 50, 50))
-    centredBlit(powerUps['reload'], (965, 555))
+    centredBlit(powerUps['reload'][0], (965, 555))
     if 940 <= mx <= 990 and 530 <= my <= 580:
         pygame.draw.rect(screen, (128, 128, 128), (940, 530, 50, 50), 3)
     else:
@@ -2645,13 +2645,13 @@ def app() -> None:
 
                     pygame.draw.rect(screen, (128, 128, 128), (x, y, 200, 200))
                     if x <= mx <= x + 200 and y <= my <= y + 200:
-                        pygame.draw.rect(screen, (64, 64, 64), (x, y, 200, 200), 3)
+                        pygame.draw.rect(screen, (64, 64, 64), (x, y, 200, 200), 5)
                     else:
-                        pygame.draw.rect(screen, (0, 0, 0), (x, y, 200, 200), 3)
+                        pygame.draw.rect(screen, (0, 0, 0), (x, y, 200, 200), 5)
 
                     rune = getRune(info.shopData[n]['item'])
                     if rune is None:
-                        centredBlit(powerUps[info.shopData[n]['item']], (x + 100, y + 100))
+                        centredBlit(powerUps[info.shopData[n]['item']][1], (x + 100, y + 100))
                     else:
                         centredBlit(rune.imageTexture, (x + 100, y + 100))
 
@@ -2700,9 +2700,9 @@ def app() -> None:
                 pygame.draw.rect(screen, (255, 0, 0), (30, 550, 100, 30))
                 centredPrint(font, 'Close', (80, 565))
                 if 30 <= mx <= 130 and 550 <= my <= 580:
-                    pygame.draw.rect(screen, (64, 64, 64), (30, 550, 100, 30), 10)
+                    pygame.draw.rect(screen, (64, 64, 64), (30, 550, 100, 30), 3)
                 else:
-                    pygame.draw.rect(screen, (0, 0, 0), (30, 550, 100, 30), 10)
+                    pygame.draw.rect(screen, (0, 0, 0), (30, 550, 100, 30), 3)
 
                 cont = True
                 for event in pygame.event.get():
@@ -3525,12 +3525,12 @@ achievements = {
 }
 
 powerUps = {
-    'lightning': pygame.image.load(os.path.join(resource_path, 'lightning_power_up.png')),
-    'spikes': pygame.image.load(os.path.join(resource_path, 'spikes_power_up.png')),
-    'antiCamo': pygame.image.load(os.path.join(resource_path, 'anti_camo_power_up.png')),
-    'heal': pygame.image.load(os.path.join(resource_path, 'heal_power_up.png')),
-    'freeze': pygame.image.load(os.path.join(resource_path, 'freeze_power_up.png')),
-    'reload': pygame.image.load(os.path.join(resource_path, 'reload_power_up.png'))
+    'lightning': [pygame.image.load(os.path.join(resource_path, 'lightning_power_up.png')), pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'lightning_power_up.png')), (60, 60))],
+    'spikes': [pygame.image.load(os.path.join(resource_path, 'spikes_power_up.png')), pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'spikes_power_up.png')), (60, 60))],
+    'antiCamo': [pygame.image.load(os.path.join(resource_path, 'anti_camo_power_up.png')), pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'anti_camo_power_up.png')), (60, 60))],
+    'heal': [pygame.image.load(os.path.join(resource_path, 'heal_power_up.png')), pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'heal_power_up.png')), (60, 60))],
+    'freeze': [pygame.image.load(os.path.join(resource_path, 'freeze_power_up.png')), pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'freeze_power_up.png')), (60, 60))],
+    'reload': [pygame.image.load(os.path.join(resource_path, 'reload_power_up.png')), pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'reload_power_up.png')), (60, 60))]
 }
 
 LOCKED = 'LOCKED'
