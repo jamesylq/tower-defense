@@ -2054,6 +2054,11 @@ def app() -> None:
                 pygame.draw.rect(screen, (68, 68, 68), (0, 0, 1000, 50))
                 centredPrint(font, 'Map Select', (500, 30), (255, 255, 255))
 
+                centredBlit(tokenImage, (830, 30))
+                pygame.draw.rect(screen, (128, 128, 128), (850, 15, 100, 30))
+                pygame.draw.rect(screen, (0, 0, 0), (850, 15, 100, 30), 2)
+                leftAlignPrint(font, str(info.tokens), (860, 30))
+
                 pygame.draw.rect(screen, (200, 200, 200), (10, 40 * n + 60 - scroll, 825, 30))
                 if 10 <= mx <= 835 and 40 * n + 60 <= my + scroll <= 40 * n + 90:
                     pygame.draw.rect(screen, (128, 128, 128), (10, 40 * n + 60 - scroll, 825, 30), 5)
@@ -2264,6 +2269,10 @@ def app() -> None:
 
                 if info.sandboxMode:
                     centredPrint(font, 'You were playing on Sandbox Mode!', (500, 350), (255, 255, 255))
+                else:
+                    totalLength = font.size(f'+{info.FinalHP // 2 + 10}')[0] + 40
+                    leftAlignPrint(font, f'+{info.FinalHP // 2 + 10}', (500 - totalLength // 2, 350), (255, 255, 255))
+                    centredBlit(tokenImage, (485 + totalLength // 2, 350))
 
                 pygame.display.update()
 
@@ -2789,6 +2798,8 @@ def app() -> None:
 
                             info.statistics['mapsBeat'] = len([m for m in info.PBs.keys() if type(info.PBs[m]) is int])
 
+                            info.tokens += info.HP // 2 + 10
+
                             info.FinalHP = info.HP
                             info.reset()
                             save()
@@ -3290,7 +3301,8 @@ defaults = {
         'reload': 0
     },
     'powerUpData': None,
-    'doubleReloadTicks': 0
+    'doubleReloadTicks': 0,
+    'tokens': 0
 }
 
 achievementRequirements = {
@@ -3380,6 +3392,7 @@ for towerType in Towers.__subclasses__():
         towerImages[towerType.name] = None
 
 healthImage = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'heart.png')), (16, 16))
+tokenImage = pygame.image.load(os.path.join(resource_path, 'token.png'))
 
 SIN45 = COS45 = math.sqrt(2) / 2
 
