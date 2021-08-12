@@ -3,9 +3,10 @@ import pygame
 import pickle
 import random
 import math
+import time
 
+from typing import *
 from _pickle import UnpicklingError
-from typing import overload, List, Tuple
 from tower_defense import __version__
 
 resource_path = os.path.join(os.path.dirname(__file__), 'resources')
@@ -42,10 +43,11 @@ Map([[0, 225], [800, 225]], "The End", (100, 100, 100), (200, 200, 200))
 
 
 class Rune:
-    def __init__(self, name: str, dropChance: float, lore: str, imageName: str = 'rune.png'):
+    def __init__(self, name: str, dropChance: float, lore: str, shopPrice: int = 0, imageName: str = 'rune.png'):
         self.name = name
         self.ID = len(Runes)
         self.dropChance = dropChance
+        self.shopPrice = shopPrice
         self.lore = lore
 
         try:
@@ -189,13 +191,13 @@ class RuneEffect:
 
 
 Rune('null', 0, 'A glitched rune. How did you get this?')
-Rune('Blood Rune', 15, 'The rune forged by the Blood Gods.', 'blood_rune.png')
-Rune('Ice Rune', 12, 'A rune as cold as ice.', 'ice_rune.png')
-Rune('Gold Rune', 8, 'The rune of the wealthy - Classy!', 'gold_rune.png')
-Rune('Leap Rune', 8, 'Jump!', 'leap_rune.png')
-Rune('Lightning Rune', 5, 'Legends say it was created by Zeus himself.', 'lightning_rune.png')
-Rune('Shrink Rune', 3, 'This magical rune compresses its foes!', 'shrink_rune.png')
-Rune('Rainbow Rune', 2, 'A rainbow tail forms behind your cursor!', 'rainbow_rune.png')
+Rune('Blood Rune', 15, 'The rune forged by the Blood Gods.', 75, 'blood_rune.png')
+Rune('Ice Rune', 12, 'A rune as cold as ice.', 75, 'ice_rune.png')
+Rune('Gold Rune', 8, 'The rune of the wealthy - Classy!', 75, 'gold_rune.png')
+Rune('Leap Rune', 8, 'Jump!', 125, 'leap_rune.png')
+Rune('Lightning Rune', 5, 'Legends say it was created by Zeus himself.', 125, 'lightning_rune.png')
+Rune('Shrink Rune', 3, 'This magical rune compresses its foes!', 150, 'shrink_rune.png')
+Rune('Rainbow Rune', 2, 'A rainbow tail forms behind your cursor!', 150, 'rainbow_rune.png')
 
 
 class PhysicalPowerUp:
@@ -1593,6 +1595,64 @@ def getRune(name: str) -> Rune:
             return rune
 
 
+def getNotObtainedRune(ignore: List[str] = None) -> dict:
+    if ignore is None:
+        ignore = ['null']
+    else:
+        ignore.append('null')
+
+    notObtainedRunes = []
+    for rune in Runes:
+        if rune.name not in info.runes and rune.name not in ignore:
+            notObtainedRunes.append(rune.name)
+    shopOfferedRune = random.choice(notObtainedRunes)
+
+    return {'count': 1, 'item': shopOfferedRune, 'price': getRune(shopOfferedRune).shopPrice, 'bought': False}
+
+
+def getRandomPowerUp() -> dict:
+    powerUpPrices = {
+        'lightning': 10,
+        'spikes': 8,
+        'antiCamo': 8,
+        'heal': 10,
+        'freeze': 5,
+        'reload': 12
+    }
+
+    powerUp = random.choice([p for p in powerUpPrices.keys()])
+
+    return {'item': powerUp, 'price': powerUpPrices[powerUp]}
+
+
+
+def refreshShop() -> None:
+    global info
+
+    if not info.shopData:
+        info.shopData = [None, None, None, None, None, None]
+
+    k = 1
+    if len(info.runes) + 1 < len(Runes):
+        info.shopData[0] = getNotObtainedRune()
+        if len(info.runes) + 2 < len(Runes):
+            info.shopData[1] = getNotObtainedRune([info.shopData[0]['item']])
+        else:
+            powerUp = getRandomPowerUp()
+            info.shopData[1] = {'count': 5 * k, 'item': powerUp['item'], 'price': powerUp['price'] * 5 * k, 'bought': False}
+            k += 1
+    else:
+        for n in range(2):
+            powerUp = getRandomPowerUp()
+            info.shopData[n] = {'count': 5 * k, 'item': powerUp['item'], 'price': powerUp['price'] * 5 * k, 'bought': False}
+            k += 1
+
+    for n in range(4):
+        powerUp = getRandomPowerUp()
+        info.shopData[2 + n] = {'count': 5 * k, 'item': powerUp['item'], 'price': powerUp['price'] * 5 * k, 'bought': False}
+        k += 1
+
+
 def draw() -> None:
     mx, my = pygame.mouse.get_pos()
 
@@ -2083,6 +2143,20 @@ def app() -> None:
                     else:
                         pygame.draw.rect(screen, (0, 0, 0), (200, 550, 200, 30), 3)
 
+                pygame.draw.rect(screen, (200, 200, 200), (675, 510, 125, 30))
+                centredPrint(font, 'Shop', (737, 525))
+                if 675 <= mx <= 800 and 510 < my <= 540:
+                    pygame.draw.rect(screen, (128, 128, 128), (675, 510, 125, 30), 5)
+                else:
+                    pygame.draw.rect(screen, (0, 0, 0), (675, 510, 125, 30), 3)
+
+                pygame.draw.rect(screen, (200, 200, 200), (825, 510, 150, 30))
+                centredPrint(font, 'Cosmetics', (900, 525))
+                if 825 <= mx <= 975 and 510 < my <= 540:
+                    pygame.draw.rect(screen, (128, 128, 128), (825, 510, 150, 30), 5)
+                else:
+                    pygame.draw.rect(screen, (0, 0, 0), (825, 510, 150, 30), 3)
+
                 pygame.draw.rect(screen, (200, 200, 200), (675, 550, 125, 30))
                 centredPrint(font, 'Stats', (737, 565))
                 if 675 <= mx <= 800 and 550 < my <= 580:
@@ -2096,13 +2170,6 @@ def app() -> None:
                     pygame.draw.rect(screen, (128, 128, 128), (825, 550, 150, 30), 5)
                 else:
                     pygame.draw.rect(screen, (0, 0, 0), (825, 550, 150, 30), 3)
-
-                pygame.draw.rect(screen, (200, 200, 200), (825, 510, 150, 30))
-                centredPrint(font, 'Cosmetics', (900, 525))
-                if 825 <= mx <= 975 and 510 < my <= 540:
-                    pygame.draw.rect(screen, (128, 128, 128), (825, 510, 150, 30), 5)
-                else:
-                    pygame.draw.rect(screen, (0, 0, 0), (825, 510, 150, 30), 3)
 
                 if info.newRunes > 0:
                     pygame.draw.circle(screen, (255, 0, 0), (975, 510), 10)
@@ -2157,6 +2224,18 @@ def app() -> None:
                                 info.status = 'mapMaker'
                                 cont = False
 
+                            if 675 <= mx <= 800 and 510 <= my <= 540:
+                                info.status = 'shop'
+                                if time.time() - info.lastOpenShop >= 86400:
+                                    refreshShop()
+                                    info.lastOpenShop = time.time()
+                                cont = False
+
+                            if 825 <= mx <= 975 and 510 <= my <= 540:
+                                info.status = 'cosmetics'
+                                info.newRunes = 0
+                                cont = False
+
                             if 675 <= mx <= 800 and 550 <= my <= 580:
                                 info.status = 'statistics'
                                 info.statistics['wins'] = updateDict(info.statistics['wins'], [Map.name for Map in Maps])
@@ -2164,11 +2243,6 @@ def app() -> None:
 
                             if 825 <= mx <= 975 and 550 <= my <= 580:
                                 info.status = 'achievements'
-                                cont = False
-
-                            if 825 <= mx <= 975 and 510 <= my <= 540:
-                                info.status = 'cosmetics'
-                                info.newRunes = 0
                                 cont = False
 
                             if 200 <= mx <= 400 and 550 <= my <= 580:
@@ -2180,82 +2254,6 @@ def app() -> None:
 
                         elif event.button == 5:
                             scroll = min(scroll + 5, max(40 * n + 90 - 490, 0))
-
-                if not cont:
-                    break
-
-        elif info.status == 'achievements':
-            for achievement, requirement in achievementRequirements.items():
-                stat = info.statistics[requirement['attr']]
-                highest = 0
-                for tier in requirement['tiers']:
-                    if stat >= tier:
-                        highest += 1
-
-                info.achievements[achievement] = highest
-
-            while True:
-                mx, my = pygame.mouse.get_pos()
-
-                screen.fill((200, 200, 200))
-
-                centredPrint(mediumFont, 'Achievements', (500, 50))
-
-                n = 0
-                for achievement, information in achievements.items():
-                    pygame.draw.rect(screen, (100, 100, 100), (10, 80 + 110 * n, 980, 100))
-                    leftAlignPrint(font, information['names'][min(info.achievements[achievement], 2)], (20, 93 + 110 * n))
-                    leftAlignPrint(tinyFont, information['lore'].replace('[%]', str(achievementRequirements[achievement]['tiers'][min(info.achievements[achievement], 2)])), (20, 120 + 110 * n))
-
-                    for m in range(3):
-                        if info.achievements[achievement] > m:
-                            pygame.draw.circle(screen, (255, 255, 0), (900 + m * 20, 100 + 110 * n), 7)
-                        pygame.draw.circle(screen, (0, 0, 0), (900 + m * 20, 100 + 110 * n), 7, 2)
-
-                    if info.achievements[achievement] < len(achievementRequirements[achievement]['tiers']):
-                        current = info.statistics[achievementRequirements[achievement]['attr']]
-                        target = achievementRequirements[achievement]['tiers'][info.achievements[achievement]]
-                        percent = current / target * 100
-                        pygame.draw.rect(screen, (0, 255, 0), (40, 140 + 110 * n, percent * 8, 20))
-                        txt = f'{round(percent, 1)}%'
-                        if 10 <= mx <= 990 and 80 + 110 * n <= my <= 180 + 110 * n:
-                            txt += f' ({current} / {target})'
-
-                        centredPrint(font, txt, (440, 150 + 110 * n))
-                    else:
-                        current = info.statistics[achievementRequirements[achievement]['attr']]
-                        target = achievementRequirements[achievement]['tiers'][info.achievements[achievement] - 1]
-                        txt = '100.0%'
-                        if 10 <= mx <= 990 and 80 + 110 * n <= my <= 180 + 110 * n:
-                            txt += f' ({current} / {target})'
-
-                        pygame.draw.rect(screen, (0, 255, 0), (40, 140 + 110 * n, 800, 20))
-                        centredPrint(font, txt, (440, 150 + 110 * n))
-
-                    pygame.draw.rect(screen, (0, 0, 0), (40, 140 + 110 * n, 800, 20), 3)
-
-                    n += 1
-
-                pygame.draw.rect(screen, (255, 0, 0), (20, 550, 100, 30))
-                centredPrint(font, 'Close', (70, 565))
-                if 20 <= mx <= 120 and 550 <= my <= 580:
-                    pygame.draw.rect(screen, (0, 0, 0), (20, 550, 100, 30), 3)
-                else:
-                    pygame.draw.rect(screen, (128, 128, 128), (20, 550, 100, 30), 5)
-
-                pygame.display.update()
-
-                cont = True
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        save()
-                        quit()
-
-                    elif event.type == pygame.MOUSEBUTTONDOWN:
-                        if event.button == 1:
-                            if 20 <= mx <= 120 and 550 <= my <= 580:
-                                info.status = 'mapSelect'
-                                cont = False
 
                 if not cont:
                     break
@@ -2633,6 +2631,86 @@ def app() -> None:
 
                     clock.tick(100)
 
+        elif info.status == 'shop':
+            while True:
+                mx, my = pygame.mouse.get_pos()
+
+                screen.fill((200, 200, 200))
+
+                centredPrint(mediumFont, 'Shop', (500, 40))
+
+                for n in range(len(info.shopData)):
+                    x = 100 + 300 * (n % 3)
+                    y = 100 if n < 3 else 325
+
+                    pygame.draw.rect(screen, (128, 128, 128), (x, y, 200, 200))
+                    if x <= mx <= x + 200 and y <= my <= y + 200:
+                        pygame.draw.rect(screen, (64, 64, 64), (x, y, 200, 200), 3)
+                    else:
+                        pygame.draw.rect(screen, (0, 0, 0), (x, y, 200, 200), 3)
+
+                    rune = getRune(info.shopData[n]['item'])
+                    if rune is None:
+                        centredBlit(powerUps[info.shopData[n]['item']], (x + 100, y + 100))
+                    else:
+                        centredBlit(rune.imageTexture, (x + 100, y + 100))
+
+                    if info.shopData[n]['count'] > 1:
+                        rightAlignPrint(font, f'x{info.shopData[n]["count"]}', (x + 190, y + 180))
+
+                    if info.shopData[n]['bought']:
+                        leftAlignPrint(font, 'BOUGHT', (x + 10, y + 20))
+                    else:
+                        centredBlit(tokenImage, (x + 20, y + 20))
+                        price = info.shopData[n]['price']
+                        if info.tokens >= price:
+                            leftAlignPrint(font, str(price), (x + 38, y + 20))
+                        else:
+                            leftAlignPrint(font, str(price), (x + 38, y + 20), (255, 0, 0))
+
+                centredBlit(tokenImage, (830, 30))
+                pygame.draw.rect(screen, (128, 128, 128), (850, 15, 100, 30))
+                pygame.draw.rect(screen, (0, 0, 0), (850, 15, 100, 30), 2)
+                leftAlignPrint(font, str(info.tokens), (860, 30))
+
+                pygame.draw.rect(screen, (255, 0, 0), (30, 550, 100, 30))
+                centredPrint(font, 'Close', (80, 565))
+                if 30 <= mx <= 130 and 550 <= my <= 580:
+                    pygame.draw.rect(screen, (64, 64, 64), (30, 550, 100, 30), 3)
+                else:
+                    pygame.draw.rect(screen, (0, 0, 0), (30, 550, 100, 30), 3)
+
+                cont = True
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        save()
+                        quit()
+
+                    elif event.type == pygame.MOUSEBUTTONDOWN:
+                        if event.button == 1:
+                            if 30 <= mx <= 130 and 550 <= my <= 580:
+                                cont = False
+                                info.status = 'mapSelect'
+
+                            for n in range(len(info.shopData)):
+                                x = 100 + 300 * (n % 3)
+                                y = 100 if n < 3 else 325
+
+                                if x <= mx <= x + 200 and y <= my <= y + 200 and not info.shopData[n]['bought']:
+                                    if info.tokens >= info.shopData[n]['price']:
+                                        rune = getRune(info.shopData[n]['item'])
+                                        if rune is None:
+                                            info.powerUps[info.shopData[n]['item']] += info.shopData[n]['count']
+                                        else:
+                                            info.runes.append(info.shopData[n]['item'])
+                                        info.tokens -= info.shopData[n]['price']
+                                        info.shopData[n]['bought'] = True
+
+                if not cont:
+                    break
+
+                pygame.display.update()
+
         elif info.status == 'cosmetics':
             while True:
                 mx, my = pygame.mouse.get_pos()
@@ -2647,8 +2725,7 @@ def app() -> None:
                     pygame.draw.rect(screen, (0, 0, 0), (30, 550, 100, 30), 3)
 
                 pygame.draw.rect(screen, (160, 160, 160), (440, 100, 120, 120))
-                centredPrint(font, 'Click on a Rune to equip!' if info.equippedRune is None else 'Equipped Rune:',
-                             (500, 75))
+                centredPrint(font, 'Click on a Rune to equip!' if info.equippedRune is None else 'Equipped Rune:', (500, 75))
 
                 pygame.draw.rect(screen, (160, 160, 160), (50, 250, 900, 225))
                 if len(info.runes) == 0:
@@ -2729,6 +2806,156 @@ def app() -> None:
                     break
 
                 pygame.display.update()
+
+        elif info.status == 'statistics':
+            scroll = 0
+
+            while True:
+                clock.tick(MaxFPS)
+
+                mx, my = pygame.mouse.get_pos()
+
+                screen.fill((200, 200, 200))
+
+                centredPrint(mediumFont, 'General Statistics', (500, 20 - scroll))
+                leftAlignPrint(font, f'Total Pops: {info.statistics["pops"]}', (20, 80 - scroll))
+                leftAlignPrint(font, f'Towers Placed: {info.statistics["towersPlaced"]}', (20, 110 - scroll))
+                leftAlignPrint(font, f'Towers Sold: {info.statistics["towersSold"]}', (20, 140 - scroll))
+                leftAlignPrint(font, f'Enemies Missed: {info.statistics["enemiesMissed"]}', (20, 170 - scroll))
+                leftAlignPrint(font, f'Coins Spent: {info.statistics["coinsSpent"]}', (20, 200 - scroll))
+
+                centredPrint(mediumFont, 'Wins and Losses', (500, 240 - scroll))
+
+                leftAlignPrint(font, f'Total Losses: {info.statistics["losses"]}', (20, 330 - scroll))
+
+                numMaps = 0
+                totalWins = 0
+                for mapName, wins in info.statistics['wins'].items():
+                    numMaps += 1
+                    totalWins += wins
+
+                    leftAlignPrint(font, f'{mapName}: {wins} ' + ('win' if wins == 1 else 'wins'), (20, 400 + 30 * numMaps - scroll))
+
+                leftAlignPrint(font, f'Total Wins: {totalWins}', (20, 300 - scroll))
+                if totalWins > 0:
+                    centredPrint(mediumFont, 'Wins by map', (500, 370 - scroll))
+
+                pygame.draw.rect(screen, (200, 200, 200), (0, 525, 1000, 75))
+
+                pygame.draw.rect(screen, (255, 0, 0), (25, 550, 100, 30))
+                centredPrint(font, 'Close', (75, 565))
+                if 25 <= mx <= 125 and 550 <= my <= 580:
+                    pygame.draw.rect(screen, (128, 128, 128), (25, 550, 100, 30), 3)
+                else:
+                    pygame.draw.rect(screen, (0, 0, 0), (25, 550, 100, 30), 3)
+
+                pressed = pygame.key.get_pressed()
+                if pressed[pygame.K_UP]:
+                    scroll = max(0, scroll - 2)
+                if pressed[pygame.K_DOWN]:
+                    scroll = min(scroll + 2, max(30 * numMaps - 85, 0))
+
+                cont = True
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        save()
+                        quit()
+
+                    elif event.type == pygame.MOUSEBUTTONDOWN:
+                        if event.button == 1:
+                            if 25 <= mx <= 125 and 550 <= my <= 580:
+                                cont = False
+                                info.status = 'mapSelect'
+
+                        elif event.button == 4:
+                            scroll = max(0, scroll - 10)
+
+                        elif event.button == 5:
+                            scroll = min(scroll + 10, max(30 * numMaps - 85, 0))
+
+                if not cont:
+                    break
+
+                pygame.display.update()
+
+        elif info.status == 'achievements':
+            for achievement, requirement in achievementRequirements.items():
+                stat = info.statistics[requirement['attr']]
+                highest = 0
+                for tier in requirement['tiers']:
+                    if stat >= tier:
+                        highest += 1
+                info.achievements[achievement] = highest
+
+            while True:
+                mx, my = pygame.mouse.get_pos()
+                screen.fill((200, 200, 200))
+                centredPrint(mediumFont, 'Achievements', (500, 50))
+
+                n = 0
+                for achievement, information in achievements.items():
+                    pygame.draw.rect(screen, (100, 100, 100), (10, 80 + 110 * n, 980, 100))
+                    leftAlignPrint(font, information['names'][min(info.achievements[achievement], 2)], (20, 93 + 110 * n))
+
+                    leftAlignPrint(tinyFont, information['lore'].replace('[%]', str(achievementRequirements[achievement]['tiers'][min(info.achievements[achievement], 2)])), (20, 120 + 110 * n))
+
+                    for m in range(3):
+                        if info.achievements[achievement] > m:
+                            pygame.draw.circle(screen, (255, 255, 0), (900 + m * 20, 100 + 110 * n), 7)
+                        pygame.draw.circle(screen, (0, 0, 0), (900 + m * 20, 100 + 110 * n), 7, 2)
+
+                    if info.achievements[achievement] < len(achievementRequirements[achievement]['tiers']):
+                        current = info.statistics[achievementRequirements[achievement]['attr']]
+                        target = achievementRequirements[achievement]['tiers'][info.achievements[achievement]]
+                        percent = current / target * 100
+
+                        pygame.draw.rect(screen, (0, 255, 0), (40, 140 + 110 * n, percent * 8, 20))
+
+                        txt = f'{round(percent, 1)}%'
+                        if 10 <= mx <= 990 and 80 + 110 * n <= my <= 180 + 110 * n:
+                            txt += f' ({current} / {target})'
+
+                        centredPrint(font, txt, (440, 150 + 110 * n))
+
+                    else:
+                        current = info.statistics[achievementRequirements[achievement]['attr']]
+                        target = achievementRequirements[achievement]['tiers'][info.achievements[achievement] - 1]
+
+                        pygame.draw.rect(screen, (0, 255, 0), (40, 140 + 110 * n, 800, 20))
+
+                        txt = '100.0%'
+                        if 10 <= mx <= 990 and 80 + 110 * n <= my <= 180 + 110 * n:
+                            txt += f' ({current} / {target})'
+                        centredPrint(font, txt, (440, 150 + 110 * n))
+
+                    pygame.draw.rect(screen, (0, 0, 0), (40, 140 + 110 * n, 800, 20), 3)
+
+                    n += 1
+
+                pygame.draw.rect(screen, (255, 0, 0), (20, 550, 100, 30))
+
+                centredPrint(font, 'Close', (70, 565))
+                if 20 <= mx <= 120 and 550 <= my <= 580:
+                    pygame.draw.rect(screen, (0, 0, 0), (20, 550, 100, 30), 3)
+                else:
+                    pygame.draw.rect(screen, (128, 128, 128), (20, 550, 100, 30), 5)
+
+                pygame.display.update()
+
+                cont = True
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        save()
+                        quit()
+
+                    elif event.type == pygame.MOUSEBUTTONDOWN:
+                        if event.button == 1:
+                            if 20 <= mx <= 120 and 550 <= my <= 580:
+                                info.status = 'mapSelect'
+                                cont = False
+
+                if not cont:
+                    break
 
         elif info.status == 'game':
             global rainbowShiftCount, rainbowShiftIndex
@@ -3007,78 +3234,6 @@ def app() -> None:
                 if maxScroll > 0:
                     info.shopScroll = max(-maxScroll, info.shopScroll - 5)
 
-        elif info.status == 'statistics':
-            scroll = 0
-
-            while True:
-                clock.tick(MaxFPS)
-
-                mx, my = pygame.mouse.get_pos()
-
-                screen.fill((200, 200, 200))
-
-                centredPrint(mediumFont, 'General Statistics', (500, 20 - scroll))
-                leftAlignPrint(font, f'Total Pops: {info.statistics["pops"]}', (20, 80 - scroll))
-                leftAlignPrint(font, f'Towers Placed: {info.statistics["towersPlaced"]}', (20, 110 - scroll))
-                leftAlignPrint(font, f'Towers Sold: {info.statistics["towersSold"]}', (20, 140 - scroll))
-                leftAlignPrint(font, f'Enemies Missed: {info.statistics["enemiesMissed"]}', (20, 170 - scroll))
-                leftAlignPrint(font, f'Coins Spent: {info.statistics["coinsSpent"]}', (20, 200 - scroll))
-
-                centredPrint(mediumFont, 'Wins and Losses', (500, 240 - scroll))
-
-                leftAlignPrint(font, f'Total Losses: {info.statistics["losses"]}', (20, 330 - scroll))
-
-                numMaps = 0
-                totalWins = 0
-                for mapName, wins in info.statistics['wins'].items():
-                    numMaps += 1
-                    totalWins += wins
-
-                    leftAlignPrint(font, f'{mapName}: {wins} ' + ('win' if wins == 1 else 'wins'),
-                                   (20, 400 + 30 * numMaps - scroll))
-
-                leftAlignPrint(font, f'Total Wins: {totalWins}', (20, 300 - scroll))
-                if totalWins > 0:
-                    centredPrint(mediumFont, 'Wins by map', (500, 370 - scroll))
-
-                pygame.draw.rect(screen, (200, 200, 200), (0, 525, 1000, 75))
-
-                pygame.draw.rect(screen, (255, 0, 0), (25, 550, 100, 30))
-                centredPrint(font, 'Close', (75, 565))
-                if 25 <= mx <= 125 and 550 <= my <= 580:
-                    pygame.draw.rect(screen, (128, 128, 128), (25, 550, 100, 30), 3)
-                else:
-                    pygame.draw.rect(screen, (0, 0, 0), (25, 550, 100, 30), 3)
-
-                pressed = pygame.key.get_pressed()
-                if pressed[pygame.K_UP]:
-                    scroll = max(0, scroll - 2)
-                if pressed[pygame.K_DOWN]:
-                    scroll = min(scroll + 2, max(30 * numMaps - 85, 0))
-
-                cont = True
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        save()
-                        quit()
-
-                    elif event.type == pygame.MOUSEBUTTONDOWN:
-                        if event.button == 1:
-                            if 25 <= mx <= 125 and 550 <= my <= 580:
-                                cont = False
-                                info.status = 'mapSelect'
-
-                        elif event.button == 4:
-                            scroll = max(0, scroll - 10)
-
-                        elif event.button == 5:
-                            scroll = min(scroll + 10, max(30 * numMaps - 85, 0))
-
-                if not cont:
-                    break
-
-                pygame.display.update()
-
 
 screen = pygame.display.set_mode((1000, 600))
 pygame.init()
@@ -3302,13 +3457,15 @@ defaults = {
     },
     'powerUpData': None,
     'doubleReloadTicks': 0,
-    'tokens': 0
+    'tokens': 0,
+    'lastOpenShop': 0,
+    'shopData': []
 }
 
 achievementRequirements = {
     'beatMaps': {
         'attr': 'mapsBeat',
-        'tiers': [1, math.floor(len(Maps) / 2), len(Maps)]
+        'tiers': [1, len(Maps) // 2, len(Maps)]
     },
     'pops': {
         'attr': 'pops',
