@@ -2673,12 +2673,36 @@ def app() -> None:
                 pygame.draw.rect(screen, (0, 0, 0), (850, 15, 100, 30), 2)
                 leftAlignPrint(font, str(info.tokens), (860, 30))
 
+                h = math.floor((info.lastOpenShop + 86400 - time.time()) // 3600)
+                m = math.floor((info.lastOpenShop + 86400 - time.time() - 3600 * h) // 60)
+                s = math.floor(info.lastOpenShop + 86400 - time.time() - 3600 * h - 60 * m)
+
+                if h == m == s == 0:
+                    refreshShop()
+
+                if h == 0:
+                    if m == 0:
+                        txt = f'{s}s'
+                    elif s == 0:
+                            txt = f'{m}min'
+                    else:
+                        txt = f'{m}min {s}s'
+                elif s == 0:
+                    if m == 0:
+                        txt = f'{h}h'
+                    else:
+                        txt = f'{h}h {m}min'
+                else:
+                    txt = f'{h}h {m}min {s}s'
+
+                leftAlignPrint(tinyFont, f'Time until refresh: {txt}', (20, 20))
+
                 pygame.draw.rect(screen, (255, 0, 0), (30, 550, 100, 30))
                 centredPrint(font, 'Close', (80, 565))
                 if 30 <= mx <= 130 and 550 <= my <= 580:
-                    pygame.draw.rect(screen, (64, 64, 64), (30, 550, 100, 30), 3)
+                    pygame.draw.rect(screen, (64, 64, 64), (30, 550, 100, 30), 10)
                 else:
-                    pygame.draw.rect(screen, (0, 0, 0), (30, 550, 100, 30), 3)
+                    pygame.draw.rect(screen, (0, 0, 0), (30, 550, 100, 30), 10)
 
                 cont = True
                 for event in pygame.event.get():
