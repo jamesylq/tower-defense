@@ -3047,9 +3047,9 @@ def app() -> None:
                                 elif info.PBs[info.Map.name] < info.HP:
                                     info.PBs[info.Map.name] = info.HP
 
-                            info.statistics['mapsBeat'] = len([m for m in info.PBs.keys() if type(info.PBs[m]) is int])
+                                info.tokens += info.HP // 2 + 10
 
-                            info.tokens += info.HP // 2 + 10
+                            info.statistics['mapsBeat'] = len([m for m in info.PBs.keys() if type(info.PBs[m]) is int])
 
                             info.FinalHP = info.HP
                             info.reset()
@@ -3358,10 +3358,10 @@ speed = {
     '6': 3,
     '7': 2,
     '8': 2,
-    'A': 1,     # True Speed: 1/3 (0.333...)
-    'B': 1,     # True Speed: 1/5 (0.2)
+    'A': 1,     # True Speed: 1/3
+    'B': 1,     # True Speed: 1/5
     'C': 1,
-    'D': 1      # True Speed: 1/2 (0.5)
+    'D': 1      # True Speed: 1/2
 }
 
 enemiesSpawnNew = {
