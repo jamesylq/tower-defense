@@ -1193,7 +1193,7 @@ class Enemy:
         self.regenTimer = 0
 
         if str(self.tier) in trueHP.keys():
-            self.HP = self.MaxHP = trueHP[str(self.tier)]
+            self.HP = self.MaxHP = trueHP[str(self.tier)] + 1
         else:
             self.HP = self.MaxHP = 1
 
@@ -2092,7 +2092,7 @@ def app() -> None:
                 for Map in Maps:
                     if info.PBs[Map.name] != LOCKED or info.sandboxMode:
                         pygame.draw.rect(screen, Map.displayColor, (10, 40 * n + 60 - scroll, 825, 30))
-                        if 10 <= mx <= 835 and 40 * n + 60 - scroll <= my <= 40 * n + 90 - scroll:
+                        if 10 <= mx <= 835 and 40 * n + 60 - scroll <= my <= 40 * n + 90 - scroll and 50 <= my <= 500:
                             pygame.draw.rect(screen, (128, 128, 128), (10, 40 * n + 60 - scroll, 825, 30), 5)
                         else:
                             pygame.draw.rect(screen, (0, 0, 0), (10, 40 * n + 60 - scroll, 825, 30), 3)
@@ -2120,7 +2120,7 @@ def app() -> None:
                 leftAlignPrint(font, str(info.tokens), (860, 30))
 
                 pygame.draw.rect(screen, (200, 200, 200), (10, 40 * n + 60 - scroll, 825, 30))
-                if 10 <= mx <= 835 and 40 * n + 60 <= my + scroll <= 40 * n + 90:
+                if 10 <= mx <= 835 and 40 * n + 60 <= my + scroll <= 40 * n + 90 and 50 <= my <= 500:
                     pygame.draw.rect(screen, (128, 128, 128), (10, 40 * n + 60 - scroll, 825, 30), 5)
                 else:
                     pygame.draw.rect(screen, (0, 0, 0), (10, 40 * n + 60 - scroll, 825, 30), 3)
@@ -3396,13 +3396,13 @@ enemiesSpawnNew = {
     '25': '24',
     '26': '25',
     '27': '26' * 2,
-    '28': '26' * 3,
+    '28': '18' * 5 + '26' * 3,
 }
 
 onlyExplosiveTiers = [7, 'D']
 
 trueHP = {
-    '8': 4,
+    '8': 5,
     'A': 500,
     'B': 2000,
     'C': 1000,
