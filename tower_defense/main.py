@@ -337,7 +337,7 @@ class Turret(Towers):
                 closest = getTarget(self)
                 explosiveRadius = 30 if self.upgrades[2] >= 1 else 0
 
-                proj = Projectile(self, self.x, self.y, closest.x, closest.y, bossDamage=(10 if self.upgrades[2] == 3 else 1), explosiveRadius=explosiveRadius)
+                proj = Projectile(self, self.x, self.y, closest.x, closest.y, bossDamage=(25 if self.upgrades[2] == 3 else 1), explosiveRadius=explosiveRadius)
                 proj.move(0)
 
                 try:
@@ -540,13 +540,13 @@ class SpikeTower(Towers):
     req = 2
     price = 125
     upgradePrices = [
-        [50, 100, 150],
-        [100, 400, 1000],
+        [50, 150, 250],
+        [100, 500, 2500],
         [100, 125, 200]
     ]
     upgradeNames = [
         ['Fast Spikes', 'Hyperspeed Spikes', 'Bullet-like Speed'],
-        ['Shorter Cooldown', 'Super Reloading', 'No Cooldown'],
+        ['Shorter Cooldown', 'Super Reloading', 'Hyper Reloading'],
         ['Double Damage', 'Lead-pierce', 'Burning Spikes']
     ]
     range = 50
@@ -582,7 +582,7 @@ class SpikeTower(Towers):
 
     def update(self):
         self.projectileSpeed = [1, 1.5, 2.2, 3][self.upgrades[0]]
-        self.cooldown = [100, 35, 10, 0][self.upgrades[1]]
+        self.cooldown = [100, 35, 10, 5][self.upgrades[1]]
 
 
 class BombTower(Towers):
@@ -652,7 +652,7 @@ class BananaFarm(Towers):
     upgradeNames = [
         ['Banana Cannon', 'More Banana Shots', 'Super Range'],
         ['Increased Income', 'Money Farm', 'Money Factory'],
-        ['Double Coin Drop', '3x Coin Drop', '5x Coin Drop']
+        ['25% More Coins', '50% More Coins', 'Double Coins']
     ]
     range = 100
     cooldown = 0
@@ -692,12 +692,12 @@ class Bowler(Towers):
     upgradePrices = [
         [20, 40, 60],
         [20, 50, 100],
-        [50, 100, 175]
+        [50, 100, 200]
     ]
     upgradeNames = [
         ['Faster Rocks', 'Double Damage', 'Snipe'],
         ['More Rocks', 'Double Rocks', 'Infini-Rocks'],
-        ['5 Enemies Pierce', '10 Enemies Pierce', '20 Enemies Pierce']
+        ['5 Enemies Pierce', '20 Enemies Pierce', '50 Enemies Pierce']
     ]
     range = 0
     cooldown = 300
@@ -724,7 +724,7 @@ class Bowler(Towers):
 
     def update(self):
         self.cooldown = [300, 200, 150, 100][self.upgrades[1]]
-        self.pierce = [3, 5, 10, 20][self.upgrades[2]]
+        self.pierce = [3, 5, 20, 50][self.upgrades[2]]
 
 
 class Wizard(Towers):
@@ -1207,7 +1207,7 @@ class Enemy:
             self.timer = 100
             info.enemies.append(Enemy(7, [self.x, self.y], self.lineIndex))
 
-        if self.freezeTimer > 0:
+        if self.freezeTimer > 0 and not self.tier in freezeImmune:
             self.freezeTimer -= 1
         else:
             if len(info.Map.path) - 1 == self.lineIndex:
@@ -1503,7 +1503,7 @@ def getCoinMultiplier(Tower: Towers) -> int:
     maxCoinMult = 1
     for bananaFarm in bananaFarms:
         if abs(Tower.x - bananaFarm.x) ** 2 + abs(Tower.y - bananaFarm.y) ** 2 < bananaFarm.range ** 2:
-            maxCoinMult = max(maxCoinMult, [1, 2, 3, 5][bananaFarm.upgrades[2]])
+            maxCoinMult = max(maxCoinMult, [1, 1.25, 1.5, 2][bananaFarm.upgrades[2]])
 
     return maxCoinMult
 
@@ -2090,7 +2090,7 @@ def app() -> None:
 
                 n = 0
                 for Map in Maps:
-                    if info.PBs[Map.name] != LOCKED or info.sandboxMode:
+                    if info.PBs[Map.name] != LOCKED:
                         pygame.draw.rect(screen, Map.displayColor, (10, 40 * n + 60 - scroll, 825, 30))
                         if 10 <= mx <= 835 and 40 * n + 60 - scroll <= my <= 40 * n + 90 - scroll and 50 <= my <= 500:
                             pygame.draw.rect(screen, (128, 128, 128), (10, 40 * n + 60 - scroll, 825, 30), 5)
@@ -2194,7 +2194,7 @@ def app() -> None:
                         if event.button == 1:
                             if 10 <= mx <= 835:
                                 for n in range(len(Maps)):
-                                    if 50 <= 40 * n + 60 - scroll <= my <= 40 * n + 90 - scroll <= 500 and list(info.PBs.values())[n] != LOCKED:
+                                    if 40 * n + 60 - scroll <= my <= 40 * n + 90 - scroll and 50 <= my <= 500 and list(info.PBs.values())[n] != LOCKED:
                                         info.Map = Maps[n]
                                         info.status = 'game'
                                         info.coins = 100000 if info.sandboxMode else 50
@@ -2533,15 +2533,9 @@ def app() -> None:
                         except (IndexError, KeyError):
                             pass
 
+                    y = 150
                     for fieldName in ['name', 'backgroundColor', 'pathColor']:
                         info.mapMakerData[fieldName] = str(info.mapMakerData[fieldName])
-
-                        if fieldName == 'name':
-                            y = 150
-                        elif fieldName == 'backgroundColor':
-                            y = 250
-                        else:
-                            y = 350
 
                         txt = info.mapMakerData[fieldName]
                         if ticks < 25 and fieldName == field:
@@ -2549,10 +2543,11 @@ def app() -> None:
                             pygame.draw.line(screen, (0, 0, 0), (length + 230, y), (length + 230, y + 20))
 
                         leftAlignPrint(font, txt, (230, y + 10))
+                        y += 100
 
                     pygame.display.update()
                     ticks = (ticks + 1) % 50
-                    clock.tick(100)
+                    clock.tick(maxFPS)
             else:
                 while True:
                     mx, my = pygame.mouse.get_pos()
@@ -3281,16 +3276,16 @@ pygame.display.update()
 waves = [
     '00' * 3,
     '00' * 5 + '01' * 3,
-    '00' * 3 + '01' * 5 + '02' * 3,
-    '00' * 3 + '01' * 5 + '02' * 5 + '03' * 3,
-    '03' * 30,
-    '02' * 30 + '03' * 30,
-    '04' * 30,
-    '04' * 15 + '05' * 15,
-    '06' * 25,
+    '01' * 5,
+    '02' * 12,
+    '03' * 15,
+    '04' * 15,
+    '05' * 20,
+    '25' * 10,
+    '06' * 20,
     '0A',
-    '06' * 30,
-    '07' * 25,
+    '06' * 50,
+    '26' * 25,
     '07' * 50,
     '08' * 25,
     '0B',
@@ -3300,15 +3295,10 @@ waves = [
     '18' * 25,
     '1A' * 2,
     '18' * 50,
-    '18' * 75,
+    '28' * 50,
     '0A' * 3,
     '0A' * 5,
     '0A' * 8,
-    '21' * 3,
-    '25' * 25,
-    '26' * 25,
-    '27' * 25,
-    '28' * 25,
     '0C',
     '0C' * 2,
     '0C' * 3,
@@ -3329,7 +3319,8 @@ enemyColors = {
     'A': (146, 43, 62),
     'B': (191, 64, 191),
     'C': (211, 47, 47),
-    'D': (64, 64, 64)
+    'D': (64, 64, 64),
+    'E': (0, 0, 0)
 }
 
 damages = {
@@ -3345,7 +3336,8 @@ damages = {
     'A': 20,
     'B': 40,
     'C': 30,
-    'D': 69
+    'D': 69,
+    'E': 90
 }
 
 speed = {
@@ -3361,7 +3353,8 @@ speed = {
     'A': 1,     # True Speed: 1/3
     'B': 1,     # True Speed: 1/5
     'C': 1,
-    'D': 1      # True Speed: 1/2
+    'D': 1,     # True Speed: 1/2
+    'E': 1      # True Speed: 1/10
 }
 
 enemiesSpawnNew = {
@@ -3370,57 +3363,62 @@ enemiesSpawnNew = {
     '02': '01',
     '03': '02',
     '04': '03',
-    '05': '04',
-    '06': '05',
-    '07': '06' * 2,
-    '08': '06' * 3,
-    '0A': '00' * 10,
-    '0B': '03' * 15,
-    '0C': '04' * 15,
+    '05': '04' * 2,
+    '06': '05' * 2,
+    '07': '06' * 3,
+    '08': '06' * 5,
+    '0A': '00' * 15,
+    '0B': '03' * 20,
+    '0C': '04' * 20,
     '0D': '0C' * 3,
     '10': None,
     '11': '10',
     '12': '11',
     '13': '12',
     '14': '13',
-    '15': '14',
-    '16': '15',
-    '17': '16' * 2,
-    '18': '16' * 3,
+    '15': '14' * 2,
+    '16': '15' * 2,
+    '17': '16' * 3,
+    '18': '16' * 5,
     '1A': '10' * 10,
     '20': None,
     '21': '20',
     '22': '21',
     '23': '22',
     '24': '23',
-    '25': '24',
-    '26': '25',
-    '27': '26' * 2,
-    '28': '18' * 5 + '26' * 3,
+    '25': '24' * 2,
+    '26': '25' * 2,
+    '27': '26' * 3,
+    '28': '26' * 5,
 }
 
 onlyExplosiveTiers = [7, 'D']
 
+freezeImmune = ['E']
+
 trueHP = {
     '8': 5,
-    'A': 500,
-    'B': 2000,
-    'C': 1000,
-    'D': 10000
+    'A': 2000,
+    'B': 5000,
+    'C': 3000,
+    'D': 25000,
+    'E': 100000
 }
 
 bossCoins = {
     'A': 150,
     'B': 250,
     'C': 100,
-    'D': 500
+    'D': 500,
+    'E': 10000
 }
 
 bossFreeze = {
     'A': 3,
     'B': 5,
     'C': 0,
-    'D': 2
+    'D': 2,
+    'E': 10
 }
 
 defaults = {
