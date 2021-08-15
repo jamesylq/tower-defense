@@ -332,7 +332,7 @@ class Turret(Towers):
             self.stun -= 1
             return
 
-        if self.timer >= getActualCooldown(self.cooldown, info.doubleReloadTicks):
+        if self.timer >= getActualCooldown(self.cooldown):
             try:
                 closest = getTarget(self)
                 explosiveRadius = 30 if self.upgrades[2] >= 1 else 0
@@ -438,7 +438,7 @@ class IceTower(Towers):
         if not self.enabled:
             return
 
-        if self.timer >= getActualCooldown(self.cooldown, info.doubleReloadTicks):
+        if self.timer >= getActualCooldown(self.cooldown):
             try:
                 closest = getTarget(self)
                 Projectile(self, self.x, self.y, closest.x, closest.y, freezeDuration=self.freezeDuration)
@@ -569,7 +569,7 @@ class SpikeTower(Towers):
         if True in [s.visible for s in self.spikes.spikes]:
             self.spikes.moveSpikes()
 
-        elif self.timer >= getActualCooldown(self.cooldown, info.doubleReloadTicks):
+        elif self.timer >= getActualCooldown(self.cooldown):
             for spike in self.spikes.spikes:
                 spike.visible = True
                 spike.x = self.x
@@ -612,7 +612,7 @@ class BombTower(Towers):
             self.stun -= 1
             return
 
-        if self.timer >= getActualCooldown(self.cooldown, info.doubleReloadTicks):
+        if self.timer >= getActualCooldown(self.cooldown):
             try:
                 explosionRadius = 60 if self.upgrades[2] >= 1 else 30
                 fireTicks = 200 if self.upgrades[2] >= 2 else 0
@@ -666,7 +666,7 @@ class BananaFarm(Towers):
             return
 
         if self.upgrades[0] >= 1:
-            if self.timer >= getActualCooldown(self.cooldown, info.doubleReloadTicks):
+            if self.timer >= getActualCooldown(self.cooldown):
                 try:
                     closest = getTarget(self)
                     Projectile(self, self.x, self.y, closest.x, closest.y)
@@ -711,7 +711,7 @@ class Bowler(Towers):
             self.stun -= 1
             return
 
-        if self.timer >= getActualCooldown(self.cooldown, info.doubleReloadTicks):
+        if self.timer >= getActualCooldown(self.cooldown):
             try:
                 for direction in ['left', 'right', 'up', 'down']:
                     PiercingProjectile(self, self.x, self.y, self.pierce, direction)
@@ -841,7 +841,7 @@ class Wizard(Towers):
             self.stun -= 1
             return
 
-        if self.timer >= getActualCooldown(self.cooldown, info.doubleReloadTicks):
+        if self.timer >= getActualCooldown(self.cooldown):
             try:
                 closest = getTarget(self)
                 Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=60 if self.upgrades[2] else 30)
@@ -935,7 +935,7 @@ class InfernoTower(Towers):
             self.stun -= 1
             return
 
-        if self.timer >= getActualCooldown(self.cooldown, info.doubleReloadTicks):
+        if self.timer >= getActualCooldown(self.cooldown):
             self.inferno.attack()
             self.timer = 0
         else:
@@ -1055,7 +1055,7 @@ class Village(Towers):
 
     def attack(self):
         for villager in self.villagers:
-            if villager.timer >= getActualCooldown(self.cooldown, info.doubleReloadTicks):
+            if villager.timer >= getActualCooldown(self.cooldown):
                 villager.attack()
                 villager.timer = 0
             else:
@@ -1214,31 +1214,52 @@ class Enemy:
                 self.kill(spawnNew=False, ignoreBoss=True)
                 info.statistics['enemiesMissed'] += 1
                 info.HP -= damages[str(self.tier)]
+
             else:
                 current = info.Map.path[self.lineIndex]
                 new = info.Map.path[self.lineIndex + 1]
+                foundMove = False
+                newLineIndex = self.lineIndex + 1
 
-                if current[0] < new[0]:
-                    self.x += 1
-                    if self.x >= new[0]:
-                        self.lineIndex += 1
-                elif current[0] > new[0]:
-                    self.x -= 1
-                    if self.x <= new[0]:
-                        self.lineIndex += 1
-                elif current[1] < new[1]:
-                    self.y += 1
-                    if self.y >= new[1]:
-                        self.lineIndex += 1
-                elif current[1] > new[1]:
-                    self.y -= 1
-                    if self.y <= new[1]:
-                        self.lineIndex += 1
+                if current != new:
+                    if current[0] == new[0] or current[1] == new[1]:
+                        speed = SQRT2
+                    else:
+                        speed = 1
+
+                    if current[0] < new[0]:
+                        self.x += speed
+                        if self.x >= new[0]:
+                            self.lineIndex = newLineIndex
+
+                        foundMove = True
+
+                    if current[0] > new[0]:
+                        self.x -= speed
+                        if self.x <= new[0]:
+                            self.lineIndex = newLineIndex
+
+                        foundMove = True
+
+                    if current[1] < new[1]:
+                        self.y += speed
+                        if self.y >= new[1]:
+                            self.lineIndex = newLineIndex
+
+                        foundMove = True
+
+                    if current[1] > new[1]:
+                        self.y -= speed
+                        if self.y <= new[1]:
+                            self.lineIndex = newLineIndex
+
+                        foundMove = True
+
+                if foundMove:
+                    self.totalMovement += 1
                 else:
                     self.kill(spawnNew=False, ignoreBoss=True)
                     info.statistics['enemiesMissed'] += 1
-
-                self.totalMovement += 1
 
             try:
                 self.freezeTimer = max(bossFreeze[self.tier], self.freezeTimer)
@@ -1396,8 +1417,6 @@ class Enemy:
 
             if self.tier in bossCoins.keys():
                 info.coins += bossCoins[self.tier] * max(1, coinMultiplier / 4)
-            elif self.tier == 0:
-                info.coins += 3 * coinMultiplier
 
             if newSpawn is not None:
                 new = None
@@ -1490,10 +1509,10 @@ def centredBlit(image: pygame.Surface, pos: Tuple[int]):
 
 
 def income() -> float:
-    total = 0.001
+    total = 0.01
     for tower in info.towers:
         if type(tower) is BananaFarm:
-            total += [0.001, 0.005, 0.01, 0.025][tower.upgrades[1]]
+            total += [0.01, 0.05, 0.1, 0.25][tower.upgrades[1]]
 
     return total
 
@@ -1659,8 +1678,9 @@ def draw() -> None:
     screen.fill(info.Map.backgroundColor)
 
     for i in range(len(info.Map.path) - 1):
-        pygame.draw.line(screen, info.Map.pathColor, info.Map.path[i], info.Map.path[i + 1], 10)
+        pygame.draw.line(screen, info.Map.pathColor, info.Map.path[i], info.Map.path[i + 1], 14 if info.Map.path[i][0] != info.Map.path[i + 1][0] and info.Map.path[i][1] != info.Map.path[i + 1][1] else 10)
     pygame.draw.circle(screen, info.Map.pathColor, info.Map.path[0], 10)
+    pygame.draw.circle(screen, info.Map.pathColor, info.Map.path[-1], 10)
 
     RuneEffects.draw()
     PowerUps.draw()
@@ -1879,35 +1899,42 @@ def move() -> None:
         projectile.move()
 
 
-def getClosestPoint(mx: int, my: int, *, sx: int = None, sy: int = None) -> List[int]:
+def getClosestPoint(mx: int, my: int, *, sx: int = None, sy: int = None) -> Tuple[int, int]:
     if sx is None and sy is None:
         return [round((mx - 100) / 25) * 25 + 100, round((my - 125) / 25) * 25 + 125]
 
     closestDistance = 100000000
-    closestX = 0
-    closestY = 0
+    closestTuple = (0, 0)
 
     for x in range(33):
-        distance = abs(x * 25 + 100 - mx) ** 2 + (sy - my) ** 2
+        for y in range(19):
+            tx = None
+            ty = None
 
-        if distance < closestDistance:
-            closestDistance = distance
-            closestX = x * 25 + 100
-            closestY = sy
+            if x * 25 + 100 == sx:
+                tx = sx
+                ty = y * 25 + 125
 
-    for y in range(19):
-        distance = (sx - mx) ** 2 + abs(y * 25 + 125 - my) ** 2
+            if y * 25 + 125 == sy:
+                tx = x * 25 + 100
+                ty = sy
 
-        if distance < closestDistance:
-            closestDistance = distance
-            closestX = sx
-            closestY = y * 25 + 125
+            if abs(x * 25 + 100 - sx) == abs(y * 25 + 125 - sy):
+                tx = x * 25 + 100
+                ty = y * 25 + 125
 
-    return [closestX, closestY]
+            if tx is not None and ty is not None:
+                distance = abs(tx - mx) ** 2 + abs(ty - my) ** 2
+
+                if distance < closestDistance:
+                    closestDistance = distance
+                    closestTuple = [tx, ty]
+
+    return closestTuple
 
 
-def getActualCooldown(originalCooldown: int, doubleReloadTicks: int) -> int:
-    if doubleReloadTicks > 0:
+def getActualCooldown(originalCooldown: int) -> int:
+    if info.doubleReloadTicks > 0:
         return originalCooldown // 2
     else:
         return originalCooldown
@@ -2547,7 +2574,7 @@ def app() -> None:
 
                     pygame.display.update()
                     ticks = (ticks + 1) % 50
-                    clock.tick(maxFPS)
+                    clock.tick(MaxFPS)
             else:
                 while True:
                     mx, my = pygame.mouse.get_pos()
@@ -2570,7 +2597,7 @@ def app() -> None:
                         pygame.draw.circle(screen, (0, 0, 0), (cx, cy), 3)
 
                     for i in range(len(info.mapMakerData['path']) - 1):
-                        pygame.draw.line(screen, info.mapMakerData['pathColor'], info.mapMakerData['path'][i], info.mapMakerData['path'][i + 1], 10)
+                        pygame.draw.line(screen, info.mapMakerData['pathColor'], info.mapMakerData['path'][i], info.mapMakerData['path'][i + 1], 14 if info.mapMakerData['path'][i][0] != info.mapMakerData['path'][i + 1][0] and info.mapMakerData['path'][i][1] != info.mapMakerData['path'][i + 1][1] else 10)
 
                     if info.mapMakerData['path']:
                         pygame.draw.circle(screen, info.mapMakerData['pathColor'], info.mapMakerData['path'][0], 10)
@@ -2995,7 +3022,7 @@ def app() -> None:
 
             if len(info.enemies) == 0:
                 if len(info.spawnleft) == 0 and info.ticksSinceNoEnemies == 0:
-                    info.coins += 100
+                    info.coins += 120 + info.wave * 5
                     info.ticksSinceNoEnemies += 1
 
                 if info.nextWave <= 0:
@@ -3281,10 +3308,9 @@ waves = [
     '03' * 15,
     '04' * 15,
     '05' * 20,
-    '25' * 10,
     '06' * 20,
-    '0A',
     '06' * 50,
+    '0A',
     '26' * 25,
     '07' * 50,
     '08' * 25,
@@ -3295,6 +3321,7 @@ waves = [
     '18' * 25,
     '1A' * 2,
     '18' * 50,
+    '25' * 10,
     '28' * 50,
     '0A' * 3,
     '0A' * 5,
@@ -3573,7 +3600,9 @@ for towerType in Towers.__subclasses__():
 healthImage = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'heart.png')), (16, 16))
 tokenImage = pygame.image.load(os.path.join(resource_path, 'token.png'))
 
-SIN45 = COS45 = math.sqrt(2) / 2
+SQRT2 = math.sqrt(2)
+SIN45 = SQRT2 / 2
+COS45 = SQRT2 / 2
 
 info = data()
 RuneEffects = RuneEffect()
