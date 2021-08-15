@@ -29,17 +29,17 @@ class Map:
     def __str__(self):
         return self.name
 
-Map([[25, 0], [25, 375], [775, 375], [775, 25], [40, 25], [40, 360], [760, 360], [760, 40], [55, 40], [55, 345], [745, 345], [745, 55], [0, 55]], "Race Track", (19, 109, 21), (189, 22, 44), (189, 22, 44))
-Map([[400, 225], [400, 50], [50, 50], [50, 400], [50, 50], [750, 50], [750, 400], [750, 50], [400, 50], [400, 225]], "The Sky", (171, 205, 239), (255, 255, 255))
-Map([[0, 25], [775, 25], [775, 425], [25, 425], [25, 75], [725, 75], [725, 375], [0, 375]], "Wizard's Lair", (187, 11, 255), (153, 153, 153))
-Map([[0, 25], [700, 25], [700, 375], [100, 375], [100, 75], [800, 75]], "Pond", (6, 50, 98), (0, 0, 255))
-Map([[0, 400], [725, 400], [725, 325], [650, 325], [650, 375], [750, 375], [750, 75], [650, 75], [650, 125], [725, 125], [725, 50], [0, 50]], "The Moon", (100, 100, 100), (255, 255, 102), (255, 255, 102))
-Map([[350, 0], [350, 150], [25, 150], [25, 300], [350, 300], [350, 450], [450, 450], [450, 300], [775, 300], [775, 150], [450, 150], [450, 0]], "Candyland", (255, 105, 180), (199, 21, 133))
-Map([[25, 0], [25, 425], [525, 425], [525, 25], [275, 25], [275, 275], [750, 275], [750, 0]], "Plains", (19, 109, 21), (155, 118, 83))
-Map([[300, 225], [575, 225], [575, 325], [125, 325], [125, 125], [675, 125], [675, 425], [25, 425], [25, 0]], "Lava Spiral", (207, 16, 32), (255, 140, 0), (178, 66, 0))
-Map([[0, 25], [750, 25], [750, 200], [25, 200], [25, 375], [800, 375]], "Desert", (170, 108, 35), (178, 151, 5))
-Map([[125, 0], [125, 500], [400, 500], [400, -50], [675, -50], [675, 500]], "Disconnected", (64, 64, 64), (100, 100, 100), (100, 0, 0))
-Map([[0, 225], [800, 225]], "The End", (100, 100, 100), (200, 200, 200))
+Map([[25, 0], [25, 375], [775, 375], [775, 25], [40, 25], [40, 360], [760, 360], [760, 40], [55, 40], [55, 345], [745, 345], [745, 55], [0, 55]], 'Race Track', (19, 109, 21), (189, 22, 44), (189, 22, 44))
+Map([[400, 225], [400, 50], [50, 50], [50, 400], [50, 50], [750, 50], [750, 400], [750, 50], [400, 50], [400, 225]], 'The Sky', (171, 205, 239), (255, 255, 255))
+Map([[0, 25], [775, 25], [775, 425], [25, 425], [25, 75], [725, 75], [725, 375], [0, 375]], 'Wizard\'s Lair', (187, 11, 255), (153, 153, 153))
+Map([[0, 25], [700, 25], [700, 375], [100, 375], [100, 75], [800, 75]], 'Pond', (6, 50, 98), (0, 0, 255))
+Map([[0, 400], [725, 400], [725, 325], [650, 325], [650, 375], [750, 375], [750, 75], [650, 75], [650, 125], [725, 125], [725, 50], [0, 50]], 'The Moon', (100, 100, 100), (255, 255, 102), (255, 255, 102))
+Map([[350, 0], [350, 150], [25, 150], [25, 300], [350, 300], [350, 450], [450, 450], [450, 300], [775, 300], [775, 150], [450, 150], [450, 0]], 'Candyland', (255, 105, 180), (199, 21, 133))
+Map([[25, 0], [25, 425], [525, 425], [525, 25], [275, 25], [275, 275], [750, 275], [750, 0]], 'Plains', (19, 109, 21), (155, 118, 83))
+Map([[300, 225], [575, 225], [575, 325], [125, 325], [125, 125], [675, 125], [675, 425], [25, 425], [25, 0]], 'Lava Spiral', (207, 16, 32), (255, 140, 0), (178, 66, 0))
+Map([[0, 25], [750, 25], [750, 200], [25, 200], [25, 375], [800, 375]], 'Desert', (170, 108, 35), (178, 151, 5))
+Map([[125, 0], [125, 500], [400, 500], [400, -50], [675, -50], [675, 500]], 'Disconnected', (64, 64, 64), (100, 100, 100), (100, 0, 0))
+Map([[0, 225], [800, 225]], 'The End', (100, 100, 100), (200, 200, 200))
 
 
 class Rune:
@@ -1678,7 +1678,9 @@ def draw() -> None:
     screen.fill(info.Map.backgroundColor)
 
     for i in range(len(info.Map.path) - 1):
-        pygame.draw.line(screen, info.Map.pathColor, info.Map.path[i], info.Map.path[i + 1], 14 if info.Map.path[i][0] != info.Map.path[i + 1][0] and info.Map.path[i][1] != info.Map.path[i + 1][1] else 10)
+        lineWidth = 14 if info.Map.path[i][0] != info.Map.path[i + 1][0] and info.Map.path[i][1] != info.Map.path[i + 1][1] else 10
+        pygame.draw.line(screen, info.Map.pathColor, info.Map.path[i], info.Map.path[i + 1], lineWidth)
+        pygame.draw.circle(screen, info.Map.pathColor, info.Map.path[i + 1], lineWidth // 2)
     pygame.draw.circle(screen, info.Map.pathColor, info.Map.path[0], 10)
     pygame.draw.circle(screen, info.Map.pathColor, info.Map.path[-1], 10)
 
@@ -2597,7 +2599,9 @@ def app() -> None:
                         pygame.draw.circle(screen, (0, 0, 0), (cx, cy), 3)
 
                     for i in range(len(info.mapMakerData['path']) - 1):
-                        pygame.draw.line(screen, info.mapMakerData['pathColor'], info.mapMakerData['path'][i], info.mapMakerData['path'][i + 1], 14 if info.mapMakerData['path'][i][0] != info.mapMakerData['path'][i + 1][0] and info.mapMakerData['path'][i][1] != info.mapMakerData['path'][i + 1][1] else 10)
+                        lineWidth = 14 if info.mapMakerData['path'][i][0] != info.mapMakerData['path'][i + 1][0] and info.mapMakerData['path'][i][1] != info.mapMakerData['path'][i + 1][1] else 10
+                        pygame.draw.line(screen, info.mapMakerData['pathColor'], info.mapMakerData['path'][i], info.mapMakerData['path'][i + 1], lineWidth)
+                        pygame.draw.circle(screen, info.mapMakerData['pathColor'], info.mapMakerData['path'][i + 1], lineWidth // 2)
 
                     if info.mapMakerData['path']:
                         pygame.draw.circle(screen, info.mapMakerData['pathColor'], info.mapMakerData['path'][0], 10)
@@ -2643,7 +2647,7 @@ def app() -> None:
                                 elif 940 < mx and 570 < my:
                                     mapShiftedPath = [[point[0] - 100, point[1] - 125] for point in info.mapMakerData['path']]
 
-                                    print(f'This is the map code for your map!\n\nMap({mapShiftedPath}, \"{info.mapMakerData["name"]}\", {tuple(info.mapMakerData["backgroundColor"])}, {tuple(info.mapMakerData["pathColor"])})')
+                                    print(f'This is the map code for your map!\n\nMap({mapShiftedPath}, \'{info.mapMakerData["name"]}\', {tuple(info.mapMakerData["backgroundColor"])}, {tuple(info.mapMakerData["pathColor"])})')
                                     info.status = 'mapSelect'
                                     info.mapMakerData = defaults['mapMakerData'].copy()
                                     cont = False
