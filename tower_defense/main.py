@@ -173,10 +173,10 @@ class RuneEffect:
             self.effects.append(self.LightningRuneEffect(target.x, target.y))
 
         elif self.rune == 'Shrink Rune':
-            self.effects.append(self.ShrinkRuneEffect(target.x, target.y, 20 if type(target.tier) is str else 10, enemyColors[str(target.tier)] if color is None else color, target.camo, target.regen))
+            self.effects.append(self.ShrinkRuneEffect(target.x, target.y, 20 if target.isBoss else 10, enemyColors[str(target.tier)] if color is None else color, target.camo, target.regen))
 
         elif self.rune == 'Leap Rune':
-            self.effects.append(self.LeapRuneEffect(target.x, target.y, 20 if type(target.tier) is str else 10, enemyColors[str(target.tier)] if color is None else color, target.camo, target.regen))
+            self.effects.append(self.LeapRuneEffect(target.x, target.y, 20 if target.isBoss else 10, enemyColors[str(target.tier)] if color is None else color, target.camo, target.regen))
 
     def draw(self):
         for effect in self.effects:
@@ -209,7 +209,7 @@ class PhysicalPowerUp:
 
         def update(self):
             for enemy in info.enemies:
-                if type(enemy.tier) is str:
+                if enemy.isBoss:
                     if abs(self.x - enemy.x) ** 2 + abs(self.y - enemy.y) ** 2 <= 484:
                         enemy.kill(bossDamage=25)
                         self.parent.objects.remove(self)
@@ -394,8 +394,8 @@ class IceTower(Towers):
             self.visibleTicks = 50
 
             for enemy in info.enemies:
-                if abs(enemy.x - self.x) ** 2 + abs(enemy.y - self.y) ** 2 <= self.parent.range ** 2:
-                    if type(enemy.tier) is int:
+                if abs(enemy.x - self.x) ** 2 + abs(enemy.y - self.y) ** 2 <= 22500:
+                    if not enemy.isBoss:
                         enemy.freezeTimer = max(enemy.freezeTimer, self.freezeDuration)
 
         def update(self):
@@ -487,7 +487,7 @@ class SpikeTower(Towers):
                 if enemy in self.ignore or (enemy.tier in onlyExplosiveTiers and self.parent.upgrades[2] < 2):
                     continue
 
-                if abs(enemy.x - self.x) ** 2 + abs(enemy.y - self.y) ** 2 < (144 if type(enemy.tier) is int else 484):
+                if abs(enemy.x - self.x) ** 2 + abs(enemy.y - self.y) ** 2 < (484 if enemy.isBoss else 144):
                     self.visible = False
                     if self.parent.upgrades[2] == 3:
                         enemy.fireTicks = max(enemy.fireTicks, 300)
@@ -505,7 +505,7 @@ class SpikeTower(Towers):
                         new = new.kill(coinMultiplier=getCoinMultiplier(self.parent), overrideRuneColor=color)
                         info.statistics['pops'] += 1
                         self.parent.hits += 1
-                        self.ignore.append(new if type(enemy.tier) is int else enemy)
+                        self.ignore.append(enemy if enemy.isBoss else new)
 
                         if new is None:
                             break
@@ -892,7 +892,7 @@ class InfernoTower(Towers):
                 if (abs(enemy.x - self.parent.x) ** 2 + abs(enemy.y - self.parent.y) ** 2 <= self.parent.range ** 2) and (not enemy.camo or canSeeCamo(self.parent)):
                     enemy.fireTicks = max(enemy.fireTicks, (500 if self.parent.upgrades[2] else 300))
                     enemy.fireIgnitedBy = self.parent
-                    if type(enemy.tier) is int:
+                    if not enemy.isBoss:
                         enemy.freezeTimer = max(enemy.freezeTimer, [0, 0, 25, 75][self.parent.upgrades[1]])
                     self.renders.append(InfernoTower.AttackRender(self.parent, enemy))
                     found = True
@@ -1176,11 +1176,7 @@ class PiercingProjectile:
 
 class Enemy:
     def __init__(self, tier: str or int, spawn: List[int], lineIndex: int, *, camo: bool = False, regen: bool = False):
-        try:
-            self.tier = int(tier)
-        except ValueError:
-            self.tier = tier
-
+        self.tier = tier
         self.x, self.y = spawn
         self.lineIndex = lineIndex
         self.totalMovement = 0
@@ -1191,6 +1187,7 @@ class Enemy:
         self.camo = camo
         self.regen = regen
         self.regenTimer = 0
+        self.isBoss = self.tier in bosses
 
         if str(self.tier) in trueHP.keys():
             self.HP = self.MaxHP = trueHP[str(self.tier)] + 1
@@ -1223,7 +1220,7 @@ class Enemy:
 
                 if current != new:
                     if current[0] == new[0] or current[1] == new[1]:
-                        speed = SQRT2
+                        speed = RECIPROCALSQRT2
                     else:
                         speed = 1
 
@@ -1280,10 +1277,10 @@ class Enemy:
                 self.fireTicks -= 1
 
         for projectile in info.projectiles:
-            if abs(self.x - projectile.x) ** 2 + abs(self.y - projectile.y) ** 2 < (625 if type(self.tier) is str else 100):
+            if abs(self.x - projectile.x) ** 2 + abs(self.y - projectile.y) ** 2 < (625 if self.isBoss else 100):
                 if projectile.freezeDuration > 0:
                     info.projectiles.remove(projectile)
-                    self.freezeTimer = max(self.freezeTimer, projectile.freezeDuration // (5 if type(self.tier) is str else 1))
+                    self.freezeTimer = max(self.freezeTimer, projectile.freezeDuration // (5 if self.isBoss else 1))
                 else:
                     info.projectiles.remove(projectile)
                     if projectile.explosiveRadius > 0:
@@ -1314,7 +1311,7 @@ class Enemy:
 
         if self.tier not in onlyExplosiveTiers:
             for projectile in info.piercingProjectiles:
-                if abs(self.x - projectile.x) ** 2 + abs(self.y - projectile.y) ** 2 < (400 if type(self.tier) is str else 100):
+                if abs(self.x - projectile.x) ** 2 + abs(self.y - projectile.y) ** 2 < (400 if self.isBoss else 100):
                     if (self not in projectile.ignore) and (canSeeCamo(projectile.parent) or not self.camo):
                         color = enemyColors[str(self.tier)]
                         damage = 1
@@ -1345,7 +1342,7 @@ class Enemy:
                             projectile.pierce -= 1
 
     def draw(self):
-        if type(self.tier) is str:
+        if self.isBoss:
             healthPercent = self.HP / trueHP[self.tier]
 
             if healthPercent >= 0.8:
@@ -1364,21 +1361,21 @@ class Enemy:
             pygame.draw.rect(screen, (0, 0, 0), (self.x - 50, self.y - 25, 100, 5), 1)
             centredPrint(font, f'{math.ceil(self.HP / self.MaxHP * 100)}%', (self.x, self.y - 35))
 
-        pygame.draw.circle(screen, enemyColors[str(self.tier)], (self.x, self.y), 20 if type(self.tier) is str else 10)
+        pygame.draw.circle(screen, enemyColors[str(self.tier)], (self.x, self.y), 20 if self.isBoss else 10)
         if self.camo:
-            pygame.draw.circle(screen, (0, 0, 0), (self.x, self.y), 20 if type(self.tier) is str else 10, 2)
+            pygame.draw.circle(screen, (0, 0, 0), (self.x, self.y), 20 if self.isBoss else 10, 2)
         if self.regen:
-            pygame.draw.circle(screen, (255, 105, 180), (self.x, self.y), 20 if type(self.tier) is str else 10, 2)
+            pygame.draw.circle(screen, (255, 105, 180), (self.x, self.y), 20 if self.isBoss else 10, 2)
 
     def kill(self, *, spawnNew: bool = True, coinMultiplier: int = 1, ignoreBoss: bool = False, burn: bool = False, bossDamage: int = 1, overrideRuneColor: Tuple[int] = None):
-        if type(self.tier) is str and ignoreBoss:
+        if self.isBoss and ignoreBoss:
             try:
                 info.enemies.remove(self)
             except ValueError:
                 pass
             return
 
-        if type(self.tier) is int:
+        if not self.isBoss:
             if self.HP > 1:
                 self.HP -= 1
                 return self
@@ -1391,7 +1388,7 @@ class Enemy:
             if str(self.tier) == '0':
                 RuneEffects.createEffects(self, color=overrideRuneColor)
 
-        elif type(self.tier) is str:
+        elif self.isBoss:
             self.HP -= 10 if burn else bossDamage
             if self.HP <= 0:
                 self.kill(spawnNew=spawnNew, coinMultiplier=coinMultiplier, ignoreBoss=True)
@@ -1442,13 +1439,14 @@ class Enemy:
         if not self.regen:
             return
 
-        if self.regenTimer >= 100:
-            if type(self.tier) is int:
-                self.tier += 1
-                if str(self.tier) not in enemyColors.keys():
-                    self.tier -= 1
-            else:
+        if self.regenTimer >= MaxFPS:
+            if self.isBoss:
                 self.HP = min(self.MaxHP, self.HP + 50)
+            elif self.tier in regen:
+                try:
+                    self.tier = regen[regen.index(self.tier) + 1]
+                except IndexError:
+                    pass
 
             self.regenTimer = 0
 
@@ -1486,7 +1484,7 @@ def getSellPrice(tower: Towers) -> float:
         for m in range(tower.upgrades[n]):
             price += tower.upgradePrices[n][m]
 
-    return price * 0.5
+    return price * 0.8
 
 
 def leftAlignPrint(font: pygame.font.Font, text: str, pos: Tuple[int], color: Tuple[int] = (0, 0, 0)) -> None:
@@ -1512,7 +1510,7 @@ def income() -> float:
     total = 0.01
     for tower in info.towers:
         if type(tower) is BananaFarm:
-            total += [0.01, 0.05, 0.1, 0.25][tower.upgrades[1]]
+            total += [0.002, 0.01, 0.02, 0.05][tower.upgrades[1]]
 
     return total
 
@@ -1565,7 +1563,7 @@ def getTarget(tower: Towers, *, ignore: [Enemy] = None, overrideRange: int = Non
         if enemy in ignore:
             continue
 
-        if ignoreBosses and type(enemy.tier) is str:
+        if ignoreBosses and enemy.isBoss:
             continue
 
         if abs(enemy.x - tower.x) ** 2 + abs(enemy.y - tower.y) ** 2 <= rangeRadius ** 2:
@@ -1875,7 +1873,7 @@ def draw() -> None:
 
         if type(info.selected) is IceTower:
             pygame.draw.rect(screen, (0, 255, 0) if info.selected.enabled else (255, 0, 0), (620, 500, 150, 25))
-            if 620 <= mx <= 770:
+            if 620 <= mx <= 770 and 500 <= my <= 525:
                 pygame.draw.rect(screen, (200, 200, 200), (620, 500, 150, 25), 3)
             else:
                 pygame.draw.rect(screen, (0, 0, 0), (620, 500, 150, 25), 3)
@@ -3388,6 +3386,8 @@ speed = {
     'E': 1      # True Speed: 1/10
 }
 
+regen = ['0', '1', '2', '3', '4', '5', '6']
+
 enemiesSpawnNew = {
     '00': None,
     '01': '00',
@@ -3427,8 +3427,10 @@ onlyExplosiveTiers = [7, 'D']
 
 freezeImmune = ['E']
 
+bosses = ['A', 'B', 'C', 'D', 'E']
+
 trueHP = {
-    '8': 5,
+    '8': 10,
     'A': 2000,
     'B': 5000,
     'C': 3000,
@@ -3605,6 +3607,7 @@ healthImage = pygame.transform.scale(pygame.image.load(os.path.join(resource_pat
 tokenImage = pygame.image.load(os.path.join(resource_path, 'token.png'))
 
 SQRT2 = math.sqrt(2)
+RECIPROCALSQRT2 = 1 / SQRT2
 SIN45 = SQRT2 / 2
 COS45 = SQRT2 / 2
 
