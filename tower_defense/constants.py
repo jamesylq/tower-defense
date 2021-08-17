@@ -71,7 +71,7 @@ damages = {
     '9': 8,
     'A': 20,
     'B': 40,
-    'C': 30,
+    'C': 20,
     'D': 69,
     'E': 90
 }
@@ -134,7 +134,7 @@ enemiesSpawnNew = {
     '0A': '00' * 15,
     '0B': '03' * 20,
     '0C': '08' * 10,
-    '0D': '0C' * 3 + '18' * 10,
+    '0D': '0C' * 5 + '18' * 10,
     '10': None,
     '11': '10',
     '12': '11',
@@ -161,7 +161,7 @@ regenPath = ['0', '1', '2', '3', '4', '5', '6']
 # Enemy Property Constants
 bosses = ['A', 'B', 'C', 'D', 'E']
 onlyExplosiveTiers = ['7', 'D']
-spikeResistant = ['9']
+resistant = ['9']
 freezeImmune = ['E']
 
 # Math Constants

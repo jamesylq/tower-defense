@@ -491,7 +491,7 @@ class SpikeTower(Towers):
                 if enemy in self.ignore:
                     continue
 
-                if enemy.tier in spikeResistant:
+                if enemy.tier in resistant:
                     continue
 
                 if enemy.tier in onlyExplosiveTiers and self.parent.upgrades[2] < 2:
@@ -1208,6 +1208,8 @@ class Enemy:
         info.enemies.append(self)
 
     def move(self, speed: int):
+        self.update()
+
         if self.timer > 0:
             self.timer -= 1
         elif self.tier == 'B':
@@ -1328,7 +1330,7 @@ class Enemy:
                             if new is None:
                                 break
 
-        if self.tier not in onlyExplosiveTiers:
+        if not(self.tier in onlyExplosiveTiers or self.tier in resistant):
             for projectile in info.piercingProjectiles:
                 if abs(self.x - projectile.x) ** 2 + abs(self.y - projectile.y) ** 2 < (400 if self.isBoss else 100):
                     if (self not in projectile.ignore) and (canSeeCamo(projectile.parent) or not self.camo):
@@ -1407,6 +1409,7 @@ class Enemy:
                         pass
 
                     RuneEffects.createEffects(self, color=overrideRuneColor)
+                    info.statistics['bossesKilled'] += 1
 
                 else:
                     return self
@@ -1456,7 +1459,7 @@ class Enemy:
         if self.regenTimer >= MaxFPS:
             if self.isBoss:
                 self.HP = min(self.MaxHP, self.HP + 50)
-            elif self.tier in regen:
+            elif self.tier in regenPath:
                 try:
                     self.tier = regenPath[regenPath.index(self.tier) + 1]
                 except IndexError:
@@ -1516,7 +1519,7 @@ def rightAlignPrint(font: pygame.font.Font, text: str, pos: Tuple[int], color: T
     screen.blit(textObj, textObj.get_rect(center=[pos[0] - font.size(text)[0] / 2, pos[1]]))
 
 
-def centredBlit(image: pygame.Surface, pos: Tuple[int]):
+def centredBlit(image: pygame.Surface, pos: Tuple[int]) -> None:
     screen.blit(image, image.get_rect(center=pos))
 
 
@@ -2948,61 +2951,64 @@ def app() -> None:
                         highest += 1
                 info.achievements[achievement] = highest
 
+            scroll = 0
             while True:
                 mx, my = pygame.mouse.get_pos()
                 screen.fill((200, 200, 200))
-                centredPrint(mediumFont, 'Achievements', (500, 50))
 
                 n = 0
                 for achievement, information in achievements.items():
-                    pygame.draw.rect(screen, (100, 100, 100), (10, 80 + 110 * n, 980, 100))
-                    leftAlignPrint(font, information['names'][min(info.achievements[achievement], 2)], (20, 93 + 110 * n))
+                    pygame.draw.rect(screen, (100, 100, 100), (10, 80 + 110 * n - scroll, 980, 100))
+                    leftAlignPrint(font, information['names'][min(info.achievements[achievement], 2)], (20, 93 + 110 * n - scroll))
 
-                    leftAlignPrint(tinyFont, information['lore'].replace('[%]', str(achievementRequirements[achievement]['tiers'][min(info.achievements[achievement], 2)])), (20, 120 + 110 * n))
+                    leftAlignPrint(tinyFont, information['lore'].replace('[%]', str(achievementRequirements[achievement]['tiers'][min(info.achievements[achievement], 2)])), (20, 120 + 110 * n - scroll))
 
                     for m in range(3):
                         if info.achievements[achievement] > m:
-                            pygame.draw.circle(screen, (255, 255, 0), (900 + m * 20, 100 + 110 * n), 7)
-                        pygame.draw.circle(screen, (0, 0, 0), (900 + m * 20, 100 + 110 * n), 7, 2)
+                            pygame.draw.circle(screen, (255, 255, 0), (900 + m * 20, 100 + 110 * n - scroll), 7)
+                        pygame.draw.circle(screen, (0, 0, 0), (900 + m * 20, 100 + 110 * n - scroll), 7, 2)
 
                     if info.achievements[achievement] < len(achievementRequirements[achievement]['tiers']):
                         current = info.statistics[achievementRequirements[achievement]['attr']]
                         target = achievementRequirements[achievement]['tiers'][info.achievements[achievement]]
                         percent = current / target * 100
 
-                        pygame.draw.rect(screen, (0, 255, 0), (40, 140 + 110 * n, percent * 8, 20))
+                        pygame.draw.rect(screen, (0, 255, 0), (40, 140 + 110 * n - scroll, percent * 8, 20))
 
                         txt = f'{round(percent, 1)}%'
-                        if 10 <= mx <= 990 and 80 + 110 * n <= my <= 180 + 110 * n:
+                        if 10 <= mx <= 990 and 80 + 110 * n <= my + scroll <= 180 + 110 * n:
                             txt += f' ({current} / {target})'
 
-                        centredPrint(font, txt, (440, 150 + 110 * n))
+                        centredPrint(font, txt, (440, 150 + 110 * n - scroll))
 
                     else:
                         current = info.statistics[achievementRequirements[achievement]['attr']]
                         target = achievementRequirements[achievement]['tiers'][info.achievements[achievement] - 1]
 
-                        pygame.draw.rect(screen, (0, 255, 0), (40, 140 + 110 * n, 800, 20))
+                        pygame.draw.rect(screen, (0, 255, 0), (40, 140 + 110 * n - scroll, 800, 20))
 
                         txt = '100.0%'
-                        if 10 <= mx <= 990 and 80 + 110 * n <= my <= 180 + 110 * n:
+                        if 10 <= mx <= 990 and 80 + 110 * n <= my + scroll <= 180 + 110 * n:
                             txt += f' ({current} / {target})'
-                        centredPrint(font, txt, (440, 150 + 110 * n))
+                        centredPrint(font, txt, (440, 150 + 110 * n - scroll))
 
-                    pygame.draw.rect(screen, (0, 0, 0), (40, 140 + 110 * n, 800, 20), 3)
+                    pygame.draw.rect(screen, (0, 0, 0), (40, 140 + 110 * n - scroll, 800, 20), 3)
 
                     n += 1
 
-                pygame.draw.rect(screen, (255, 0, 0), (20, 550, 100, 30))
+                pygame.draw.rect(screen, (200, 200, 200), (0, 0, 1000, 70))
+                centredPrint(mediumFont, 'Achievements', (500, 40))
 
+                pygame.draw.rect(screen, (200, 200, 200), (0, 520, 1000, 80))
+
+                pygame.draw.rect(screen, (255, 0, 0), (20, 550, 100, 30))
                 centredPrint(font, 'Close', (70, 565))
                 if 20 <= mx <= 120 and 550 <= my <= 580:
                     pygame.draw.rect(screen, (0, 0, 0), (20, 550, 100, 30), 3)
                 else:
                     pygame.draw.rect(screen, (128, 128, 128), (20, 550, 100, 30), 5)
 
-                pygame.display.update()
-
+                maxScroll = len(achievements) * 110 - 440
                 cont = True
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
@@ -3015,8 +3021,24 @@ def app() -> None:
                                 info.status = 'mapSelect'
                                 cont = False
 
+                        elif event.button == 4:
+                            scroll = max(0, scroll - 10)
+
+                        elif event.button == 5:
+                            scroll = min(maxScroll, scroll + 10)
+
                 if not cont:
                     break
+
+                pressed = pygame.key.get_pressed()
+                if pressed[pygame.K_UP]:
+                    scroll = max(0, scroll - 2)
+                if pressed[pygame.K_DOWN]:
+                    scroll = min(scroll + 2, maxScroll)
+
+                pygame.display.update()
+
+                clock.tick(MaxFPS)
 
         elif info.status == 'game':
             global rainbowShiftCount, rainbowShiftIndex
@@ -3350,7 +3372,8 @@ defaults = {
         'losses': 0,
         'coinsSpent': 0,
         'totalWins': 0,
-        'mapsBeat': 0
+        'mapsBeat': 0,
+        'bossesKilled': 0
     },
     'ticksSinceNoEnemies': 1,
     'achievements': {
@@ -3385,7 +3408,7 @@ achievementRequirements = {
     },
     'pops': {
         'attr': 'pops',
-        'tiers': [10000, 100000, 1000000]
+        'tiers': [1000, 100000, 1000000]
     },
     'wins': {
         'attr': 'totalWins',
@@ -3394,6 +3417,10 @@ achievementRequirements = {
     'spendCoins': {
         'attr': 'coinsSpent',
         'tiers': [10000, 100000, 1000000]
+    },
+    'killBosses': {
+        'attr': 'bossesKilled',
+        'tiers': [1, 50, 500]
     }
 }
 
@@ -3413,6 +3440,10 @@ achievements = {
     'spendCoins': {
         'names': ['Money Spender', 'Rich Player', 'Millionaire!'],
         'lore': 'Spend [%] coins!'
+    },
+    'killBosses': {
+        'names': ['Slayer', 'Large Enemies Popper', 'Boss Exterminator'],
+        'lore': 'Kill [%] bosses!'
     }
 }
 
