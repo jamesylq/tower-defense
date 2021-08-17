@@ -1,17 +1,20 @@
+# Imports
 import os
+import math
+import time
 import pygame
 import pickle
 import random
-import math
-import time
 
 from typing import *
 from _pickle import UnpicklingError
 from tower_defense import __version__
+from tower_defense.constants import *
 
 resource_path = os.path.join(os.path.dirname(__file__), 'resources')
-
 MaxFPS = 100
+
+# Map/Rune Setup
 Maps = []
 Runes = []
 
@@ -199,7 +202,7 @@ Rune('Lightning Rune', 5, 'Legends say it was created by Zeus himself.', 125, 'l
 Rune('Shrink Rune', 3, 'This magical rune compresses its foes!', 150, 'shrink_rune.png')
 Rune('Rainbow Rune', 2, 'A rainbow tail forms behind your cursor!', 150, 'rainbow_rune.png')
 
-
+# Powerups
 class PhysicalPowerUp:
     class Spike:
         def __init__(self, x, y, parent):
@@ -250,6 +253,7 @@ class PhysicalPowerUp:
             obj.draw()
 
 
+# Classes
 class data:
     def __init__(self):
         self.PBs = {Map.name: (LOCKED if Map != Maps[0] else None) for Map in Maps}
@@ -484,7 +488,13 @@ class SpikeTower(Towers):
             self.y += self.dy * self.parent.projectileSpeed
 
             for enemy in info.enemies:
-                if enemy in self.ignore or (enemy.tier in onlyExplosiveTiers and self.parent.upgrades[2] < 2):
+                if enemy in self.ignore:
+                    continue
+
+                if enemy.tier in spikeResistant:
+                    continue
+
+                if enemy.tier in onlyExplosiveTiers and self.parent.upgrades[2] < 2:
                     continue
 
                 if abs(enemy.x - self.x) ** 2 + abs(enemy.y - self.y) ** 2 < (484 if enemy.isBoss else 144):
@@ -1188,75 +1198,84 @@ class Enemy:
         self.regen = regen
         self.regenTimer = 0
         self.isBoss = self.tier in bosses
+        self.reachedEnd = False
 
         if str(self.tier) in trueHP.keys():
             self.HP = self.MaxHP = trueHP[str(self.tier)] + 1
         else:
             self.HP = self.MaxHP = 1
 
-    def move(self):
+        info.enemies.append(self)
+
+    def move(self, speed: int):
         if self.timer > 0:
             self.timer -= 1
         elif self.tier == 'B':
             self.timer = 250
-            info.enemies.append(Enemy(3, [self.x, self.y], self.lineIndex))
+            Enemy(3, [self.x, self.y], self.lineIndex)
         elif self.tier == 'D':
             self.timer = 100
-            info.enemies.append(Enemy(7, [self.x, self.y], self.lineIndex))
+            Enemy(7, [self.x, self.y], self.lineIndex)
 
         if self.freezeTimer > 0 and not self.tier in freezeImmune:
             self.freezeTimer -= 1
         else:
-            if len(info.Map.path) - 1 == self.lineIndex:
-                self.kill(spawnNew=False, ignoreBoss=True)
-                info.statistics['enemiesMissed'] += 1
-                info.HP -= damages[str(self.tier)]
+            for n in range(speed):
+                if len(info.Map.path) - 1 == self.lineIndex:
+                    if not self.reachedEnd:
+                        self.kill(spawnNew=False, ignoreBoss=True)
+                        info.statistics['enemiesMissed'] += 1
+                        info.HP -= damages[str(self.tier)]
+                        self.reachedEnd = True
+                        break
 
-            else:
-                current = info.Map.path[self.lineIndex]
-                new = info.Map.path[self.lineIndex + 1]
-                foundMove = False
-                newLineIndex = self.lineIndex + 1
-
-                if current != new:
-                    if current[0] == new[0] or current[1] == new[1]:
-                        speed = RECIPROCALSQRT2
-                    else:
-                        speed = 1
-
-                    if current[0] < new[0]:
-                        self.x += speed
-                        if self.x >= new[0]:
-                            self.lineIndex = newLineIndex
-
-                        foundMove = True
-
-                    if current[0] > new[0]:
-                        self.x -= speed
-                        if self.x <= new[0]:
-                            self.lineIndex = newLineIndex
-
-                        foundMove = True
-
-                    if current[1] < new[1]:
-                        self.y += speed
-                        if self.y >= new[1]:
-                            self.lineIndex = newLineIndex
-
-                        foundMove = True
-
-                    if current[1] > new[1]:
-                        self.y -= speed
-                        if self.y <= new[1]:
-                            self.lineIndex = newLineIndex
-
-                        foundMove = True
-
-                if foundMove:
-                    self.totalMovement += 1
                 else:
-                    self.kill(spawnNew=False, ignoreBoss=True)
-                    info.statistics['enemiesMissed'] += 1
+                    current = info.Map.path[self.lineIndex]
+                    new = info.Map.path[self.lineIndex + 1]
+                    foundMove = False
+                    newLineIndex = self.lineIndex + 1
+
+                    if current != new:
+                        if current[0] == new[0] or current[1] == new[1]:
+                            speed = RECIPROCALSQRT2
+                        else:
+                            speed = 1
+
+                        if current[0] < new[0]:
+                            self.x += speed
+                            if self.x >= new[0]:
+                                self.lineIndex = newLineIndex
+
+                            foundMove = True
+
+                        if current[0] > new[0]:
+                            self.x -= speed
+                            if self.x <= new[0]:
+                                self.lineIndex = newLineIndex
+
+                            foundMove = True
+
+                        if current[1] < new[1]:
+                            self.y += speed
+                            if self.y >= new[1]:
+                                self.lineIndex = newLineIndex
+
+                            foundMove = True
+
+                        if current[1] > new[1]:
+                            self.y -= speed
+                            if self.y <= new[1]:
+                                self.lineIndex = newLineIndex
+
+                            foundMove = True
+
+                    if foundMove:
+                        self.totalMovement += 1
+                    else:
+                        self.kill(spawnNew=False, ignoreBoss=True)
+                        info.statistics['enemiesMissed'] += 1
+
+                self.update()
 
             try:
                 self.freezeTimer = max(bossFreeze[self.tier], self.freezeTimer)
@@ -1368,14 +1387,31 @@ class Enemy:
             pygame.draw.circle(screen, (255, 105, 180), (self.x, self.y), 20 if self.isBoss else 10, 2)
 
     def kill(self, *, spawnNew: bool = True, coinMultiplier: int = 1, ignoreBoss: bool = False, burn: bool = False, bossDamage: int = 1, overrideRuneColor: Tuple[int] = None):
-        if self.isBoss and ignoreBoss:
-            try:
-                info.enemies.remove(self)
-            except ValueError:
-                pass
-            return
+        if self.isBoss:
+            if ignoreBoss:
+                try:
+                    info.enemies.remove(self)
+                except ValueError:
+                    pass
+                return
 
-        if not self.isBoss:
+            else:
+                self.HP -= 10 if burn else bossDamage
+                if self.HP <= 0:
+                    self.kill(spawnNew=spawnNew, coinMultiplier=coinMultiplier, ignoreBoss=True)
+
+                    try:
+                        self.fireIgnitedBy.hits += 1
+                        info.statistics['pops'] += 1
+                    except AttributeError:
+                        pass
+
+                    RuneEffects.createEffects(self, color=overrideRuneColor)
+
+                else:
+                    return self
+
+        else:
             if self.HP > 1:
                 self.HP -= 1
                 return self
@@ -1387,22 +1423,6 @@ class Enemy:
 
             if str(self.tier) == '0':
                 RuneEffects.createEffects(self, color=overrideRuneColor)
-
-        elif self.isBoss:
-            self.HP -= 10 if burn else bossDamage
-            if self.HP <= 0:
-                self.kill(spawnNew=spawnNew, coinMultiplier=coinMultiplier, ignoreBoss=True)
-
-                try:
-                    self.fireIgnitedBy.hits += 1
-                    info.statistics['pops'] += 1
-                except AttributeError:
-                    pass
-
-                RuneEffects.createEffects(self, color=overrideRuneColor)
-
-            else:
-                return self
 
         if spawnNew:
             if self.camo:
@@ -1417,23 +1437,17 @@ class Enemy:
 
             if newSpawn is not None:
                 new = None
-                for k in range(len(newSpawn) // 2):
-                    newSpawnType = newSpawn[2 * k]
-                    newSpawnTier = newSpawn[2 * k + 1]
+                for n in range(len(newSpawn) // 2):
+                    newSpawnType = newSpawn[2 * n]
+                    newSpawnTier = newSpawn[2 * n + 1]
 
                     new = Enemy(str(newSpawnTier), (self.x, self.y), self.lineIndex, camo=newSpawnType == '1', regen=newSpawnType == '2')
                     new.fireTicks = self.fireTicks
                     new.fireIgnitedBy = self.fireIgnitedBy
                     new.totalMovement = self.totalMovement
-                    for n in range(k):
-                        new.move()
-                        new.update()
-
-                    info.enemies.append(new)
+                    new.move(n)
 
                 return new
-
-            return None
 
     def updateRegen(self):
         if not self.regen:
@@ -1444,7 +1458,7 @@ class Enemy:
                 self.HP = min(self.MaxHP, self.HP + 50)
             elif self.tier in regen:
                 try:
-                    self.tier = regen[regen.index(self.tier) + 1]
+                    self.tier = regenPath[regenPath.index(self.tier) + 1]
                 except IndexError:
                     pass
 
@@ -1453,7 +1467,7 @@ class Enemy:
         else:
             self.regenTimer += 1
 
-
+# Functions
 def reset() -> None:
     try:
         open('save.txt', 'r').close()
@@ -1884,9 +1898,7 @@ def draw() -> None:
 
 def move() -> None:
     for enemy in info.enemies:
-        for i in range(speed[str(enemy.tier)]):
-            enemy.move()
-            enemy.update()
+        enemy.move(speed[str(enemy.tier)])
 
     for tower in info.towers:
         tower.update()
@@ -2056,6 +2068,7 @@ def load() -> None:
         pass
 
 
+# Main
 def app() -> None:
     load()
 
@@ -3015,7 +3028,7 @@ def app() -> None:
                 mouseTrail = mouseTrail[:-10]
 
             if info.spawndelay == 0 and len(info.spawnleft) > 0:
-                info.enemies.append(Enemy(info.spawnleft[1], info.Map.path[0], 0, camo=info.spawnleft[0] == '1', regen=info.spawnleft[0] == '2'))
+                Enemy(info.spawnleft[1], info.Map.path[0], 0, camo=info.spawnleft[0] == '1', regen=info.spawnleft[0] == '2')
 
                 info.spawnleft = info.spawnleft[2:]
                 info.spawndelay = 20
@@ -3302,158 +3315,6 @@ centredPrint(largeFont, f'Tower Defense v{__version__}', (500, 200), (100, 100, 
 centredPrint(mediumFont, 'Loading...', (500, 300), (100, 100, 100))
 pygame.display.update()
 
-waves = [
-    '00' * 3,
-    '00' * 5 + '01' * 3,
-    '01' * 5,
-    '02' * 12,
-    '03' * 15,
-    '04' * 15,
-    '05' * 20,
-    '06' * 20,
-    '06' * 50,
-    '0A',
-    '26' * 25,
-    '07' * 50,
-    '08' * 25,
-    '0B',
-    '10' * 3,
-    '16' * 25,
-    '17' * 25,
-    '18' * 25,
-    '1A' * 2,
-    '18' * 50,
-    '25' * 10,
-    '28' * 50,
-    '0A' * 3,
-    '0A' * 5,
-    '0A' * 8,
-    '0C',
-    '0C' * 2,
-    '0C' * 3,
-    '0C' * 5,
-    '0D'
-]
-
-enemyColors = {
-    '0': (255, 0, 0),
-    '1': (0, 0, 221),
-    '2': (0, 255, 0),
-    '3': (255, 255, 0),
-    '4': (255, 20, 147),
-    '5': (68, 68, 68),
-    '6': (255, 255, 255),
-    '7': (16, 16, 16),
-    '8': (110, 38, 14),
-    'A': (146, 43, 62),
-    'B': (191, 64, 191),
-    'C': (211, 47, 47),
-    'D': (64, 64, 64),
-    'E': (0, 0, 0)
-}
-
-damages = {
-    '0': 1,
-    '1': 2,
-    '2': 3,
-    '3': 4,
-    '4': 5,
-    '5': 6,
-    '6': 7,
-    '7': 8,
-    '8': 9,
-    'A': 20,
-    'B': 40,
-    'C': 30,
-    'D': 69,
-    'E': 90
-}
-
-speed = {
-    '0': 1,
-    '1': 1,
-    '2': 2,
-    '3': 2,
-    '4': 3,
-    '5': 4,
-    '6': 3,
-    '7': 2,
-    '8': 2,
-    'A': 1,     # True Speed: 1/3
-    'B': 1,     # True Speed: 1/5
-    'C': 1,
-    'D': 1,     # True Speed: 1/2
-    'E': 1      # True Speed: 1/10
-}
-
-regen = ['0', '1', '2', '3', '4', '5', '6']
-
-enemiesSpawnNew = {
-    '00': None,
-    '01': '00',
-    '02': '01',
-    '03': '02',
-    '04': '03',
-    '05': '04' * 2,
-    '06': '05' * 2,
-    '07': '06' * 3,
-    '08': '06' * 5,
-    '0A': '00' * 15,
-    '0B': '03' * 20,
-    '0C': '04' * 20,
-    '0D': '0C' * 3,
-    '10': None,
-    '11': '10',
-    '12': '11',
-    '13': '12',
-    '14': '13',
-    '15': '14' * 2,
-    '16': '15' * 2,
-    '17': '16' * 3,
-    '18': '16' * 5,
-    '1A': '10' * 10,
-    '20': None,
-    '21': '20',
-    '22': '21',
-    '23': '22',
-    '24': '23',
-    '25': '24' * 2,
-    '26': '25' * 2,
-    '27': '26' * 3,
-    '28': '26' * 5,
-}
-
-onlyExplosiveTiers = [7, 'D']
-
-freezeImmune = ['E']
-
-bosses = ['A', 'B', 'C', 'D', 'E']
-
-trueHP = {
-    '8': 10,
-    'A': 2000,
-    'B': 5000,
-    'C': 3000,
-    'D': 25000,
-    'E': 100000
-}
-
-bossCoins = {
-    'A': 150,
-    'B': 250,
-    'C': 100,
-    'D': 500,
-    'E': 10000
-}
-
-bossFreeze = {
-    'A': 3,
-    'B': 5,
-    'C': 0,
-    'D': 2,
-    'E': 10
-}
-
 defaults = {
     'enemies': [],
     'projectiles': [],
@@ -3564,15 +3425,13 @@ powerUps = {
     'reload': [pygame.image.load(os.path.join(resource_path, 'reload_power_up.png')), pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'reload_power_up.png')), (60, 60))]
 }
 
-LOCKED = 'LOCKED'
-
 IceCircle = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'ice_circle.png')), (250, 250)).copy()
 IceCircle.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
 
 rangeImages = []
 possibleRanges = [0, 50, 100, 125, 130, 150, 160, 165, 175, 180, 200, 250, 400]
 for possibleRange in possibleRanges:
-    rangeImage = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'range.png')), (possibleRange * 2,) * 2)
+    rangeImage = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'range.png')), (possibleRange * 2, possibleRange * 2))
     alphaImage = rangeImage.copy()
     alphaImage.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
     rangeImages.append(alphaImage)
@@ -3606,18 +3465,11 @@ for towerType in Towers.__subclasses__():
 healthImage = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'heart.png')), (16, 16))
 tokenImage = pygame.image.load(os.path.join(resource_path, 'token.png'))
 
-SQRT2 = math.sqrt(2)
-RECIPROCALSQRT2 = 1 / SQRT2
-SIN45 = SQRT2 / 2
-COS45 = SQRT2 / 2
-
 info = data()
 RuneEffects = RuneEffect()
 PowerUps = PhysicalPowerUp()
 mouseTrail = []
 
-rainbowColors = [[255, 0, 0], [0, 127, 0], [255, 255, 0], [0, 255, 0], [0, 0, 255], [46, 43, 95], [139, 0, 255]]
-rainbowShift = [[0, 0.127, 0], [0.255, 0.127, 0], [-0.255, 0, 0], [0, -0.255, 0.255], [0.046, 0.043, -0.16], [0.093, -0.043, 0.16], [0.116, 0, -0.255]]
 rainbowShiftCount = random.randint(0, 999)
 rainbowShiftIndex = random.randint(0, 6)
 
