@@ -868,7 +868,7 @@ class Wizard(Towers):
 
     def update(self):
         if self.upgrades[0] == 3:
-            if self.healTimer >= 1000 and info.HP < 100:
+            if self.healTimer >= 1000 and info.HP < 250:
                 info.HP += 1
                 self.healTimer = 0
             else:
@@ -2141,8 +2141,8 @@ def app() -> None:
                             pygame.draw.rect(screen, (0, 0, 0), (10, 40 * n + 60 - scroll, 825, 30), 3)
 
                         leftAlignPrint(font, Map.name.upper(), (20, 74 + n * 40 - scroll))
-                        if info.PBs[Map.name] == 100:
-                            centredPrint(font, f'[Best: 100]', (900, 74 + n * 40 - scroll), (225, 225, 0))
+                        if info.PBs[Map.name] == 250:
+                            centredPrint(font, f'[Best: 250]', (900, 74 + n * 40 - scroll), (225, 225, 0))
                         else:
                             centredPrint(font, f'[Best: {info.PBs[Map.name]}]', (900, 74 + n * 40 - scroll))
 
@@ -3242,8 +3242,8 @@ def app() -> None:
 
                         if 530 <= my <= 580:
                             if 810 <= mx <= 860 and info.powerUps['heal'] > 0:
-                                if info.HP < 100:
-                                    info.HP = min(100, info.HP + 5)
+                                if info.HP < 250:
+                                    info.HP = min(250, info.HP + 5)
 
                                     if not info.sandboxMode:
                                         info.powerUps['heal'] -= 1
@@ -3342,7 +3342,7 @@ defaults = {
     'projectiles': [],
     'piercingProjectiles': [],
     'towers': [],
-    'HP': 100,
+    'HP': 250,
     'FinalHP': None,
     'coins': 50,
     'selected': None,
