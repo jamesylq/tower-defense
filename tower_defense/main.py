@@ -278,10 +278,11 @@ class Towers:
         self.x = x
         self.y = y
         self.timer = 0
-        self.upgrades = [0, 0, 0]
+        self.upgrades = [0, 0, 0, False]
         self.stun = 0
         self.hits = 0
         self.camoDetectionOverride = overrideCamoDetect
+
         if not overrideAddToTowers:
             info.towers.append(self)
 
@@ -311,37 +312,58 @@ class Turret(Towers):
     color = (128, 128, 128)
     req = 0
     price = 50
-
     upgradePrices = [
         [30, 75, 125],
         [20, 60, 275],
-        [75, 125, 175]
+        [75, 125, 175],
+        1000
     ]
-
     upgradeNames = [
         ['Longer Range', 'Extreme Range', 'Ultra Range'],
         ['More Bullets', 'Bullet Rain', 'Double Bullets'],
-        ['Explosive Shots', 'Camo Detection', 'Boss Shred']
+        ['Explosive Shots', 'Camo Detection', 'Boss Shred'],
+        'Spinning Shots'
     ]
-
     range = 100
     cooldown = 75
+    bossDamage = 1
+    explosiveRadius = 0
+    totalAbilityCooldown = 3000
 
     def __init__(self, x: int, y: int):
         super().__init__(x, y)
         self.rotation = 0
+        self.abilityData = {
+            'tick': 0,
+            'rotation': 0,
+            'active': False
+        }
+        self.abilityCooldown = 0
 
     def attack(self):
+        if self.abilityData['active']:
+            if self.abilityData['tick'] <= 3:
+                self.abilityData['tick'] += 1
+            else:
+                self.abilityData['tick'] = 0
+                tx = self.x + 1000 * SINDEGREES[self.abilityData['rotation'] % 360]
+                ty = self.y + 1000 * COSDEGREES[self.abilityData['rotation'] % 360]
+                Projectile(self, self.x, self.y, tx, ty, bossDamage=self.bossDamage, explosiveRadius=self.explosiveRadius)
+
+                self.abilityData['rotation'] += 30
+                if self.abilityData['rotation'] == 1800:
+                    self.abilityData['tick'] = 0
+                    self.abilityData['rotation'] = 0
+                    self.abilityData['active'] = False
+
         if self.stun > 0:
             self.stun -= 1
             return
 
-        if self.timer >= getActualCooldown(self.cooldown):
+        if self.timer >= getActualCooldown(self.x, self.y, self.cooldown):
             try:
                 closest = getTarget(self)
-                explosiveRadius = 30 if self.upgrades[2] >= 1 else 0
-
-                proj = Projectile(self, self.x, self.y, closest.x, closest.y, bossDamage=(25 if self.upgrades[2] == 3 else 1), explosiveRadius=explosiveRadius)
+                proj = Projectile(self, self.x, self.y, closest.x, closest.y, bossDamage=self.bossDamage, explosiveRadius=self.explosiveRadius)
                 proj.move(0)
 
                 try:
@@ -373,8 +395,13 @@ class Turret(Towers):
             self.timer += 1
 
     def update(self):
+        if self.abilityCooldown < self.totalAbilityCooldown:
+            self.abilityCooldown += 1
+
         self.range = [100, 130, 165, 200][self.upgrades[0]]
         self.cooldown = [60, 35, 20, 10][self.upgrades[1]]
+        self.bossDamage = 25 if self.upgrades[2] == 3 else 1
+        self.explosiveRadius = 30 if self.upgrades[2] >= 1 else 0
 
     def getImageFrame(self) -> int:
         return self.rotation
@@ -413,28 +440,40 @@ class IceTower(Towers):
     upgradePrices = [
         [30, 60, 100],
         [30, 50, 85],
-        [30, 50, 75]
+        [30, 50, 75],
+        250
     ]
     upgradeNames = [
         ['Longer Range', 'Extreme Range', 'Ultra Range'],
         ['Lesser Cooldown', 'Snowball Shower', 'Heavy Snowfall'],
-        ['Longer Freeze', 'Snowstorm Circle', 'Ultra Freeze']
+        ['Longer Freeze', 'Snowstorm Circle', 'Ultra Freeze'],
+        'Blizzard'
     ]
     range = 150
     cooldown = 100
     freezeDuration = 20
     snowCircleTimer = 0
+    totalAbilityCooldown = 3000
 
     def __init__(self, x: int, y: int):
         super().__init__(x, y)
         self.snowCircle = self.SnowStormCircle(self, self.x, self.y)
         self.enabled = True
+        self.abilityData = {
+            'active': False
+        }
+        self.abilityCooldown = 0
 
     def draw(self):
         super().draw()
         self.snowCircle.draw()
 
     def attack(self):
+        if self.abilityData['active']:
+            for enemy in info.enemies:
+                enemy.freezeTimer = max(300, enemy.freezeTimer)
+            self.abilityData['active'] = False
+
         if self.stun > 0:
             self.stun -= 1
             return
@@ -442,7 +481,7 @@ class IceTower(Towers):
         if not self.enabled:
             return
 
-        if self.timer >= getActualCooldown(self.cooldown):
+        if self.timer >= getActualCooldown(self.x, self.y, self.cooldown):
             try:
                 closest = getTarget(self)
                 Projectile(self, self.x, self.y, closest.x, closest.y, freezeDuration=self.freezeDuration)
@@ -461,8 +500,10 @@ class IceTower(Towers):
                 self.snowCircleTimer += 1
 
     def update(self):
-        self.snowCircle.update()
+        if self.abilityCooldown < self.totalAbilityCooldown:
+            self.abilityCooldown += 1
 
+        self.snowCircle.update()
         self.range = [150, 180, 200, 250][self.upgrades[0]]
         self.cooldown = [50, 38, 27, 20][self.upgrades[1]]
         self.freezeDuration = [20, 45, 45, 75][self.upgrades[2]]
@@ -470,15 +511,17 @@ class IceTower(Towers):
 
 class SpikeTower(Towers):
     class Spike:
-        def __init__(self, parent, angle: int):
+        def __init__(self, parent, angle: int, pierce: int = 1):
             self.parent = parent
             self.x = self.parent.x
             self.y = self.parent.y
             self.angle = angle
-            self.dx = {0: 0, 45: SIN45, 90: 1, 135: SIN45, 180: 0, 225: -SIN45, 270: -1, 315: -SIN45, 360: 0}[angle]
-            self.dy = {0: -1, 45: -COS45, 90: 0, 135: COS45, 180: 1, 225: COS45, 270: 0, 315: -COS45, 360: -1}[angle]
+            self.dx = SINDEGREES[angle]
+            self.dy = COSDEGREES[angle]
             self.visible = False
             self.ignore = []
+            self.pierce = pierce
+            self.maxPierce = pierce
 
         def move(self):
             if not self.visible or (getTarget(self.parent) is None and [self.x, self.y] == [self.parent.x, self.parent.y]):
@@ -498,7 +541,11 @@ class SpikeTower(Towers):
                     continue
 
                 if abs(enemy.x - self.x) ** 2 + abs(enemy.y - self.y) ** 2 < (484 if enemy.isBoss else 144):
-                    self.visible = False
+                    self.pierce -= 1
+                    if self.pierce <= 0:
+                        self.visible = False
+                        self.pierce = self.maxPierce
+
                     if self.parent.upgrades[2] == 3:
                         enemy.fireTicks = max(enemy.fireTicks, 300)
                         enemy.fireIgnitedBy = self.parent
@@ -526,10 +573,14 @@ class SpikeTower(Towers):
 
             pygame.draw.circle(screen, (0, 0, 0), (self.x, self.y), 2)
 
+        def update(self):
+            self.maxPierce = self.parent.pierce
+
     class Spikes:
         def __init__(self, parent):
             self.parent = parent
             self.spikes = []
+
             for n in range(8):
                 self.spikes.append(SpikeTower.Spike(self.parent, n * 45))
 
@@ -544,6 +595,10 @@ class SpikeTower(Towers):
             for spike in self.spikes:
                 spike.draw()
 
+        def update(self):
+            for spike in self.spikes:
+                spike.update()
+
     name = 'Spike Tower'
     imageName = 'spike_tower.png'
     color = (224, 17, 95)
@@ -552,20 +607,29 @@ class SpikeTower(Towers):
     upgradePrices = [
         [50, 150, 250],
         [100, 500, 2500],
-        [100, 125, 200]
+        [100, 125, 200],
+        5000
     ]
     upgradeNames = [
         ['Fast Spikes', 'Hyperspeed Spikes', 'Bullet-like Speed'],
         ['Shorter Cooldown', 'Super Reloading', 'Hyper Reloading'],
-        ['Double Damage', 'Lead-pierce', 'Burning Spikes']
+        ['Double Damage', 'Lead-pierce', 'Burning Spikes'],
+        'Sharper Spikes'
     ]
     range = 50
     projectileSpeed = 1
     cooldown = 100
+    pierce = 1
+    totalAbilityCooldown = 3000
 
     def __init__(self, x: int, y: int):
         super().__init__(x, y)
         self.spikes = SpikeTower.Spikes(self)
+        self.abilityData = {
+            'active': True,
+            'ticks': 0
+        }
+        self.abilityCooldown = 0
 
     def draw(self):
         self.spikes.drawSpikes()
@@ -579,7 +643,7 @@ class SpikeTower(Towers):
         if True in [s.visible for s in self.spikes.spikes]:
             self.spikes.moveSpikes()
 
-        elif self.timer >= getActualCooldown(self.cooldown):
+        elif self.timer >= getActualCooldown(self.x, self.y, self.cooldown):
             for spike in self.spikes.spikes:
                 spike.visible = True
                 spike.x = self.x
@@ -591,6 +655,18 @@ class SpikeTower(Towers):
             self.timer += 1
 
     def update(self):
+        if self.abilityCooldown < self.totalAbilityCooldown:
+            self.abilityCooldown += 1
+
+        if self.abilityData['active']:
+            if self.abilityData['ticks'] <= 750:
+                self.abilityData['ticks'] += 1
+                self.pierce = 3
+            else:
+                self.abilityData['ticks'] = 0
+                self.abilityData['active'] = False
+                self.pierce = 1
+
         self.projectileSpeed = [1, 1.5, 2.2, 3][self.upgrades[0]]
         self.cooldown = [100, 35, 10, 5][self.upgrades[1]]
 
@@ -604,35 +680,63 @@ class BombTower(Towers):
     upgradePrices = [
         [30, 50, 75],
         [20, 35, 50],
-        [75, 100, 125]
+        [75, 100, 125],
+        1000
     ]
     upgradeNames = [
         ['Longer Range', 'Extra Range', 'Ultra Range'],
         ['More Bombs', 'Heavy Fire', 'Twin-Fire'],
-        ['Larger Explosions', 'Burning Bombs', '2x Impact Damage']
+        ['Larger Explosions', 'Burning Bombs', '2x Impact Damage'],
+        'Enemy Incineration'
     ]
     range = 50
     cooldown = 200
+    explosionRadius = 30
+    fireTicks = 0
+    impactDamage = 1
+    totalAbilityCooldown = 4500
 
     def __init__(self, x: int, y: int):
         super().__init__(x, y)
+        self.abilityData = {
+            'active': False,
+            'ticks': 0
+        }
+        self.abilityCooldown = 0
 
     def attack(self):
+        if self.abilityData['active']:
+            if self.abilityData['ticks'] == 0:
+                for enemy in info.enemies:
+                    if abs(enemy.x - self.x) ** 2 + abs(enemy.y - self.y) ** 2 <= self.range ** 2:
+                        enemy.kill(coinMultiplier=getCoinMultiplier(self), bossDamage=50, ignoreRegularEnemyHealth=True)
+                for enemy in info.enemies:
+                    if abs(enemy.x - self.x) ** 2 + abs(enemy.y - self.y) ** 2 <= self.range ** 2:
+                        enemy.kill(coinMultiplier=getCoinMultiplier(self), bossDamage=50, ignoreRegularEnemyHealth=True)
+                for enemy in info.enemies:
+                    if abs(enemy.x - self.x) ** 2 + abs(enemy.y - self.y) ** 2 <= self.range ** 2:
+                        enemy.kill(coinMultiplier=getCoinMultiplier(self), bossDamage=50, ignoreRegularEnemyHealth=True)
+
+                self.abilityData['ticks'] = 1
+
+            elif self.abilityData['ticks'] <= 100:
+                self.abilityData['ticks'] += 1
+
+            else:
+                self.abilityData['ticks'] = 0
+                self.abilityData['active'] = False
+
         if self.stun > 0:
             self.stun -= 1
             return
 
-        if self.timer >= getActualCooldown(self.cooldown):
+        if self.timer >= getActualCooldown(self.x, self.y, self.cooldown):
             try:
-                explosionRadius = 60 if self.upgrades[2] >= 1 else 30
-                fireTicks = 200 if self.upgrades[2] >= 2 else 0
-                impactDamage = 2 if self.upgrades[2] == 3 else 1
-
                 closest = getTarget(self)
 
-                Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=explosionRadius, impactDamage=impactDamage, fireTicks=fireTicks)
+                Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=self.explosionRadius, impactDamage=self.impactDamage, fireTicks=self.fireTicks)
                 if self.upgrades[1] == 3:
-                    twin = Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=explosionRadius, impactDamage=impactDamage, fireTicks=fireTicks)
+                    twin = Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=self.explosionRadius, impactDamage=self.impactDamage, fireTicks=self.fireTicks)
                     for n in range(5):
                         twin.move()
 
@@ -644,8 +748,19 @@ class BombTower(Towers):
             self.timer += 1
 
     def update(self):
+        if self.abilityCooldown < self.totalAbilityCooldown:
+            self.abilityCooldown += 1
+
         self.range = [50, 100, 150, 200][self.upgrades[0]]
         self.cooldown = [100, 50, 25, 25][self.upgrades[1]]
+        self.explosionRadius = 60 if self.upgrades[2] >= 1 else 30
+        self.fireTicks = 200 if self.upgrades[2] >= 2 else 0
+        self.impactDamage = 2 if self.upgrades[2] == 3 else 1
+
+    def draw(self):
+        super().draw()
+        if self.abilityData['active']:
+            centredBlit(explosionImages[possibleRanges.index(self.range)], (self.x, self.y))
 
 
 class BananaFarm(Towers):
@@ -657,18 +772,25 @@ class BananaFarm(Towers):
     upgradePrices = [
         [30, 50, 65],
         [30, 45, 60],
-        [50, 150, 300]
+        [50, 150, 300],
+        1000
     ]
     upgradeNames = [
         ['Banana Cannon', 'More Banana Shots', 'Super Range'],
         ['Increased Income', 'Money Farm', 'Money Factory'],
-        ['25% More Coins', '50% More Coins', 'Double Coins']
+        ['25% More Coins', '50% More Coins', 'Double Coins'],
+        'Backup Cash'
     ]
     range = 100
     cooldown = 0
+    totalAbilityCooldown = 4500
 
     def __init__(self, x: int, y: int):
         super().__init__(x, y)
+        self.abilityData = {
+            'active': False
+        }
+        self.abilityCooldown = 0
 
     def attack(self):
         if self.stun > 0:
@@ -676,7 +798,7 @@ class BananaFarm(Towers):
             return
 
         if self.upgrades[0] >= 1:
-            if self.timer >= getActualCooldown(self.cooldown):
+            if self.timer >= getActualCooldown(self.x, self.y, self.cooldown):
                 try:
                     closest = getTarget(self)
                     Projectile(self, self.x, self.y, closest.x, closest.y)
@@ -688,6 +810,13 @@ class BananaFarm(Towers):
                 self.timer += 1
 
     def update(self):
+        if self.abilityCooldown < self.totalAbilityCooldown:
+            self.abilityCooldown += 1
+
+        if self.abilityData['active']:
+            info.coins += random.randint(1000, 5000)
+            self.abilityData['active'] = False
+
         self.cooldown = [0, 50, 25, 25][self.upgrades[0]]
         if self.upgrades[0] == 3:
             self.range = 150
@@ -702,26 +831,41 @@ class Bowler(Towers):
     upgradePrices = [
         [20, 40, 60],
         [20, 50, 100],
-        [50, 100, 200]
+        [50, 100, 200],
+        500
     ]
     upgradeNames = [
         ['Faster Rocks', 'Double Damage', 'Snipe'],
         ['More Rocks', 'Double Rocks', 'Infini-Rocks'],
-        ['5 Enemies Pierce', '20 Enemies Pierce', '50 Enemies Pierce']
+        ['5 Enemies Pierce', '20 Enemies Pierce', '50 Enemies Pierce'],
+        'Damage Buff'
     ]
     range = 0
     cooldown = 300
     pierce = 3
+    totalAbilityCooldown = 4500
 
     def __init__(self, x: int, y: int):
         super().__init__(x, y)
+        self.abilityData = {
+            'active': False,
+            'ticks': 0
+        }
+        self.abilityCooldown = 0
 
     def attack(self):
+        if self.abilityData['active']:
+            if self.abilityData['ticks'] <= 500:
+                self.abilityData['ticks'] += 1
+            else:
+                self.abilityData['active'] = False
+                self.abilityData['ticks'] = 0
+
         if self.stun > 0:
             self.stun -= 1
             return
 
-        if self.timer >= getActualCooldown(self.cooldown):
+        if self.timer >= getActualCooldown(self.x, self.y, self.cooldown):
             try:
                 for direction in ['left', 'right', 'up', 'down']:
                     PiercingProjectile(self, self.x, self.y, self.pierce, direction)
@@ -733,6 +877,9 @@ class Bowler(Towers):
             self.timer += 1
 
     def update(self):
+        if self.abilityCooldown < self.totalAbilityCooldown:
+            self.abilityCooldown += 1
+
         self.cooldown = [300, 200, 150, 100][self.upgrades[1]]
         self.pierce = [3, 5, 20, 50][self.upgrades[2]]
 
@@ -826,21 +973,28 @@ class Wizard(Towers):
     upgradePrices = [
         [30, 60, 150],
         [75, 95, 150],
-        [50, 65, 90]
+        [50, 65, 90],
+        500
     ]
     upgradeNames = [
         ['Longer Range', 'Extreme Range', 'Magic Healing'],
         ['Lighning Zap', 'Wisdom of Camo', '5-hit Lightning'],
-        ['Big Blast Radius', 'Faster Reload', 'Hyper Reload']
+        ['Big Blast Radius', 'Faster Reload', 'Hyper Reload'],
+        'Mega Heal'
     ]
     range = 125
     cooldown = 100
+    totalAbilityCooldown = 7500
 
     def __init__(self, x: int, y: int):
         super().__init__(x, y)
         self.lightning = self.LightningBolt(self)
         self.lightningTimer = 0
         self.healTimer = 0
+        self.abilityData = {
+            'active': False
+        }
+        self.abilityCooldown = 0
 
     def draw(self):
         super().draw()
@@ -851,7 +1005,7 @@ class Wizard(Towers):
             self.stun -= 1
             return
 
-        if self.timer >= getActualCooldown(self.cooldown):
+        if self.timer >= getActualCooldown(self.x, self.y, self.cooldown):
             try:
                 closest = getTarget(self)
                 Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=60 if self.upgrades[2] else 30)
@@ -867,12 +1021,19 @@ class Wizard(Towers):
             self.lightningTimer += 1
 
     def update(self):
+        if self.abilityCooldown < self.totalAbilityCooldown:
+            self.abilityCooldown += 1
+
         if self.upgrades[0] == 3:
             if self.healTimer >= 1000 and info.HP < 250:
                 info.HP += 1
                 self.healTimer = 0
             else:
                 self.healTimer += 1
+
+        if self.abilityData['active']:
+            self.abilityData['active'] = False
+            info.HP = min(300, info.HP + 25)
 
         self.range = [125, 150, 175, 175][self.upgrades[0]]
         self.cooldown = [50, 50, 33, 16][self.upgrades[2]]
@@ -922,36 +1083,56 @@ class InfernoTower(Towers):
     upgradePrices = [
         [100, 200, 350],
         [120, 175, 250],
-        [150, 200, 275]
+        [150, 200, 275],
+        1000
     ]
     upgradeNames = [
         ['Longer Range', 'Extreme Range', 'Ultra Range'],
         ['Shortened Cooldown', 'More Infernoes', 'Hyper Infernoes'],
-        ['Longer Burning', 'Firey Stun', 'Longer Stun']
+        ['Longer Burning', 'Firey Stun', 'Longer Stun'],
+        'Strong Shock Wave'
     ]
     range = 100
     cooldown = 500
+    totalAbilityCooldown = 6000
 
     def __init__(self, x: int, y: int):
         super().__init__(x, y)
         self.inferno = self.Inferno(self)
+        self.abilityData = {
+            'active': False
+        }
+        self.abilityCooldown = 0
 
     def draw(self):
         self.inferno.draw()
         super().draw()
 
     def attack(self):
+        if self.abilityData['active']:
+            for enemy in info.enemies:
+                if abs(enemy.x - self.x) ** 2 + abs(enemy.y - self.y) ** 2 <= self.range ** 2:
+                    enemy.freezeTimer = max(enemy.freezeTimer, 1000)
+                    self.inferno.renders.append(self.AttackRender(self, enemy))
+                    enemy.fireTicks = max(enemy.fireTicks, (500 if self.parent.upgrades[2] else 300))
+                    enemy.fireIgnitedBy = self.parent
+
+            self.abilityData['active'] = False
+
         if self.stun > 0:
             self.stun -= 1
             return
 
-        if self.timer >= getActualCooldown(self.cooldown):
+        if self.timer >= getActualCooldown(self.x, self.y, self.cooldown):
             self.inferno.attack()
             self.timer = 0
         else:
             self.timer += 1
 
     def update(self):
+        if self.abilityCooldown < self.totalAbilityCooldown:
+            self.abilityCooldown += 1
+
         self.range = [100, 125, 160, 200][self.upgrades[0]]
         self.cooldown = [500, 375, 250, 200][self.upgrades[1]]
 
@@ -1043,20 +1224,28 @@ class Village(Towers):
     upgradePrices = [
         [120, 150, 200],
         [100, 125, 175],
-        [50, 75, 100]
+        [50, 75, 100],
+        1000
     ]
     upgradeNames = [
         ['Anti-Camo', 'Bomber Villagers', 'Turret Villagers'],
         ['Longer Range', 'Extreme Range', 'Ultra Range'],
-        ['Two Villagers', 'Three Villagers', 'Four Villagers']
+        ['Two Villagers', 'Three Villagers', 'Four Villagers'],
+        'Double Reload Speed'
     ]
     range = 100
     cooldown = 100
+    totalAbilityCooldown = 7500
 
     def __init__(self, x: int, y: int):
         super().__init__(x, y)
         self.villagers = [self.Villager(self)]
         self.targets = []
+        self.abilityData = {
+            'active': False,
+            'ticks': 0
+        }
+        self.abilityCooldown = 0
 
     def draw(self):
         for villager in self.villagers:
@@ -1065,13 +1254,23 @@ class Village(Towers):
 
     def attack(self):
         for villager in self.villagers:
-            if villager.timer >= getActualCooldown(self.cooldown):
+            if villager.timer >= getActualCooldown(self.x, self.y, self.cooldown):
                 villager.attack()
                 villager.timer = 0
             else:
                 villager.timer += 1
 
     def update(self):
+        if self.abilityCooldown < self.totalAbilityCooldown:
+            self.abilityCooldown += 1
+
+        if self.abilityData['active']:
+            if self.abilityData['ticks'] <= 1000:
+                self.abilityData['ticks'] += 1
+            else:
+                self.abilityData['ticks'] = 0
+                self.abilityData['active'] = False
+
         self.cooldown = [50, 50, 50, 20][self.upgrades[0]]
         self.range = [100, 125, 150, 175][self.upgrades[1]]
         self.targets = [villager.target for villager in self.villagers]
@@ -1153,6 +1352,9 @@ class Projectile:
 
 class PiercingProjectile:
     def __init__(self, parent: Towers, x: int, y: int, pierceLimit: int, direction: str, *, speed: int = 2, overrideAddToPiercingProjectiles: bool = False):
+        if not overrideAddToPiercingProjectiles:
+            info.piercingProjectiles.append(self)
+
         self.parent = parent
         self.coinMultiplier = getCoinMultiplier(self.parent)
         self.x = x
@@ -1162,8 +1364,11 @@ class PiercingProjectile:
         self.ignore = []
         self.movement = 0
         self.speed = speed
-        if not overrideAddToPiercingProjectiles:
-            info.piercingProjectiles.append(self)
+
+        self.damageMultiplier = 1
+        if type(parent) is Bowler:
+            if parent.abilityData['active']:
+                self.damageMultipler = 2 * self.damageMultiplier
 
     def move(self):
         self.movement += self.speed
@@ -1338,9 +1543,9 @@ class Enemy:
                         damage = 1
                         if type(projectile.parent) is Bowler:
                             if projectile.parent.upgrades[0] == 2:
-                                damage = 2
+                                damage = 2 * projectile.damageMultiplier
                             elif projectile.parent.upgrades[0] == 3:
-                                damage = 2 * (projectile.movement // 100 + 1)
+                                damage = 2 * (projectile.movement // 100 + 1) * projectile.damageMultiplier
 
                         new = self
                         for n in range(damage):
@@ -1388,7 +1593,7 @@ class Enemy:
         if self.regen:
             pygame.draw.circle(screen, (255, 105, 180), (self.x, self.y), 20 if self.isBoss else 10, 2)
 
-    def kill(self, *, spawnNew: bool = True, coinMultiplier: int = 1, ignoreBoss: bool = False, burn: bool = False, bossDamage: int = 1, overrideRuneColor: Tuple[int] = None):
+    def kill(self, *, spawnNew: bool = True, coinMultiplier: int = 1, ignoreBoss: bool = False, burn: bool = False, bossDamage: int = 1, overrideRuneColor: Tuple[int] = None, ignoreRegularEnemyHealth: bool = False):
         if self.isBoss:
             if ignoreBoss:
                 try:
@@ -1415,9 +1620,10 @@ class Enemy:
                     return self
 
         else:
-            if self.HP > 1:
-                self.HP -= 1
-                return self
+            if not ignoreRegularEnemyHealth:
+                if self.HP > 1:
+                    self.HP -= 1
+                    return self
 
             try:
                 info.enemies.remove(self)
@@ -1500,6 +1706,9 @@ def getSellPrice(tower: Towers) -> float:
     for n in range(3):
         for m in range(tower.upgrades[n]):
             price += tower.upgradePrices[n][m]
+
+    if tower.upgrades[3]:
+        price += tower.upgradePrices[3]
 
     return price * 0.8
 
@@ -1702,18 +1911,6 @@ def draw() -> None:
     RuneEffects.draw()
     PowerUps.draw()
 
-    for tower in info.towers:
-        tower.draw()
-
-    for enemy in info.enemies:
-        enemy.draw()
-
-    for projectile in info.projectiles:
-        projectile.draw()
-
-    for projectile in info.piercingProjectiles:
-        projectile.draw()
-
     if info.selected is not None:
         if info.selected.range in possibleRanges:
             modified = rangeImages[possibleRanges.index(info.selected.range)]
@@ -1744,7 +1941,7 @@ def draw() -> None:
                             continue
 
                         if abs(tower.x - mx) ** 2 + abs(tower.y - my) ** 2 < classObj.range ** 2:
-                            pygame.draw.circle(screen, classObj.color, (tower.x, tower.y), 17, 2)
+                            pygame.draw.circle(screen, classObj.color, (tower.x, tower.y), 17, 5)
 
                 if towerImages[classObj.name] is not None:
                     try:
@@ -1761,6 +1958,18 @@ def draw() -> None:
                     modified = original.copy()
                     modified.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
                 screen.blit(modified, (mx - classObj.range, my - classObj.range))
+
+    for tower in info.towers:
+        tower.draw()
+
+    for enemy in info.enemies:
+        enemy.draw()
+
+    for projectile in info.projectiles:
+        projectile.draw()
+
+    for projectile in info.piercingProjectiles:
+        projectile.draw()
 
     pygame.draw.rect(screen, (221, 221, 221), (800, 0, 200, 450))
 
@@ -1795,7 +2004,7 @@ def draw() -> None:
 
     leftAlignPrint(font, f'FPS: {round(clock.get_fps(), 1)}', (10, 525))
     leftAlignPrint(font, str(info.HP), (10, 500))
-    screen.blit(healthImage, (font.size(str(info.HP))[0] + 17, 493))
+    screen.blit(healthImage if info.HP <= 250 else goldenHealthImage, (font.size(str(info.HP))[0] + 17, 493))
     leftAlignPrint(font, f'Coins: {math.floor(info.coins)}', (10, 550))
     leftAlignPrint(font, f'Wave {max(info.wave, 1)} of {len(waves)}', (10, 575))
 
@@ -1859,33 +2068,53 @@ def draw() -> None:
         leftAlignPrint(font, 'Upgrades:', (200, 497))
         leftAlignPrint(font, f'Pops: {info.selected.hits}', (200, 470))
 
-        for n in range(3):
-            if 295 <= mx <= 595 and 485 + 30 * n <= my <= 515 + 30 * n:
-                pygame.draw.rect(screen, (200, 200, 200), (295, 485 + 30 * n, 300, 30))
+        if info.selected.upgrades[0] == info.selected.upgrades[1] == info.selected.upgrades[2] == 3:
+            if info.selected.upgrades[3]:
+                if 295 <= my <= 595 and 485 <= my <= 605:
+                    pygame.draw.rect(screen, (255, 255, 225), (295, 485, 300, 90))
+                else:
+                    pygame.draw.rect(screen, (255, 255, 191), (295, 485, 300, 90))
+                pygame.draw.rect(screen, (0, 0, 0), (295, 485, 300, 90), 3)
+
+                leftAlignPrint(font, f'{info.selected.upgradeNames[3]}', (300, 500))
+                if info.selected.abilityCooldown >= info.selected.totalAbilityCooldown:
+                    centredPrint(font, 'Click to use!', (445, 530))
+                else:
+                    centredPrint(font, f'On cooldown for {math.ceil((info.selected.totalAbilityCooldown - info.selected.abilityCooldown) / 100)}s', (445, 530))
             else:
-                pygame.draw.rect(screen, (128, 128, 128), (295, 485 + 30 * n, 300, 30))
+                if 295 <= my <= 595 and 485 <= my <= 605:
+                    pygame.draw.rect(screen, (200, 200, 200), (295, 485, 300, 90))
+                else:
+                    pygame.draw.rect(screen, (128, 128, 128), (295, 485, 300, 90))
+                pygame.draw.rect(screen, (0, 0, 0), (295, 485, 300, 90), 3)
 
-            if info.selected.upgrades[n] == 3:
-                pygame.draw.rect(screen, (255, 255, 191), (295, 485 + 30 * n, 300, 30))
+                leftAlignPrint(font, f'{info.selected.upgradeNames[3]} [${info.selected.upgradePrices[3]}]', (300, 500))
+
+        else:
+            for n in range(3):
+                if 295 <= mx <= 595 and 485 + 30 * n <= my <= 515 + 30 * n:
+                    pygame.draw.rect(screen, (200, 200, 200), (295, 485 + 30 * n, 300, 30))
+                else:
+                    pygame.draw.rect(screen, (128, 128, 128), (295, 485 + 30 * n, 300, 30))
+
+                if info.selected.upgrades[n] == 3:
+                    pygame.draw.rect(screen, (255, 255, 191), (295, 485 + 30 * n, 300, 30))
+                    centredPrint(font, 'MAX', (445, 500 + 30 * n))
+                else:
+                    leftAlignPrint(font, f'{info.selected.upgradeNames[n][info.selected.upgrades[n]]} [${info.selected.upgradePrices[n][info.selected.upgrades[n]]}]', (300, 500 + n * 30), (32, 32, 32))
+
                 pygame.draw.rect(screen, (0, 0, 0), (295, 485 + 30 * n, 300, 30), 3)
-                centredPrint(font, 'MAX', (445, 500 + 30 * n))
-            else:
-                pygame.draw.rect(screen, (0, 0, 0), (295, 485 + 30 * n, 300, 30), 3)
 
-                leftAlignPrint(font, f'{info.selected.upgradeNames[n][info.selected.upgrades[n]]} [${info.selected.upgradePrices[n][info.selected.upgrades[n]]}]', (300, 500 + n * 30), (32, 32, 32))
-
-            for m in range(3):
-                if info.selected.upgrades[n] > m:
-                    pygame.draw.circle(screen, (0, 255, 0), (560 + 12 * m, 497 + 30 * n), 5)
-                pygame.draw.circle(screen, (0, 0, 0), (560 + 12 * m, 497 + 30 * n), 5, 2)
+                for m in range(3):
+                    if info.selected.upgrades[n] > m:
+                        pygame.draw.circle(screen, (0, 255, 0), (560 + 12 * m, 497 + 30 * n), 5)
+                    pygame.draw.circle(screen, (0, 0, 0), (560 + 12 * m, 497 + 30 * n), 5, 2)
 
         pygame.draw.rect(screen, (128, 128, 128), (620, 545, 150, 25))
-
         if 620 < mx < 820 and 545 < my < 570:
             pygame.draw.rect(screen, (200, 200, 200), (620, 545, 150, 25), 3)
         else:
             pygame.draw.rect(screen, (0, 0, 0), (620, 545, 150, 25), 3)
-
         centredPrint(font, f'Sell: ${round(getSellPrice(info.selected))}', (695, 557))
 
         if type(info.selected) is IceTower:
@@ -1948,11 +2177,22 @@ def getClosestPoint(mx: int, my: int, *, sx: int = None, sy: int = None) -> Tupl
     return closestTuple
 
 
-def getActualCooldown(originalCooldown: int) -> int:
+def getActualCooldown(x: int, y: int, originalCooldown: int) -> int:
+    cooldown = originalCooldown
+
     if info.doubleReloadTicks > 0:
-        return originalCooldown // 2
-    else:
-        return originalCooldown
+        cooldown /= 2
+
+    foundVillageWithAbility = False
+    for tower in info.towers:
+        if type(tower) is Village and abs(tower.x - x) ** 2 + abs(tower.y - y) ** 2 <= tower.range ** 2:
+            if tower.abilityData['active']:
+                foundVillageWithAbility = True
+
+    if foundVillageWithAbility:
+        cooldown /= 2
+
+    return math.floor(cooldown)
 
 
 def updateDict(d: dict, l: list) -> dict:
@@ -3209,22 +3449,22 @@ def app() -> None:
                                 t1 = getTarget(Towers(0, 0, overrideAddToTowers=True), overrideRange=1000, ignoreBosses=True)
                                 if t1 is not None:
                                     t2 = getTarget(Towers(0, 0, overrideAddToTowers=True), ignore=[t1], overrideRange=1000, ignoreBosses=True)
-                                    t1.kill(spawnNew=False)
+                                    t1.kill(spawnNew=False, ignoreRegularEnemyHealth=True)
                                     PowerUps.objects.append(PhysicalPowerUp.Lightning(t1.x, t1.y, PowerUps))
                                     if t2 is not None:
                                         t3 = getTarget(Towers(0, 0, overrideAddToTowers=True), ignore=[t1, t2], overrideRange=1000, ignoreBosses=True)
-                                        t2.kill(spawnNew=False)
+                                        t2.kill(spawnNew=False, ignoreRegularEnemyHealth=True)
                                         PowerUps.objects.append(PhysicalPowerUp.Lightning(t2.x, t2.y, PowerUps))
                                         if t3 is not None:
                                             t4 = getTarget(Towers(0, 0, overrideAddToTowers=True), ignore=[t1, t2, t3], overrideRange=1000, ignoreBosses=True)
-                                            t3.kill(spawnNew=False)
+                                            t3.kill(spawnNew=False, ignoreRegularEnemyHealth=True)
                                             PowerUps.objects.append(PhysicalPowerUp.Lightning(t3.x, t3.y, PowerUps))
                                             if t4 is not None:
                                                 t5 = getTarget(Towers(0, 0, overrideAddToTowers=True), ignore=[t1, t2, t3, t4], overrideRange=1000, ignoreBosses=True)
-                                                t4.kill(spawnNew=False)
+                                                t4.kill(spawnNew=False, ignoreRegularEnemyHealth=True)
                                                 PowerUps.objects.append(PhysicalPowerUp.Lightning(t4.x, t4.y, PowerUps))
                                                 if t5 is not None:
-                                                    t5.kill(spawnNew=False)
+                                                    t5.kill(spawnNew=False, ignoreRegularEnemyHealth=True)
                                                     PowerUps.objects.append(PhysicalPowerUp.Lightning(t5.x, t5.y, PowerUps))
 
                                     if not info.sandboxMode:
@@ -3265,13 +3505,26 @@ def app() -> None:
 
                         if issubclass(type(info.selected), Towers):
                             if 295 <= mx <= 595 and 485 <= my <= 570:
-                                n = (my - 485) // 30
-                                if info.selected.upgrades[n] < 3:
-                                    cost = type(info.selected).upgradePrices[n][info.selected.upgrades[n]]
-                                    if info.coins >= cost and (info.wave >= info.selected.req or info.sandboxMode):
-                                        info.coins -= cost
-                                        info.statistics['coinsSpent'] += cost
-                                        info.selected.upgrades[n] += 1
+                                if info.selected.upgrades[0] == info.selected.upgrades[1] == info.selected.upgrades[2] == 3:
+                                    if info.selected.upgrades[3]:
+                                        if info.selected.abilityCooldown >= info.selected.totalAbilityCooldown:
+                                            info.selected.abilityCooldown = 0
+                                            info.selected.abilityData['active'] = True
+                                    else:
+                                        cost = type(info.selected).upgradePrices[3]
+                                        if info.coins >= cost and (info.wave >= info.selected.req or info.sandboxMode):
+                                            info.coins -= cost
+                                            info.statistics['coinsSpent'] += cost
+                                            info.selected.upgrades[3] = True
+
+                                else:
+                                    n = (my - 485) // 30
+                                    if info.selected.upgrades[n] < 3:
+                                        cost = type(info.selected).upgradePrices[n][info.selected.upgrades[n]]
+                                        if info.coins >= cost and (info.wave >= info.selected.req or info.sandboxMode):
+                                            info.coins -= cost
+                                            info.statistics['coinsSpent'] += cost
+                                            info.selected.upgrades[n] += 1
 
                             elif 620 <= mx < 770 and 545 <= my < 570:
                                 info.towers.remove(info.selected)
@@ -3459,13 +3712,19 @@ powerUps = {
 IceCircle = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'ice_circle.png')), (250, 250)).copy()
 IceCircle.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
 
-rangeImages = []
 possibleRanges = [0, 50, 100, 125, 130, 150, 160, 165, 175, 180, 200, 250, 400]
+rangeImages = []
+explosionImages = []
 for possibleRange in possibleRanges:
     rangeImage = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'range.png')), (possibleRange * 2, possibleRange * 2))
-    alphaImage = rangeImage.copy()
-    alphaImage.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
-    rangeImages.append(alphaImage)
+    alphaRangeImage = rangeImage.copy()
+    alphaRangeImage.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
+    rangeImages.append(alphaRangeImage)
+
+    explosionImage = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'explosion.png')), (possibleRange * 2, possibleRange * 2))
+    alphaExplosionImage = explosionImage.copy()
+    alphaExplosionImage.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
+    explosionImages.append(alphaExplosionImage)
 
 towerImages = {}
 for towerType in Towers.__subclasses__():
@@ -3493,7 +3752,8 @@ for towerType in Towers.__subclasses__():
     except FileNotFoundError:
         towerImages[towerType.name] = None
 
-healthImage = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'heart.png')), (16, 16))
+healthImage = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'heart_0.png')), (16, 16))
+goldenHealthImage = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'heart_1.png')), (16, 16))
 tokenImage = pygame.image.load(os.path.join(resource_path, 'token.png'))
 
 info = data()

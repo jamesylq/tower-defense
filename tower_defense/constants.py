@@ -161,9 +161,78 @@ freezeImmune = ['E']
 
 # Math Constants
 SQRT2 = math.sqrt(2)
+SQRT3 = math.sqrt(3)
 RECIPROCALSQRT2 = 1 / SQRT2
+
+SIN0 = 0
+SIN30 = 0.5
 SIN45 = SQRT2 / 2
+SIN60 = SQRT3 / 2
+SIN90 = 1
+SIN120 = SIN60
+SIN135 = SIN45
+SIN150 = 0.5
+SIN180 = 0
+SIN210 = -0.5
+SIN225 = -SIN135
+SIN240 = -SIN120
+SIN270 = -1
+SIN300 = SIN240
+SIN315 = SIN225
+SIN330 = -0.5
+SINDEGREES = {
+    0: SIN0,
+    30: SIN30,
+    45: SIN45,
+    60: SIN60,
+    90: SIN90,
+    120: SIN120,
+    135: SIN135,
+    150: SIN150,
+    180: SIN180,
+    210: SIN210,
+    225: SIN225,
+    240: SIN240,
+    270: SIN270,
+    300: SIN300,
+    315: SIN315,
+    330: SIN330
+}
+
+COS0 = 1
+COS30 = SQRT3 / 2
 COS45 = SQRT2 / 2
+COS60 = 0.5
+COS90 = 0
+COS120 = -0.5
+COS135 = -COS45
+COS150 = -COS30
+COS180 = -1
+COS210 = COS150
+COS225 = COS135
+COS240 = -0.5
+COS270 = 0
+COS300 = 0.5
+COS315 = -COS225
+COS330 = -COS210
+COSDEGREES = {
+    0: COS0,
+    30: COS30,
+    45: COS45,
+    60: COS60,
+    90: COS90,
+    120: COS120,
+    135: COS135,
+    150: COS150,
+    180: COS180,
+    210: COS210,
+    225: COS225,
+    240: COS240,
+    270: COS270,
+    300: COS300,
+    315: COS315,
+    330: COS330
+}
 
 # Misc. Constants
 rainbowColors = [[255, 0, 0], [0, 127, 0], [255, 255, 0], [0, 255, 0], [0, 0, 255], [46, 43, 95], [139, 0, 255]]
