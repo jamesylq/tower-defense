@@ -2381,8 +2381,10 @@ def app() -> None:
                             pygame.draw.rect(screen, (0, 0, 0), (10, 40 * n + 60 - scroll, 825, 30), 3)
 
                         leftAlignPrint(font, Map.name.upper(), (20, 74 + n * 40 - scroll))
-                        if info.PBs[Map.name] == 250:
-                            centredPrint(font, f'[Best: 250]', (900, 74 + n * 40 - scroll), (225, 225, 0))
+                        if info.PBs[Map.name] == 300:
+                            centredPrint(font, '[Best: 300]', (900, 74 + n * 40 - scroll), (189, 22, 44))
+                        elif info.PBs[Map.name] >= 250:
+                            centredPrint(font, f'[Best: {info.PBs[Map.name]}]', (900, 74 + n * 40 - scroll), (225, 225, 0))
                         else:
                             centredPrint(font, f'[Best: {info.PBs[Map.name]}]', (900, 74 + n * 40 - scroll))
 
