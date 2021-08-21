@@ -342,17 +342,18 @@ class Turret(Towers):
 
     def attack(self):
         if self.abilityData['active']:
-            if self.abilityData['tick'] <= 3:
+            if self.abilityData['tick'] <= 5:
                 self.abilityData['tick'] += 1
             else:
                 self.abilityData['tick'] = 0
-                tx = self.x + 1000 * SINDEGREES[self.abilityData['rotation'] % 360]
-                ty = self.y + 1000 * COSDEGREES[self.abilityData['rotation'] % 360]
-                Projectile(self, self.x, self.y, tx, ty, bossDamage=self.bossDamage, explosiveRadius=self.explosiveRadius)
+
+                for n in range(2):
+                    tx = self.x + 1000 * SINDEGREES[(self.abilityData['rotation'] + n * 180) % 360]
+                    ty = self.y + 1000 * COSDEGREES[(self.abilityData['rotation'] + n * 180) % 360]
+                    Projectile(self, self.x, self.y, tx, ty, bossDamage=self.bossDamage, explosiveRadius=self.explosiveRadius)
 
                 self.abilityData['rotation'] += 30
                 if self.abilityData['rotation'] == 1800:
-                    self.abilityData['tick'] = 0
                     self.abilityData['rotation'] = 0
                     self.abilityData['active'] = False
 
@@ -2383,7 +2384,7 @@ def app() -> None:
                         leftAlignPrint(font, Map.name.upper(), (20, 74 + n * 40 - scroll))
                         try:
                             if info.PBs[Map.name] == 300:
-                                centredPrint(font, '[Best: 300]', (900, 74 + n * 40 - scroll), (189, 22, 44))
+                                centredPrint(font, '[Best: 300]', (900, 74 + n * 40 - scroll), (100, 0, 0))
                             elif info.PBs[Map.name] >= 250:
                                 centredPrint(font, f'[Best: {info.PBs[Map.name]}]', (900, 74 + n * 40 - scroll), (225, 225, 0))
                             else:
