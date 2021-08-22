@@ -7,6 +7,7 @@ import pickle
 import random
 
 from typing import *
+from tkinter import Tk, filedialog
 from _pickle import UnpicklingError
 from tower_defense import __version__
 from tower_defense.constants import *
@@ -264,7 +265,7 @@ class data:
                 setattr(self, attr, default)
 
     def reset(self):
-        for attr in ['enemies', 'projectiles', 'piercingProjectiles', 'towers', 'HP', 'coins', 'selected', 'placing', 'nextWave', 'wave', 'shopScroll', 'spawnleft', 'spawndelay', 'ticksSinceNoEnemies']:
+        for attr in gameAttrs:
             default = defaults[attr]
 
             if type(default) in [dict, list]:
@@ -2148,7 +2149,10 @@ def draw() -> None:
     if info.sandboxMode:
         leftAlignPrint(font, 'Coins: ∞', (10, 550))
     else:
-        leftAlignPrint(font, f'Coins: {math.floor(info.coins)}', (10, 550))
+        try:
+            leftAlignPrint(font, f'Coins: {math.floor(info.coins)}', (10, 550))
+        except OverflowError:
+            info.sandboxMode = True
     leftAlignPrint(font, f'Wave {max(info.wave, 1)} of {len(waves)}', (10, 575))
 
     pygame.draw.rect(screen, (200, 200, 200), (810, 460, 50, 50))
@@ -2482,6 +2486,17 @@ def load() -> None:
         pass
 
 
+def loadGame(filename: str):
+    global info
+
+    game = pickle.load(open(filename, 'rb'))
+    for attr in gameAttrs:
+        setattr(info, attr, getattr(game, attr))
+
+    info.status = 'game'
+    info.Map = game.Map
+
+
 # Main
 def app() -> None:
     load()
@@ -2617,6 +2632,13 @@ def app() -> None:
                 else:
                     pygame.draw.rect(screen, (0, 0, 0), (825, 510, 150, 30), 3)
 
+                pygame.draw.rect(screen, (200, 200, 200), (525, 550, 125, 30))
+                centredPrint(font, 'Load', (587, 565))
+                if 525 <= mx <= 650 and 550 < my <= 580:
+                    pygame.draw.rect(screen, (128, 128, 128), (525, 550, 125, 30), 5)
+                else:
+                    pygame.draw.rect(screen, (0, 0, 0), (525, 550, 125, 30), 3)
+
                 pygame.draw.rect(screen, (200, 200, 200), (675, 550, 125, 30))
                 centredPrint(font, 'Stats', (737, 565))
                 if 675 <= mx <= 800 and 550 < my <= 580:
@@ -2695,6 +2717,13 @@ def app() -> None:
                                 info.status = 'cosmetics'
                                 info.newRunes = 0
                                 cont = False
+
+                            if 525 <= mx <= 650 and 550 <= my <= 580:
+                                path = filedialog.askopenfilename()
+                                if type(path) is str:
+                                    loadGame(path)
+                                    print(f'Loaded game from savefile {path}!')
+                                    cont = False
 
                             if 675 <= mx <= 800 and 550 <= my <= 580:
                                 info.status = 'statistics'
@@ -3806,6 +3835,9 @@ screen.fill((200, 200, 200))
 centredPrint(largeFont, f'Tower Defense v{__version__}', (500, 200), (100, 100, 100))
 centredPrint(mediumFont, 'Loading...', (500, 300), (100, 100, 100))
 pygame.display.update()
+
+root = Tk()
+root.withdraw()
 
 defaults = {
     'enemies': [],
