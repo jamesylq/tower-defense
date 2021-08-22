@@ -585,11 +585,16 @@ class SpikeTower(Towers):
             for n in range(8):
                 self.spikes.append(SpikeTower.Spike(self.parent, n * 45))
 
-        def moveSpikes(self):
+        def moveSpikes(self, overrideRange: int = None):
+            if overrideRange is None:
+                towerRange = self.parent.range
+            else:
+                towerRange = overrideRange
+
             for spike in self.spikes:
                 spike.move()
 
-                if abs(spike.x - self.parent.x) ** 2 + abs(spike.y - self.parent.y) ** 2 >= self.parent.range ** 2:
+                if abs(spike.x - self.parent.x) ** 2 + abs(spike.y - self.parent.y) ** 2 >= towerRange ** 2:
                     spike.visible = False
 
         def drawSpikes(self):
@@ -896,36 +901,36 @@ class Wizard(Towers):
             self.t5 = None
             self.visibleTicks = 0
 
-        def attack(self):
+        def attack(self, bossDamage: int = 25):
             self.visibleTicks = 50
             self.t1 = getTarget(Towers(self.parent.x, self.parent.y, overrideCamoDetect=self.parent.upgrades[1] >= 2, overrideAddToTowers=True), overrideRange=1000)
             if type(self.t1) is Enemy:
-                self.t1.kill(coinMultiplier=getCoinMultiplier(self.parent), bossDamage=25)
+                self.t1.kill(coinMultiplier=getCoinMultiplier(self.parent), bossDamage=bossDamage)
                 self.parent.hits += 1
                 info.statistics['pops'] += 1
                 self.t2 = getTarget(Towers(self.t1.x, self.t1.y, overrideCamoDetect=self.parent.upgrades[1] >= 2, overrideAddToTowers=True), ignore=[self.t1], overrideRange=1000)
 
                 if type(self.t2) is Enemy:
-                    self.t2.kill(coinMultiplier=getCoinMultiplier(self.parent), bossDamage=25)
+                    self.t2.kill(coinMultiplier=getCoinMultiplier(self.parent), bossDamage=bossDamage)
                     self.parent.hits += 1
                     info.statistics['pops'] += 1
                     self.t3 = getTarget(Towers(self.t2.x, self.t2.y, overrideCamoDetect=self.parent.upgrades[1] >= 2, overrideAddToTowers=True), ignore=[self.t1, self.t2], overrideRange=1000)
 
                     if type(self.t3) is Enemy:
-                        self.t3.kill(coinMultiplier=getCoinMultiplier(self.parent), bossDamage=25)
+                        self.t3.kill(coinMultiplier=getCoinMultiplier(self.parent), bossDamage=bossDamage)
                         self.parent.hits += 1
                         info.statistics['pops'] += 1
                         if self.parent.upgrades[1] == 3:
                             self.t4 = getTarget(Towers(self.t3.x, self.t3.y, overrideCamoDetect=self.parent.upgrades[1] >= 2, overrideAddToTowers=True), ignore=[self.t1, self.t2, self.t3], overrideRange=1000)
 
                             if type(self.t4) is Enemy:
-                                self.t4.kill(coinMultiplier=getCoinMultiplier(self.parent), bossDamage=25)
+                                self.t4.kill(coinMultiplier=getCoinMultiplier(self.parent), bossDamage=bossDamage)
                                 self.parent.hits += 1
                                 info.statistics['pops'] += 1
                                 self.t5 = getTarget(Towers(self.t4.x, self.t4.y, overrideCamoDetect=self.parent.upgrades[1] >= 2, overrideAddToTowers=True), ignore=[self.t1, self.t2, self.t3, self.t4], overrideRange=1000)
 
                                 if type(self.t5) is Enemy:
-                                    self.t5.kill(coinMultiplier=getCoinMultiplier(self.parent), bossDamage=25)
+                                    self.t5.kill(coinMultiplier=getCoinMultiplier(self.parent), bossDamage=bossDamage)
                                     self.parent.hits += 1
                                     info.statistics['pops'] += 1
                             else:
@@ -1157,12 +1162,17 @@ class Village(Towers):
             self.moveCooldown = 250
             self.timer = 0
 
-        def attack(self):
+        def attack(self, overrideExplosiveRadius: int = None):
             closest = getTarget(Towers(self.x, self.y, overrideAddToTowers=True), overrideRange=self.parent.range)
             if closest is None:
                 self.parent.timer = 100
             else:
-                Projectile(self.parent, self.x, self.y, closest.x, closest.y, explosiveRadius=30 if self.parent.upgrades[0] >= 2 else 0)
+                if overrideExplosiveRadius is not None:
+                    explosiveRadius = overrideExplosiveRadius
+                else:
+                    explosiveRadius = 30 if self.parent.upgrades[0] >= 2 else 0
+
+                Projectile(self.parent, self.x, self.y, closest.x, closest.y, explosiveRadius=explosiveRadius)
 
         def draw(self):
             pygame.draw.circle(screen, (184, 134, 69), (self.x, self.y), 10)
@@ -1226,17 +1236,17 @@ class Village(Towers):
         [120, 150, 200],
         [100, 125, 175],
         [50, 75, 100],
-        1000
+        20000
     ]
     upgradeNames = [
         ['Anti-Camo', 'Bomber Villagers', 'Turret Villagers'],
         ['Longer Range', 'Extreme Range', 'Ultra Range'],
         ['Two Villagers', 'Three Villagers', 'Four Villagers'],
-        'Double Reload Speed'
+        'Elemental'
     ]
     range = 100
     cooldown = 100
-    totalAbilityCooldown = 7500
+    totalAbilityCooldown = 0
 
     def __init__(self, x: int, y: int):
         super().__init__(x, y)
@@ -1281,6 +1291,116 @@ class Village(Towers):
 
         if len(self.villagers) <= self.upgrades[2]:
             self.villagers.append(self.Villager(self))
+
+
+class Elemental(Towers):
+    name = 'Elemental'
+    imageName = 'elemental.png'
+    color = (255, 150, 0)
+    req = math.inf
+    range = 250
+    totalAbilityCooldown = 7500
+    price = 40000
+    upgradeNames = [None, None, None, 'ELEMENTS ASSEMBLE']
+
+    def __init__(self, x: int, y: int):
+        super().__init__(x, y)
+        self.inferno = InfernoTower.Inferno(self)
+        self.lightning = Wizard.LightningBolt(self)
+        self.villagers = []
+        self.abilityCooldown = 7500
+        self.abilityData = {
+            'tick': 0,
+            'rotation': 0,
+            'active': True
+        }
+        self.infernoTimer = 0
+        self.lightningTimer = 0
+
+        self.targets = []
+        for n in range(4):
+            self.villagers.append(Village.Villager(self))
+
+        self.upgrades = [3, 3, 3, True]
+
+    def draw(self):
+        for villager in self.villagers:
+            villager.draw()
+        self.inferno.draw()
+        self.lightning.draw()
+
+        super().draw()
+
+    def attack(self):
+        if self.abilityData['active']:
+            if self.abilityData['tick'] <= 5:
+                self.abilityData['tick'] += 1
+            else:
+                self.abilityData['tick'] = 0
+
+                tx = self.x + 1000 * SINDEGREES[self.abilityData['rotation'] % 360]
+                ty = self.y + 1000 * COSDEGREES[self.abilityData['rotation'] % 360]
+                Projectile(self, self.x, self.y, tx, ty, freezeDuration=100)
+
+                tx = self.x + 1000 * SINDEGREES[(self.abilityData['rotation'] + 180) % 360]
+                ty = self.y + 1000 * COSDEGREES[(self.abilityData['rotation'] + 180) % 360]
+                Projectile(self, self.x, self.y, tx, ty, bossDamage=50, explosiveRadius=50)
+
+                self.abilityData['rotation'] += 30
+                if self.abilityData['rotation'] == 1800:
+                    self.abilityData['rotation'] = 0
+                    self.abilityData['active'] = False
+
+        for villager in self.villagers:
+            villager.move()
+            if villager.timer >= 25:
+                villager.attack(30)
+                villager.timer = 0
+            else:
+                villager.timer += 1
+
+        if self.stun > 0:
+            self.stun -= 1
+            return
+
+        if self.timer >= getActualCooldown(self.x, self.y, 3):
+            closest = getTarget(self)
+            try:
+                Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=50, bossDamage=25, fireTicks=300)
+                self.timer = 0
+            except AttributeError:
+                pass
+        else:
+            self.timer += 1
+
+        if self.lightningTimer >= getActualCooldown(self.x, self.y, 100):
+            self.lightning.attack(250)
+            self.lightningTimer = 0
+        else:
+            self.lightningTimer += 1
+
+        if self.infernoTimer >= getActualCooldown(self.x, self.y, 250):
+            found = False
+            for enemy in info.enemies:
+                if abs(enemy.x - self.x) ** 2 + abs(enemy.y - self.y) ** 2 <= self.range ** 2:
+                    enemy.fireTicks = max(enemy.fireTicks, 200)
+                    enemy.fireIgnitedBy = self
+                    if not enemy.isBoss:
+                        enemy.freezeTimer = max(enemy.freezeTimer, 75)
+
+                    self.inferno.renders.append(InfernoTower.AttackRender(self, enemy))
+                    found = True
+
+            if found:
+                self.infernoTimer = 0
+        else:
+            self.infernoTimer += 1
+
+    def update(self):
+        self.targets = [villager.target for villager in self.villagers]
+
+        if self.abilityCooldown < self.totalAbilityCooldown:
+            self.abilityCooldown += 1
 
 
 class Projectile:
@@ -1493,12 +1613,10 @@ class Enemy:
     def update(self):
         if self.fireTicks > 0:
             if self.fireTicks % 100 == 0:
-                new = self.kill(burn=True)
+                new = self.kill(burn=True, reduceFireTicks=True)
                 self.fireIgnitedBy.hits += 1
                 info.statistics['pops'] += 1
                 if new is not None:
-                    new.fireTicks -= 1
-                else:
                     self.fireTicks -= 1
             else:
                 self.fireTicks -= 1
@@ -1594,7 +1712,10 @@ class Enemy:
         if self.regen:
             pygame.draw.circle(screen, (255, 105, 180), (self.x, self.y), 20 if self.isBoss else 10, 2)
 
-    def kill(self, *, spawnNew: bool = True, coinMultiplier: int = 1, ignoreBoss: bool = False, burn: bool = False, bossDamage: int = 1, overrideRuneColor: Tuple[int] = None, ignoreRegularEnemyHealth: bool = False):
+    def kill(self, *, spawnNew: bool = True, coinMultiplier: int = 1, ignoreBoss: bool = False, burn: bool = False, bossDamage: int = 1, overrideRuneColor: Tuple[int] = None, ignoreRegularEnemyHealth: bool = False, reduceFireTicks: bool = False):
+        if reduceFireTicks:
+            self.fireTicks -= 1
+
         if self.isBoss:
             if ignoreBoss:
                 try:
@@ -1704,12 +1825,13 @@ def removeCharset(s, charset) -> str:
 def getSellPrice(tower: Towers) -> float:
     price = tower.price
 
-    for n in range(3):
-        for m in range(tower.upgrades[n]):
-            price += tower.upgradePrices[n][m]
+    if type(tower) is not Elemental:
+        for n in range(3):
+            for m in range(tower.upgrades[n]):
+                price += tower.upgradePrices[n][m]
 
-    if tower.upgrades[3]:
-        price += tower.upgradePrices[3]
+        if tower.upgrades[3]:
+            price += tower.upgradePrices[3]
 
     return price * 0.8
 
@@ -1765,9 +1887,12 @@ def canSeeCamo(Tower: Towers) -> bool:
     if type(Tower) is Village and Tower.upgrades[0] >= 1:
         return True
 
-    villages = [tower for tower in info.towers if type(tower) is Village and tower.upgrades[0] >= 1]
-    for village in villages:
-        if abs(Tower.x - village.x) ** 2 + abs(Tower.y - village.y) ** 2 < village.range ** 2:
+    if type(Tower) is Elemental:
+        return True
+
+    camoTowers = [tower for tower in info.towers if (type(tower) is Village or type(tower) is Elemental) and tower.upgrades[0] >= 1]
+    for tower in camoTowers:
+        if abs(Tower.x - tower.x) ** 2 + abs(Tower.y - tower.y) ** 2 < tower.range ** 2:
             return True
     return False
 
@@ -1794,7 +1919,7 @@ def getTarget(tower: Towers, *, ignore: [Enemy] = None, overrideRange: int = Non
             continue
 
         if abs(enemy.x - tower.x) ** 2 + abs(enemy.y - tower.y) ** 2 <= rangeRadius ** 2:
-            if (enemy.camo and canSeeCamo(tower)) or not enemy.camo:
+            if (enemy.camo and canSeeCamo(tower)) or (not enemy.camo):
                 try:
                     if enemy.totalMovement > maxDistance:
                         maxDistance = enemy.totalMovement
@@ -1976,6 +2101,9 @@ def draw() -> None:
 
     n = 0
     for towerType in Towers.__subclasses__():
+        if towerType is Elemental:
+            continue
+
         if info.wave >= towerType.req or info.sandboxMode:
             leftAlignPrint(font, f'{towerType.name} (${towerType.price})', (810, 20 + 80 * n + info.shopScroll))
 
@@ -2066,11 +2194,12 @@ def draw() -> None:
         pygame.draw.rect(screen, (0, 0, 0), (0, 450, 20, 20), 3)
 
     if issubclass(type(info.selected), Towers):
-        leftAlignPrint(font, 'Upgrades:', (200, 497))
+        if type(info.selected) is not Elemental:
+            leftAlignPrint(font, 'Upgrades:', (200, 497))
         leftAlignPrint(font, f'Pops: {info.selected.hits}', (200, 470))
 
-        if info.selected.upgrades[0] == info.selected.upgrades[1] == info.selected.upgrades[2] == 3:
-            if info.selected.upgrades[3]:
+        if info.selected.upgrades[0] == info.selected.upgrades[1] == info.selected.upgrades[2] == 3 or type(info.selected) is Elemental:
+            if info.selected.upgrades[3] or type(info.selected) is Elemental:
                 if 295 <= my <= 595 and 485 <= my <= 605:
                     pygame.draw.rect(screen, (255, 255, 225), (295, 485, 300, 90))
                 else:
@@ -2089,7 +2218,31 @@ def draw() -> None:
                     pygame.draw.rect(screen, (128, 128, 128), (295, 485, 300, 90))
                 pygame.draw.rect(screen, (0, 0, 0), (295, 485, 300, 90), 3)
 
-                leftAlignPrint(font, f'{info.selected.upgradeNames[3]} [${info.selected.upgradePrices[3]}]', (300, 500))
+                if type(info.selected) is Village:
+                    towers = {
+                        'Turret': None,
+                        'Ice Tower': None,
+                        'Spike Tower': None,
+                        'Bomb Tower': None,
+                        'Banana Farm': None,
+                        'Bowler': None,
+                        'Wizard': None,
+                        'Inferno': None
+                    }
+
+                    for tower in info.towers:
+                        if tower.name in towers.keys():
+                            if tower.upgrades == [3, 3, 3, True]:
+                                towers[tower.name] = tower
+
+                    if None not in towers.values():
+                        leftAlignPrint(font, f'{info.selected.upgradeNames[3]} [${info.selected.upgradePrices[3]}]', (300, 500))
+                    else:
+                        centredPrint(font, 'The Elemental demands', (445, 515))
+                        centredPrint(font, 'powerful sacrifices!', (445, 540))
+
+                else:
+                    leftAlignPrint(font, f'{info.selected.upgradeNames[3]} [${info.selected.upgradePrices[3]}]', (300, 500))
 
         else:
             for n in range(3):
@@ -3434,6 +3587,9 @@ def app() -> None:
                         if 810 <= mx <= 910:
                             n = 0
                             for tower in Towers.__subclasses__():
+                                if tower is Elemental:
+                                    continue
+
                                 if 40 + n * 80 + info.shopScroll <= my <= 70 + n * 80 + info.shopScroll and my <= 450 and info.coins >= tower.price and info.placing == '' and (info.wave >= tower.req or info.sandboxMode):
                                     info.coins -= tower.price
                                     info.placing = tower.name
@@ -3517,14 +3673,46 @@ def app() -> None:
                                         if info.selected.abilityCooldown >= info.selected.totalAbilityCooldown:
                                             info.selected.abilityCooldown = 0
                                             info.selected.abilityData['active'] = True
+
+                                    elif type(info.selected) is Village:
+                                        towers = {
+                                            'Turret': None,
+                                            'Ice Tower': None,
+                                            'Spike Tower': None,
+                                            'Bomb Tower': None,
+                                            'Banana Farm': None,
+                                            'Bowler': None,
+                                            'Wizard': None,
+                                            'Inferno': None
+                                        }
+
+                                        for tower in info.towers:
+                                            if tower.name in towers.keys():
+                                                if tower.upgrades == [3, 3, 3, True]:
+                                                    towers[tower.name] = tower
+
+                                        if None not in towers.values():
+                                            cost = Village.upgradePrices[3]
+                                            if info.coins >= cost:
+                                                info.coins -= cost
+                                                info.statistics['coinsSpent'] += cost
+
+                                                for tower in towers.values():
+                                                    info.towers.remove(tower)
+                                                info.towers.remove(info.selected)
+                                                elemental = Elemental(info.selected.x, info.selected.y)
+                                                elemental.hits = sum([t.hits for t in towers.values()])
+
+                                                info.selected = elemental
+
                                     else:
                                         cost = type(info.selected).upgradePrices[3]
-                                        if info.coins >= cost and (info.wave >= info.selected.req or info.sandboxMode):
+                                        if info.coins >= cost:
                                             info.coins -= cost
                                             info.statistics['coinsSpent'] += cost
                                             info.selected.upgrades[3] = True
 
-                                else:
+                                elif type(info.selected) is not Elemental:
                                     n = (my - 485) // 30
                                     if info.selected.upgrades[n] < 3:
                                         cost = type(info.selected).upgradePrices[n][info.selected.upgrades[n]]
@@ -3550,7 +3738,7 @@ def app() -> None:
 
                     elif event.button == 5:
                         if mx > 800 and my < 450:
-                            maxScroll = len([tower for tower in Towers.__subclasses__() if (info.wave >= tower.req or info.sandboxMode)]) * 80 - 450
+                            maxScroll = len([tower for tower in Towers.__subclasses__() if (info.wave >= tower.req or info.sandboxMode) and not tower is Elemental]) * 80 - 450
                             if maxScroll > 0:
                                 info.shopScroll = max(-maxScroll, info.shopScroll - 10)
 
@@ -3573,7 +3761,7 @@ def app() -> None:
             if pressed[pygame.K_UP]:
                 info.shopScroll = min(0, info.shopScroll + 5)
             elif pressed[pygame.K_DOWN]:
-                maxScroll = len([tower for tower in Towers.__subclasses__() if (info.wave >= tower.req or info.sandboxMode)]) * 80 - 450
+                maxScroll = len([tower for tower in Towers.__subclasses__() if (info.wave >= tower.req or info.sandboxMode) and tower is not Elemental]) * 80 - 450
                 if maxScroll > 0:
                     info.shopScroll = max(-maxScroll, info.shopScroll - 5)
 
