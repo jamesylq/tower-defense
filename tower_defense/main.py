@@ -561,7 +561,8 @@ class SpikeTower(Towers):
 
                     for n in range(damage):
                         new = new.kill(coinMultiplier=getCoinMultiplier(self.parent), overrideRuneColor=color)
-                        info.statistics['pops'] += 1
+                        if not info.sandboxMode:
+                            info.statistics['pops'] += 1
                         self.parent.hits += 1
                         self.ignore.append(enemy if enemy.isBoss else new)
 
@@ -902,37 +903,38 @@ class Wizard(Towers):
             self.visibleTicks = 0
 
         def attack(self, bossDamage: int = 25):
+            pops = 0
             self.visibleTicks = 50
             self.t1 = getTarget(Towers(self.parent.x, self.parent.y, overrideCamoDetect=self.parent.upgrades[1] >= 2, overrideAddToTowers=True), overrideRange=1000)
             if type(self.t1) is Enemy:
                 self.t1.kill(coinMultiplier=getCoinMultiplier(self.parent), bossDamage=bossDamage)
                 self.parent.hits += 1
-                info.statistics['pops'] += 1
+                pops += 1
                 self.t2 = getTarget(Towers(self.t1.x, self.t1.y, overrideCamoDetect=self.parent.upgrades[1] >= 2, overrideAddToTowers=True), ignore=[self.t1], overrideRange=1000)
 
                 if type(self.t2) is Enemy:
                     self.t2.kill(coinMultiplier=getCoinMultiplier(self.parent), bossDamage=bossDamage)
                     self.parent.hits += 1
-                    info.statistics['pops'] += 1
+                    pops += 1
                     self.t3 = getTarget(Towers(self.t2.x, self.t2.y, overrideCamoDetect=self.parent.upgrades[1] >= 2, overrideAddToTowers=True), ignore=[self.t1, self.t2], overrideRange=1000)
 
                     if type(self.t3) is Enemy:
                         self.t3.kill(coinMultiplier=getCoinMultiplier(self.parent), bossDamage=bossDamage)
                         self.parent.hits += 1
-                        info.statistics['pops'] += 1
+                        pops += 1
                         if self.parent.upgrades[1] == 3:
                             self.t4 = getTarget(Towers(self.t3.x, self.t3.y, overrideCamoDetect=self.parent.upgrades[1] >= 2, overrideAddToTowers=True), ignore=[self.t1, self.t2, self.t3], overrideRange=1000)
 
                             if type(self.t4) is Enemy:
                                 self.t4.kill(coinMultiplier=getCoinMultiplier(self.parent), bossDamage=bossDamage)
                                 self.parent.hits += 1
-                                info.statistics['pops'] += 1
+                                pops += 1
                                 self.t5 = getTarget(Towers(self.t4.x, self.t4.y, overrideCamoDetect=self.parent.upgrades[1] >= 2, overrideAddToTowers=True), ignore=[self.t1, self.t2, self.t3, self.t4], overrideRange=1000)
 
                                 if type(self.t5) is Enemy:
                                     self.t5.kill(coinMultiplier=getCoinMultiplier(self.parent), bossDamage=bossDamage)
                                     self.parent.hits += 1
-                                    info.statistics['pops'] += 1
+                                    pops += 1
                             else:
                                 self.t5 = None
                         else:
@@ -950,6 +952,8 @@ class Wizard(Towers):
                 self.t3 = None
                 self.t4 = None
                 self.t5 = None
+
+            info.statistics['pops'] += pops
 
             if self.t1 is None:
                 self.parent.lightningTimer = 500
@@ -1236,7 +1240,7 @@ class Village(Towers):
         [120, 150, 200],
         [100, 125, 175],
         [50, 75, 100],
-        20000
+        5000
     ]
     upgradeNames = [
         ['Anti-Camo', 'Bomber Villagers', 'Turret Villagers'],
@@ -1300,7 +1304,7 @@ class Elemental(Towers):
     req = math.inf
     range = 250
     totalAbilityCooldown = 7500
-    price = 40000
+    price = 25000
     upgradeNames = [None, None, None, 'ELEMENTS ASSEMBLE']
 
     def __init__(self, x: int, y: int):
@@ -1318,7 +1322,7 @@ class Elemental(Towers):
         self.lightningTimer = 0
 
         self.targets = []
-        for n in range(4):
+        for n in range(10):
             self.villagers.append(Village.Villager(self))
 
         self.upgrades = [3, 3, 3, True]
@@ -1353,7 +1357,7 @@ class Elemental(Towers):
 
         for villager in self.villagers:
             villager.move()
-            if villager.timer >= 25:
+            if villager.timer >= 10:
                 villager.attack(30)
                 villager.timer = 0
             else:
@@ -1468,7 +1472,8 @@ class Projectile:
 
                 enemy.kill(coinMultiplier=getCoinMultiplier(self.parent))
                 self.parent.hits += 1
-                info.statistics['pops'] += 1
+                if not info.sandboxMode:
+                    info.statistics['pops'] += 1
 
 
 class PiercingProjectile:
@@ -1615,7 +1620,8 @@ class Enemy:
             if self.fireTicks % 100 == 0:
                 new = self.kill(burn=True, reduceFireTicks=True)
                 self.fireIgnitedBy.hits += 1
-                info.statistics['pops'] += 1
+                if not info.sandboxMode:
+                    info.statistics['pops'] += 1
                 if new is not None:
                     self.fireTicks -= 1
             else:
@@ -1637,7 +1643,8 @@ class Enemy:
                             for n in range(projectile.impactDamage):
                                 new = new.kill(coinMultiplier=projectile.coinMultiplier, bossDamage=projectile.bossDamage, overrideRuneColor=color)
                                 projectile.parent.hits += 1
-                                info.statistics['pops'] += 1
+                                if not info.sandboxMode:
+                                    info.statistics['pops'] += 1
 
                                 if new is None:
                                     break
@@ -1649,7 +1656,8 @@ class Enemy:
                         for n in range(projectile.impactDamage):
                             new = new.kill(coinMultiplier=projectile.coinMultiplier, bossDamage=projectile.bossDamage, overrideRuneColor=color)
                             projectile.parent.hits += 1
-                            info.statistics['pops'] += 1
+                            if not info.sandboxMode:
+                                info.statistics['pops'] += 1
 
                             if new is None:
                                 break
@@ -1670,7 +1678,8 @@ class Enemy:
                         for n in range(damage):
                             new = new.kill(coinMultiplier=projectile.coinMultiplier, overrideRuneColor=color)
                             projectile.parent.hits += 1
-                            info.statistics['pops'] += 1
+                            if not info.sandboxMode:
+                                info.statistics['pops'] += 1
 
                             if new is None:
                                 break
@@ -1731,12 +1740,14 @@ class Enemy:
 
                     try:
                         self.fireIgnitedBy.hits += 1
-                        info.statistics['pops'] += 1
+                        if not info.sandboxMode:
+                            info.statistics['pops'] += 1
                     except AttributeError:
                         pass
 
                     RuneEffects.createEffects(self, color=overrideRuneColor)
-                    info.statistics['bossesKilled'] += 1
+                    if not info.sandboxMode:
+                        info.statistics['bossesKilled'] += 1
 
                 else:
                     return self
@@ -2134,7 +2145,10 @@ def draw() -> None:
     leftAlignPrint(font, f'FPS: {round(clock.get_fps(), 1)}', (10, 525))
     leftAlignPrint(font, str(info.HP), (10, 500))
     screen.blit(healthImage if info.HP <= 250 else goldenHealthImage, (font.size(str(info.HP))[0] + 17, 493))
-    leftAlignPrint(font, f'Coins: {math.floor(info.coins)}', (10, 550))
+    if info.sandboxMode:
+        leftAlignPrint(font, 'Coins: ∞', (10, 550))
+    else:
+        leftAlignPrint(font, f'Coins: {math.floor(info.coins)}', (10, 550))
     leftAlignPrint(font, f'Wave {max(info.wave, 1)} of {len(waves)}', (10, 575))
 
     pygame.draw.rect(screen, (200, 200, 200), (810, 460, 50, 50))
@@ -2279,7 +2293,10 @@ def draw() -> None:
                 pygame.draw.rect(screen, (0, 0, 0), (620, 500, 150, 25), 3)
             centredPrint(font, 'ENABLED' if info.selected.enabled else 'DISABLED', (695, 512))
 
-    pygame.display.update()
+    if mx <= 800 and my <= 450:
+        pygame.display.update((0, 0, 800, 450))
+    else:
+        pygame.display.update()
 
 
 def move() -> None:
@@ -2640,7 +2657,7 @@ def app() -> None:
                                     if 40 * n + 60 - scroll <= my <= 40 * n + 90 - scroll and 50 <= my <= 500 and list(info.PBs.values())[n] != LOCKED:
                                         info.Map = Maps[n]
                                         info.status = 'game'
-                                        info.coins = 100000 if info.sandboxMode else 50
+                                        info.coins = math.inf if info.sandboxMode else 50
 
                                         try:
                                             PowerUps.objects.clear()
@@ -2653,7 +2670,7 @@ def app() -> None:
                             if 10 <= mx <= 935 and 40 * len(Maps) + 60 <= my + scroll <= 40 * len(Maps) + 90 and my <= 500:
                                 info.Map = random.choice([Map for Map in Maps if info.PBs[Map.name] != LOCKED])
                                 info.status = 'game'
-                                info.coins = 100000 if info.sandboxMode else 50
+                                info.coins = math.inf if info.sandboxMode else 50
 
                                 try:
                                     PowerUps.objects.clear()
@@ -3470,49 +3487,49 @@ def app() -> None:
                     except IndexError:
                         info.status = 'win'
 
-                        try:
-                            info.statistics['wins'][info.Map.name] += 1
-                        except KeyError:
-                            info.statistics['wins'][info.Map.name] = 1
-                        finally:
-                            info.statistics['totalWins'] += 1
+                        if not info.sandboxMode:
+                            try:
+                                info.statistics['wins'][info.Map.name] += 1
+                            except KeyError:
+                                info.statistics['wins'][info.Map.name] = 1
+                            finally:
+                                info.statistics['totalWins'] += 1
 
                             for rune in Runes:
                                 if rune.roll():
                                     info.runes.append(rune.name)
                                     info.newRunes += 1
 
-                            if not info.sandboxMode:
-                                for powerUp in defaults['powerUps'].keys():
-                                    result = random.randint(1, 10)
-                                    if result <= 2:
-                                        info.powerUps[powerUp] += 3
-                                    elif result <= 5:
-                                        info.powerUps[powerUp] += 2
-                                    elif result <= 8:
-                                        info.powerUps[powerUp] += 1
+                            for powerUp in defaults['powerUps'].keys():
+                                result = random.randint(1, 10)
+                                if result <= 2:
+                                    info.powerUps[powerUp] += 3
+                                elif result <= 5:
+                                    info.powerUps[powerUp] += 2
+                                elif result <= 8:
+                                    info.powerUps[powerUp] += 1
 
-                            try:
-                                nextMap = Maps[[m.name for m in Maps].index(info.Map.name) + 1].name
-                                if info.PBs[nextMap] == LOCKED:
-                                    info.PBs[nextMap] = None
+                        try:
+                            nextMap = Maps[[m.name for m in Maps].index(info.Map.name) + 1].name
+                            if info.PBs[nextMap] == LOCKED:
+                                info.PBs[nextMap] = None
 
-                            except IndexError:
-                                pass
+                        except IndexError:
+                            pass
 
-                            if not info.sandboxMode:
-                                if info.PBs[info.Map.name] is None or info.PBs[info.Map.name] == LOCKED:
-                                    info.PBs[info.Map.name] = info.HP
-                                elif info.PBs[info.Map.name] < info.HP:
-                                    info.PBs[info.Map.name] = info.HP
+                        if not info.sandboxMode:
+                            if info.PBs[info.Map.name] is None or info.PBs[info.Map.name] == LOCKED:
+                                info.PBs[info.Map.name] = info.HP
+                            elif info.PBs[info.Map.name] < info.HP:
+                                info.PBs[info.Map.name] = info.HP
 
-                                info.tokens += info.HP // 2 + 10
+                            info.tokens += info.HP // 2 + 10
 
-                            info.statistics['mapsBeat'] = len([m for m in info.PBs.keys() if type(info.PBs[m]) is int])
+                        info.statistics['mapsBeat'] = len([m for m in info.PBs.keys() if type(info.PBs[m]) is int])
 
-                            info.FinalHP = info.HP
-                            info.reset()
-                            save()
+                        info.FinalHP = info.HP
+                        info.reset()
+                        save()
 
                     else:
                         info.spawndelay = 20
@@ -3594,7 +3611,8 @@ def app() -> None:
                                     info.coins -= tower.price
                                     info.placing = tower.name
                                     info.selected = None
-                                    info.statistics['coinsSpent'] += tower.price
+                                    if not info.sandboxMode:
+                                        info.statistics['coinsSpent'] += tower.price
                                 n += 1
 
                         if mx <= 20 and 450 <= my <= 470:
@@ -3695,7 +3713,8 @@ def app() -> None:
                                             cost = Village.upgradePrices[3]
                                             if info.coins >= cost:
                                                 info.coins -= cost
-                                                info.statistics['coinsSpent'] += cost
+                                                if not info.sandboxMode:
+                                                    info.statistics['coinsSpent'] += cost
 
                                                 for tower in towers.values():
                                                     info.towers.remove(tower)
@@ -3709,7 +3728,8 @@ def app() -> None:
                                         cost = type(info.selected).upgradePrices[3]
                                         if info.coins >= cost:
                                             info.coins -= cost
-                                            info.statistics['coinsSpent'] += cost
+                                            if not info.sandboxMode:
+                                                info.statistics['coinsSpent'] += cost
                                             info.selected.upgrades[3] = True
 
                                 elif type(info.selected) is not Elemental:
@@ -3718,7 +3738,8 @@ def app() -> None:
                                         cost = type(info.selected).upgradePrices[n][info.selected.upgrades[n]]
                                         if info.coins >= cost and (info.wave >= info.selected.req or info.sandboxMode):
                                             info.coins -= cost
-                                            info.statistics['coinsSpent'] += cost
+                                            if not info.sandboxMode:
+                                                info.statistics['coinsSpent'] += cost
                                             info.selected.upgrades[n] += 1
 
                             elif 620 <= mx < 770 and 545 <= my < 570:
@@ -3751,7 +3772,8 @@ def app() -> None:
                             try:
                                 price = {t.name: t.price for t in Towers.__subclasses__()}[info.placing]
                                 info.coins += price
-                                info.statistics['coinsSpent'] -= price
+                                if not info.sandboxMode:
+                                    info.statistics['coinsSpent'] -= price
                             except KeyError:
                                 pass
 
