@@ -2,6 +2,8 @@
 import os
 import math
 import time
+import tkinter
+
 import pygame
 import pickle
 import random
