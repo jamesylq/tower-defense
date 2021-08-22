@@ -1,13 +1,13 @@
 [tool.poetry]
 name = "tower-defense"
-version = "2.4.1"
+version = "2.4.2"
 description = ""
 authors = ["Ying Liqian <jamesylq@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.6"
 pygame = "^2.0.1"
-tkinter = "^8.6"
+python3-tkinter = "^8.6"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
