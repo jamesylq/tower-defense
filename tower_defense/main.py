@@ -1768,6 +1768,7 @@ class Enemy:
 
             if str(self.tier) == '0':
                 RuneEffects.createEffects(self, color=overrideRuneColor)
+                info.coins += coinMultipler * 0.25
 
         if spawnNew:
             if self.camo:
@@ -3080,8 +3081,14 @@ def app() -> None:
 
                     pygame.draw.rect(screen, (100, 100, 100), (0, 570, 60, 30))
                     centredPrint(font, 'Clear', (30, 585))
-
                     if mx <= 60 and 570 <= my:
+                        pygame.draw.rect(screen, (128, 128, 128), (0, 570, 60, 30), 3)
+                    else:
+                        pygame.draw.rect(screen, (0, 0, 0), (0, 570, 60, 30), 3)
+
+                    pygame.draw.rect(screen, (100, 100, 100), (0, 530, 60, 30))
+                    centredPrint(font, 'Undo', (30, 545))
+                    if mx <= 60 and 530 <= my <= 560:
                         pygame.draw.rect(screen, (128, 128, 128), (0, 570, 60, 30), 3)
                     else:
                         pygame.draw.rect(screen, (0, 0, 0), (0, 570, 60, 30), 3)
@@ -3108,8 +3115,14 @@ def app() -> None:
                                 if 100 <= cx <= 900 and 125 <= cy <= 575:
                                     info.mapMakerData['path'].append([cx, cy])
 
-                                elif 0 < mx < 60 and 570 < my:
+                                elif 0 < mx < 60 and 570 <= my:
                                     info.mapMakerData['path'].clear()
+
+                                elif 0 < mx < 60 and 530 <= my <= 560:
+                                    try:
+                                        info.mapMakerData['path'] = info.mapMakerData['path'][:-1]
+                                    except IndexError:
+                                        pass
 
                                 elif 940 < mx and 570 < my:
                                     mapShiftedPath = [[point[0] - 100, point[1] - 125] for point in info.mapMakerData['path']]
