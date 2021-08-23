@@ -2491,6 +2491,7 @@ def load() -> None:
 def loadGame(filename: str):
     global info
 
+    infoSave = info
     try:
         game = pickle.load(open(filename, 'rb'))
         for attr in gameAttrs:
@@ -2499,8 +2500,8 @@ def loadGame(filename: str):
         info.status = 'game'
         info.Map = game.Map
 
-    except FileNotFoundError:
-        pass
+    except (FileNotFoundError, EOFError, AttributeError, UnpicklingError):
+        info = infoSave
 
 
 # Main
