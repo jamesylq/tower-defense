@@ -2491,12 +2491,16 @@ def load() -> None:
 def loadGame(filename: str):
     global info
 
-    game = pickle.load(open(filename, 'rb'))
-    for attr in gameAttrs:
-        setattr(info, attr, getattr(game, attr))
+    try:
+        game = pickle.load(open(filename, 'rb'))
+        for attr in gameAttrs:
+            setattr(info, attr, getattr(game, attr))
 
-    info.status = 'game'
-    info.Map = game.Map
+        info.status = 'game'
+        info.Map = game.Map
+
+    except FileNotFoundError:
+        pass
 
 
 # Main
