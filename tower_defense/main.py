@@ -2146,7 +2146,11 @@ def draw() -> None:
 
     pygame.draw.rect(screen, (170, 170, 170), (0, 450, 1000, 150))
 
-    leftAlignPrint(font, f'FPS: {round(clock.get_fps(), 1)}', (10, 525))
+    fps = round(clock.get_fps(), 1)
+    if fps < 1:
+        leftAlignPrint(font, f'SPF: {1 / fps}', (10, 525))
+    else:
+        leftAlignPrint(font, f'FPS: {fps}', (10, 525))
     leftAlignPrint(font, str(info.HP), (10, 500))
     screen.blit(healthImage if info.HP <= 250 else goldenHealthImage, (font.size(str(info.HP))[0] + 17, 493))
     if info.sandboxMode:
@@ -3056,18 +3060,23 @@ def app() -> None:
 
                     cx = None
                     cy = None
+                    placable = True
 
                     if mx <= 100:
                         cx = 100
+                        placable = False
 
                     if mx >= 900:
                         cx = 900
+                        placable = False
 
                     if my <= 125:
                         cy = 125
+                        placable = False
 
                     if my >= 575:
                         cy = 575
+                        placable = False
 
                     try:
                         ncx, ncy = getClosestPoint(mx, my, sx=info.mapMakerData['path'][-1][0], sy=info.mapMakerData['path'][-1][1])
@@ -3149,7 +3158,7 @@ def app() -> None:
 
                         elif event.type == pygame.MOUSEBUTTONDOWN:
                             if event.button == 1:
-                                if 100 <= cx <= 900 and 125 <= cy <= 575:
+                                if 100 <= cx <= 900 and 125 <= cy <= 575 and placable:
                                     info.mapMakerData['path'].append([cx, cy])
 
                                 if 0 <= mx <= 60 and 570 <= my:
