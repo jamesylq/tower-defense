@@ -1768,7 +1768,7 @@ class Enemy:
 
             if str(self.tier) == '0':
                 RuneEffects.createEffects(self, color=overrideRuneColor)
-                info.coins += coinMultipler * 0.25
+                info.coins += coinMultiplier * 0.25
 
         if spawnNew:
             if self.camo:
@@ -3049,19 +3049,36 @@ def app() -> None:
                 while True:
                     mx, my = pygame.mouse.get_pos()
 
-                    if mx < 100 or mx > 900 or my < 125 or my > 575:
-                        cx = cy = -1
-
-                    else:
-                        try:
-                            cx, cy = getClosestPoint(mx, my, sx=info.mapMakerData['path'][-1][0], sy=info.mapMakerData['path'][-1][1])
-                        except IndexError:
-                            cx, cy = getClosestPoint(mx, my)
-
                     screen.fill((200, 200, 200))
-                    centredPrint(mediumFont, 'Map Maker', (500, 75))
+                    centredPrint(mediumFont, 'Map Maker', (500, 50))
                     pygame.draw.rect(screen, (0, 0, 0), (100, 125, 800, 450), 5)
                     pygame.draw.rect(screen, info.mapMakerData['backgroundColor'], (100, 125, 800, 450))
+
+                    cx = None
+                    cy = None
+
+                    if mx <= 100:
+                        cx = 100
+
+                    if mx >= 900:
+                        cx = 900
+
+                    if my <= 125:
+                        cy = 125
+
+                    if my >= 575:
+                        cy = 575
+
+                    try:
+                        ncx, ncy = getClosestPoint(mx, my, sx=info.mapMakerData['path'][-1][0], sy=info.mapMakerData['path'][-1][1])
+                    except IndexError:
+                        ncx, ncy = getClosestPoint(mx, my)
+
+                    if cx is None:
+                        cx = ncx
+
+                    if cy is None:
+                        cy = ncy
 
                     if 100 <= cx <= 900 and 125 <= cy <= 575:
                         pygame.draw.circle(screen, (0, 0, 0), (cx, cy), 3)
@@ -3079,6 +3096,26 @@ def app() -> None:
                     pygame.draw.rect(screen, (200, 200, 200), (90, 125, 10, 450))
                     pygame.draw.rect(screen, (200, 200, 200), (900, 125, 10, 450))
 
+                    left = (cx - 100) // 25
+                    right = 32 - left
+                    up = (cy - 125) // 25
+                    down = 18 - up
+
+                    pygame.draw.line(screen, (0, 0, 0), (100, 115), (900, 115), 2)
+                    pygame.draw.line(screen, (0, 0, 0), (90, 125), (90, 575), 2)
+
+                    pygame.draw.line(screen, (0, 0, 0), (85, cy), (95, cy), 2)
+                    pygame.draw.line(screen, (0, 0, 0), (cx, 110), (cx, 120), 2)
+
+                    if left > 0:
+                        centredPrint(font, str(left), (50 + cx // 2, 90))
+                    if right > 0:
+                        centredPrint(font, str(right), (450 + cx // 2, 90))
+                    if up > 0:
+                        centredPrint(font, str(up), (75, 62 + cy // 2))
+                    if down > 0:
+                        centredPrint(font, str(down), (75, 287 + cy // 2))
+
                     pygame.draw.rect(screen, (100, 100, 100), (0, 570, 60, 30))
                     centredPrint(font, 'Clear', (30, 585))
                     if mx <= 60 and 570 <= my:
@@ -3089,9 +3126,9 @@ def app() -> None:
                     pygame.draw.rect(screen, (100, 100, 100), (0, 530, 60, 30))
                     centredPrint(font, 'Undo', (30, 545))
                     if mx <= 60 and 530 <= my <= 560:
-                        pygame.draw.rect(screen, (128, 128, 128), (0, 570, 60, 30), 3)
+                        pygame.draw.rect(screen, (128, 128, 128), (0, 530, 60, 30), 3)
                     else:
-                        pygame.draw.rect(screen, (0, 0, 0), (0, 570, 60, 30), 3)
+                        pygame.draw.rect(screen, (0, 0, 0), (0, 530, 60, 30), 3)
 
                     if len(info.mapMakerData['path']) >= 2:
                         pygame.draw.rect(screen, (44, 255, 44), (940, 570, 60, 30))
@@ -3115,16 +3152,16 @@ def app() -> None:
                                 if 100 <= cx <= 900 and 125 <= cy <= 575:
                                     info.mapMakerData['path'].append([cx, cy])
 
-                                elif 0 < mx < 60 and 570 <= my:
+                                if 0 <= mx <= 60 and 570 <= my:
                                     info.mapMakerData['path'].clear()
 
-                                elif 0 < mx < 60 and 530 <= my <= 560:
+                                if 0 <= mx <= 60 and 530 <= my <= 560:
                                     try:
                                         info.mapMakerData['path'] = info.mapMakerData['path'][:-1]
                                     except IndexError:
                                         pass
 
-                                elif 940 < mx and 570 < my:
+                                if 940 <= mx and 570 <= my:
                                     mapShiftedPath = [[point[0] - 100, point[1] - 125] for point in info.mapMakerData['path']]
 
                                     print(f'This is the map code for your map!\n\nMap({mapShiftedPath}, \'{info.mapMakerData["name"]}\', {tuple(info.mapMakerData["backgroundColor"])}, {tuple(info.mapMakerData["pathColor"])})')
