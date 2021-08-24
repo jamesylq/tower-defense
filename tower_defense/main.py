@@ -1937,7 +1937,7 @@ def getTarget(tower: Towers, *, ignore: [Enemy] = None, overrideRange: int = Non
     maxDistance = None
 
     for enemy in info.enemies:
-        if not (0 <= enemy.x <= 800 and 0 <= enemy.y <= 450):
+        if not (0 <= enemy.x <= 800 and 0 <= enemy.y <= 450) and overrideRange is None:
             continue
 
         if enemy in ignore:
@@ -3795,6 +3795,8 @@ def app() -> None:
 
             draw()
             move()
+
+            print([[enemy.x, enemy.y, enemy.camo, enemy.regen, enemy.tier, enemy.freezeTimer] for enemy in info.enemies])
 
             if info.equippedRune == 'Rainbow Rune':
                 rainbowShiftCount += 1
