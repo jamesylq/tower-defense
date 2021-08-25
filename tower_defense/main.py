@@ -13,11 +13,9 @@ from tkinter import Tk, filedialog
 from _pickle import UnpicklingError
 
 from tower_defense import __version__
-from tower_defense.replay import *
 from tower_defense.constants import *
 
 resource_path = os.path.join(os.path.dirname(__file__), 'resources')
-MaxFPS = 100
 
 # Map/Rune Setup
 Maps = []
@@ -229,8 +227,8 @@ class PhysicalPowerUp:
                         self.parent.objects.remove(self)
                         break
 
-        def draw(self):
-            pygame.draw.circle(screen, (0, 0, 0), (self.x, self.y), 3)
+        def draw(self, *, sx: int = 0, sy: int = 0):
+            pygame.draw.circle(screen, (0, 0, 0), (self.x + sx, self.y + sy), 3)
 
     class Lightning:
         def __init__(self, x, y, parent):
@@ -244,8 +242,8 @@ class PhysicalPowerUp:
             if self.visibleTicks == 0:
                 self.parent.objects.remove(self)
 
-        def draw(self):
-            pygame.draw.line(screen, (191, 0, 255), (500, -200), (self.x, self.y), 3)
+        def draw(self, *, sx: int = 0, sy: int = 0):
+            pygame.draw.line(screen, (191, 0, 255), (500, -200), (self.x + sx, self.y + sy), 3)
 
     def __init__(self):
         self.objects = []
@@ -312,6 +310,9 @@ class Towers:
         pass
 
     def update(self):
+        pass
+
+    def getImageFrame(self):
         pass
 
 
@@ -836,7 +837,6 @@ class BananaFarm(Towers):
         if self.abilityData['active']:
             profit = random.randint(1000, 5000)
             info.coins += profit
-            info.gameReplayData.append(Update(GAINCOINS, info.ticks, [profit]))
             self.abilityData['active'] = False
 
         self.cooldown = [0, 50, 25, 25][self.upgrades[0]]
@@ -1059,7 +1059,6 @@ class Wizard(Towers):
         if self.abilityData['active']:
             self.abilityData['active'] = False
             info.HP = min(300, info.HP + 25)
-            info.gameReplayData.append(Update(HEAL, info.ticks, [25]))
 
         self.range = [125, 150, 175, 175][self.upgrades[0]]
         self.cooldown = [50, 50, 33, 16][self.upgrades[2]]
@@ -1594,6 +1593,7 @@ class Enemy:
                             self.x += speed
                             if self.x >= new[0]:
                                 self.lineIndex = newLineIndex
+                                self.x, self.y = info.Map.path[newLineIndex]
 
                             foundMove = True
 
@@ -1601,6 +1601,7 @@ class Enemy:
                             self.x -= speed
                             if self.x <= new[0]:
                                 self.lineIndex = newLineIndex
+                                self.x, self.y = info.Map.path[newLineIndex]
 
                             foundMove = True
 
@@ -1608,6 +1609,7 @@ class Enemy:
                             self.y += speed
                             if self.y >= new[1]:
                                 self.lineIndex = newLineIndex
+                                self.x, self.y = info.Map.path[newLineIndex]
 
                             foundMove = True
 
@@ -1615,6 +1617,7 @@ class Enemy:
                             self.y -= speed
                             if self.y <= new[1]:
                                 self.lineIndex = newLineIndex
+                                self.x, self.y = info.Map.path[newLineIndex]
 
                             foundMove = True
 
@@ -1711,7 +1714,7 @@ class Enemy:
                         else:
                             projectile.pierce -= 1
 
-    def draw(self):
+    def draw(self, *, sx: int = 0, sy: int = 0):
         if self.isBoss:
             healthPercent = self.HP / trueHP[self.tier]
 
@@ -1726,16 +1729,16 @@ class Enemy:
             else:
                 color = (255, 0, 0)
 
-            pygame.draw.rect(screen, (128, 128, 128), (self.x - 50, self.y - 25, 100, 5))
-            pygame.draw.rect(screen, color, (self.x - 50, self.y - 25, round(self.HP / self.MaxHP * 100), 5))
-            pygame.draw.rect(screen, (0, 0, 0), (self.x - 50, self.y - 25, 100, 5), 1)
-            centredPrint(font, f'{math.ceil(self.HP / self.MaxHP * 100)}%', (self.x, self.y - 35))
+            pygame.draw.rect(screen, (128, 128, 128), (self.x - 50 + sx, self.y - 25 + sy, 100, 5))
+            pygame.draw.rect(screen, color, (self.x - 50 + sx, self.y - 25 + sy, round(self.HP / self.MaxHP * 100), 5))
+            pygame.draw.rect(screen, (0, 0, 0), (self.x - 50 + sx, self.y - 25 + sy, 100, 5), 1)
+            centredPrint(font, f'{math.ceil(self.HP / self.MaxHP * 100)}%', (self.x + sx, self.y - 35 + sy))
 
-        pygame.draw.circle(screen, enemyColors[str(self.tier)], (self.x, self.y), 20 if self.isBoss else 10)
+        pygame.draw.circle(screen, enemyColors[str(self.tier)], (self.x + sx, self.y + sy), 20 if self.isBoss else 10)
         if self.camo:
-            pygame.draw.circle(screen, (0, 0, 0), (self.x, self.y), 20 if self.isBoss else 10, 2)
+            pygame.draw.circle(screen, (0, 0, 0), (self.x + sx, self.y + sy), 20 if self.isBoss else 10, 2)
         if self.regen:
-            pygame.draw.circle(screen, (255, 105, 180), (self.x, self.y), 20 if self.isBoss else 10, 2)
+            pygame.draw.circle(screen, (255, 105, 180), (self.x + sx, self.y + sy), 20 if self.isBoss else 10, 2)
 
     def kill(self, *, spawnNew: bool = True, coinMultiplier: int = 1, ignoreBoss: bool = False, burn: bool = False, bossDamage: int = 1, overrideRuneColor: Tuple[int] = None, ignoreRegularEnemyHealth: bool = False, reduceFireTicks: bool = False):
         if reduceFireTicks:
@@ -2471,9 +2474,6 @@ def load() -> None:
         if info.powerUpData is not None:
             PowerUps = info.powerUpData
 
-        if info.status == 'replay':
-            info.status = 'mapSelect'
-
         info.PBs = updateDict(info.PBs, [Map.name for Map in Maps])
 
         info.statistics['mapsBeat'] = len([m for m in info.PBs.keys() if type(info.PBs[m]) is int])
@@ -2723,6 +2723,7 @@ def app() -> None:
                                         info.Map = Maps[n]
                                         info.status = 'game'
                                         info.coins = math.inf if info.sandboxMode else 50
+                                        info.gameReplayData.clear()
 
                                         try:
                                             PowerUps.objects.clear()
@@ -2736,6 +2737,7 @@ def app() -> None:
                                 info.Map = random.choice([Map for Map in Maps if info.PBs[Map.name] != LOCKED])
                                 info.status = 'game'
                                 info.coins = math.inf if info.sandboxMode else 50
+                                info.gameReplayData.clear()
 
                                 try:
                                     PowerUps.objects.clear()
@@ -3241,17 +3243,15 @@ def app() -> None:
                     if not cont:
                         break
 
-                    clock.tick(100)
+                    clock.tick(MaxFPS)
 
         elif info.status == 'replay':
-            ticks = 0
-
-            info.reset()
-
-            replayData = info.gameReplayData.copy()
+            screen.fill((200, 200, 200))
+            pygame.draw.rect(screen, (0, 0, 0), (100, 75, 800, 450), 3)
+            pygame.display.update()
 
             while True:
-                screen.fill(200, 200, 200)
+                screen.fill((200, 200, 200))
 
                 pygame.draw.rect(screen, (0, 0, 0), (100, 75, 800, 450), 3)
                 pygame.draw.rect(screen, info.Map.backgroundColor, (100, 75, 800, 450))
@@ -3263,84 +3263,94 @@ def app() -> None:
                     pygame.draw.line(screen, info.Map.pathColor, [x1 + 100, y1 + 75], [x2 + 100, y2 + 75], lineWidth)
                     pygame.draw.circle(screen, info.Map.pathColor, [x2 + 100, y2 + 75], lineWidth // 2)
 
-                if len(replayData) > 0:
-                    if ticks == replayData[0].ticks:
-                        nextReplayRecord = replayData[0]
-                        while nextReplayRecord.ticks == ticks:
-                            if replayData[0].updateType == HEAL:
-                                info.HP = min(300, info.HP + replayData[0].heal)
+                try:
+                    data = info.gameReplayData.copy()[info.ticks]
+                except IndexError:
+                    info.status = 'mapSelect'
+                    info.ticks = 0
+                    break
 
-                            if replayData[0].updateType == GAINCOINS:
-                                info.coins += replayData[0].coins
+                for tower in data['towers']:
+                    towerName, x, y, imageFrame = tower
 
-                            if replayData[0].updateType == SELLTOWER:
-                                for tower in info.towers:
-                                    if tower.ID == replayData[0].ID:
-                                        info.towers.remove(tower)
-                                        info.coins += getSellPrice(tower)
+                    color = None
+                    for TowerType in Towers.__subclasses__():
+                        if TowerType.name == towerName:
+                            color = TowerType.color
 
-                            if replayData[0].updateType == PLACETOWER:
-                                replayData.towerType(replayData[0].x, replayData[0].y)
+                    try:
+                        if towerImages[towerName] is not None:
+                            try:
+                                screen.blit(towerImages[towerName], (x + 85, y + 55))
+                            except TypeError:
+                                screen.blit(towerImages[towerName][imageFrame], (x + 85, y + 55))
 
-                            if replayData[0].updateType == USEABILITY:
-                                for tower in info.towers:
-                                    if tower.ID == replayData[0].ID:
-                                        tower.abilityData['active'] = True
+                        elif color is None:
+                            raise AttributeError
+                        else:
+                            pygame.draw.circle(screen, color, (x + 100, y + 75), 15)
 
-                            if replayData[0].updateType == SPAWNSPIKE:
-                                PowerUps.objects.append(PhysicalPowerUp.Spike(replayData[0].x, replayData[0].y, PhysicalPowerUp))
+                    except AttributeError:
+                        pygame.draw.circle(screen, (200, 200, 200), (x + 100, y + 75), 15)
 
-                            if replayData[0].updateType == USEPOWERUP:
-                                if replayData[0].powerUpType == 'lightning':
-                                    t1 = getTarget(Towers(0, 0, overrideAddToTowers=True), overrideRange=1000, ignoreBosses=True)
-                                    if t1 is not None:
-                                        t2 = getTarget(Towers(0, 0, overrideAddToTowers=True), ignore=[t1], overrideRange=1000, ignoreBosses=True)
-                                        t1.kill(spawnNew=False, ignoreRegularEnemyHealth=True)
-                                        PowerUps.objects.append(PhysicalPowerUp.Lightning(t1.x, t1.y, PowerUps))
-                                        if t2 is not None:
-                                            t3 = getTarget(Towers(0, 0, overrideAddToTowers=True), ignore=[t1, t2], overrideRange=1000, ignoreBosses=True)
-                                            t2.kill(spawnNew=False, ignoreRegularEnemyHealth=True)
-                                            PowerUps.objects.append(PhysicalPowerUp.Lightning(t2.x, t2.y, PowerUps))
-                                            if t3 is not None:
-                                                t4 = getTarget(Towers(0, 0, overrideAddToTowers=True), ignore=[t1, t2, t3], overrideRange=1000, ignoreBosses=True)
-                                                t3.kill(spawnNew=False, ignoreRegularEnemyHealth=True)
-                                                PowerUps.objects.append(PhysicalPowerUp.Lightning(t3.x, t3.y, PowerUps))
-                                                if t4 is not None:
-                                                    t5 = getTarget(Towers(0, 0, overrideAddToTowers=True), ignore=[t1, t2, t3, t4], overrideRange=1000, ignoreBosses=True)
-                                                    t4.kill(spawnNew=False, ignoreRegularEnemyHealth=True)
-                                                    PowerUps.objects.append(PhysicalPowerUp.Lightning(t4.x, t4.y, PowerUps))
-                                                    if t5 is not None:
-                                                        t5.kill(spawnNew=False, ignoreRegularEnemyHealth=True)
-                                                        PowerUps.objects.append(PhysicalPowerUp.Lightning(t5.x, t5.y, PowerUps))
+                for enemy in data['enemies']:
+                    camo, regen, tier, x, y, HP, MaxHP = enemy
 
-                                if replayData[0].powerUpType == 'antiCamo':
-                                    for enemy in info.enemies:
-                                        if enemy.camo:
-                                            enemy.camo = False
+                    if tier in bosses:
+                        healthPercent = HP / trueHP[tier]
 
-                                if replayData[0].powerUpType == 'heal':
-                                    if info.HP < 250:
-                                        info.HP = min(250, info.HP + 5)
+                        if healthPercent >= 0.8:
+                            color = (191, 255, 0)
+                        elif healthPercent >= 0.6:
+                            color = (196, 211, 0)
+                        elif healthPercent >= 0.4:
+                            color = (255, 255, 0)
+                        elif healthPercent >= 0.2:
+                            color = (255, 69, 0)
+                        else:
+                            color = (255, 0, 0)
 
-                                if replayData[0].powerUpType == 'freeze':
-                                    if len(info.enemies) > 0:
-                                        for enemy in info.enemies:
-                                            enemy.freezeTimer = max(500, enemy.freezeTimer)
+                        pygame.draw.rect(screen, (128, 128, 128), (x + 50, y + 50, 100, 5))
+                        pygame.draw.rect(screen, color, (x + 50, y + 50, round(HP / MaxHP * 100), 5))
+                        pygame.draw.rect(screen, (0, 0, 0), (x + 50, y + 50, 100, 5), 1)
+                        centredPrint(font, f'{math.ceil(HP / MaxHP * 100)}%', (x + 100, y + 40))
 
-                                if replayData[0].powerUpType == 'reload':
-                                    info.doubleReloadTicks = 1000
+                    pygame.draw.circle(screen, enemyColors[str(tier)], (x + 100, y + 75), 20 if tier in bosses else 10)
+                    if camo:
+                        pygame.draw.circle(screen, (0, 0, 0), (x + 100, y + 75), 20 if tier in bosses else 10, 2)
+                    if regen:
+                        pygame.draw.circle(screen, (255, 105, 180), (x + 100, y + 75), 20 if tier in bosses else 10, 2)
 
-                            replayData.pop(0)
-                            nextReplayRecord = replayData[0]
+                for proj in data['projectiles']:
+                    color, x, y = proj
 
-                move()
+                    pygame.draw.circle(screen, color, (x + 100, y + 75), 3)
+
+                for piercingProj in data['piercingProjectiles']:
+                    x, y = piercingProj
+
+                    pygame.draw.circle(screen, (16, 16, 16), (x + 100, y + 75), 5)
+
+                for powerUp in data['powerups']:
+                    powerUpType, x, y = powerUp
+
+                    if powerUpType == 'spikes':
+                        pygame.draw.circle(screen, (0, 0, 0), (x + 100, y + 75), 3)
+
+                    if powerUpType == 'lightning':
+                        pygame.draw.line(screen, (191, 0, 255), (500, -200), (x + 100, y + 75), 3)
 
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
+                        info.ticks = 0
+                        info.reset()
+                        save()
                         quit()
-                pygame.display.update()
 
-                ticks += 1
+                clock.tick(ReplayFPS)
+                pygame.display.update((100, 75, 800, 450))
+
+                info.ticks += 1
 
         elif info.status == 'shop':
             while True:
@@ -3796,7 +3806,43 @@ def app() -> None:
             draw()
             move()
 
-            print([[enemy.x, enemy.y, enemy.camo, enemy.regen, enemy.tier, enemy.freezeTimer] for enemy in info.enemies])
+            if info.replayRefresh >= ReplayRefreshRate:
+                replayTowers = []
+                replayEnemies = []
+                replayProjectiles = []
+                replayPiercingProjectiles = []
+                replayPowerUps = []
+
+                for tower in info.towers:
+                    replayTowers.append([tower.name, tower.x, tower.y, tower.getImageFrame()])
+
+                for enemy in info.enemies:
+                    replayEnemies.append([enemy.camo, enemy.regen, enemy.tier, enemy.x, enemy.y, enemy.HP, enemy.MaxHP])
+
+                for proj in info.projectiles:
+                    replayProjectiles.append([proj.color, proj.x, proj.y])
+
+                for piercingProj in info.piercingProjectiles:
+                    replayPiercingProjectiles.append([piercingProj.x, piercingProj.y])
+
+                for powerUp in PowerUps.objects:
+                    if type(powerUp) is PhysicalPowerUp.Spike:
+                        replayPowerUps.append(['spike', powerUp.x, powerUp.y])
+
+                    if type(powerUp) is PhysicalPowerUp.Lightning:
+                        replayPowerUps.append(['lightning', powerUp.x, powerUp.y])
+
+                info.gameReplayData.append({
+                    'towers': replayTowers,
+                    'enemies': replayEnemies,
+                    'projectiles': replayProjectiles,
+                    'piercingProjectiles': replayPiercingProjectiles,
+                    'powerups': replayPowerUps
+                })
+
+                info.replayRefresh = 0
+            else:
+                info.replayRefresh += 1
 
             if info.equippedRune == 'Rainbow Rune':
                 rainbowShiftCount += 1
@@ -3830,7 +3876,6 @@ def app() -> None:
                             if info.placing == 'spikes':
                                 for n in range(25):
                                     PowerUps.objects.append(PhysicalPowerUp.Spike(mx + random.randint(-25, 25), my + random.randint(-25, 25), PowerUps))
-                                    info.gameReplayData.append(Update(SPAWNSPIKE, info.ticks, [(mx, my)]))
                                 info.placing = ''
 
                             else:
@@ -3838,7 +3883,6 @@ def app() -> None:
                                     if towerType.name == info.placing:
                                         info.placing = ''
                                         towerType(mx, my)
-                                        info.gameReplayData.append(Update(PLACETOWER, info.ticks, [towerType, (mx, my), info.towersPlaced]))
                                         info.statistics['towersPlaced'] += 1
                                         info.towersPlaced += 1
 
@@ -3901,8 +3945,6 @@ def app() -> None:
                                     if not info.sandboxMode:
                                         info.powerUps['lightning'] -= 1
 
-                                    info.gameReplayData.append(Update(USEPOWERUP, info.ticks, ['lightning']))
-
                             if 940 <= mx <= 990 and info.powerUps['antiCamo'] > 0:
                                 found = False
                                 for enemy in info.enemies:
@@ -3913,8 +3955,6 @@ def app() -> None:
                                 if found and not info.sandboxMode:
                                     info.powerUps['antiCamo'] -= 1
 
-                                info.gameReplayData.append(Update(USEPOWERUP, info.ticks, ['antiCamo']))
-
                         if 530 <= my <= 580:
                             if 810 <= mx <= 860 and info.powerUps['heal'] > 0:
                                 if info.HP < 250:
@@ -3922,8 +3962,6 @@ def app() -> None:
 
                                     if not info.sandboxMode:
                                         info.powerUps['heal'] -= 1
-
-                                info.gameReplayData.append(Update(USEPOWERUP, info.ticks, ['heal']))
 
                             if 875 <= mx <= 925 and info.powerUps['freeze'] > 0:
                                 if len(info.enemies) > 0:
@@ -3933,16 +3971,12 @@ def app() -> None:
                                     if not info.sandboxMode:
                                         info.powerUps['freeze'] -= 1
 
-                                info.gameReplayData.append(Update(USEPOWERUP, info.ticks, ['freeze']))
-
                             if 940 <= mx <= 990 and info.powerUps['reload'] > 0:
                                 if len(info.towers) > 0:
                                     info.doubleReloadTicks = 1000
 
                                     if not info.sandboxMode:
                                         info.powerUps['reload'] -= 1
-
-                                info.gameReplayData.append(Update(USEPOWERUP, info.ticks, ['reload']))
 
                         if issubclass(type(info.selected), Towers):
                             if 295 <= mx <= 595 and 485 <= my <= 570:
@@ -3951,7 +3985,6 @@ def app() -> None:
                                         if info.selected.abilityCooldown >= info.selected.totalAbilityCooldown:
                                             info.selected.abilityCooldown = 0
                                             info.selected.abilityData['active'] = True
-                                            info.gameReplayData.append(Update(USEABILITY, info.ticks, [info.selected.ID]))
 
                                     elif type(info.selected) is Village:
                                         towers = {
@@ -3979,7 +4012,6 @@ def app() -> None:
 
                                                 for tower in towers.values():
                                                     info.towers.remove(tower)
-                                                    info.gameReplayData.append(Update(SELLTOWER, info.ticks, [tower.ID]))
                                                 info.towers.remove(info.selected)
 
                                                 elemental = Elemental(info.selected.x, info.selected.y)
@@ -3995,7 +4027,6 @@ def app() -> None:
                                             if not info.sandboxMode:
                                                 info.statistics['coinsSpent'] += cost
                                             info.selected.upgrades[3] = True
-                                            info.gameReplayData.append(Update(UPGRADETOWER, info.ticks, [3, info.selected.ID]))
 
                                 elif type(info.selected) is not Elemental:
                                     n = (my - 485) // 30
@@ -4006,12 +4037,10 @@ def app() -> None:
                                             if not info.sandboxMode:
                                                 info.statistics['coinsSpent'] += cost
                                             info.selected.upgrades[n] += 1
-                                            info.gameReplayData.append(Update(UPGRADETOWER, info.ticks, [n, info.selected.ID]))
 
                             elif 620 <= mx < 770 and 545 <= my <= 570:
                                 info.towers.remove(info.selected)
                                 info.coins += getSellPrice(info.selected)
-                                info.gameReplayData.append(Update(SELLTOWER, info.ticks, [info.selected.ID]))
                                 info.statistics['towersSold'] += 1
                                 info.selected = None
 
@@ -4019,7 +4048,6 @@ def app() -> None:
                             elif type(info.selected) is IceTower:
                                 if 620 <= mx <= 770 and 500 <= my <= 525:
                                     info.selected.enabled = not info.selected.enabled
-                                    info.gameReplayData.append(Update(PAUSEICETOWER, info.ticks, [info.selected.ID]))
 
                     elif event.button == 4:
                         if mx > 800 and my < 450:
@@ -4144,7 +4172,8 @@ defaults = {
     'shopData': [],
     'gameReplayData': [],
     'ticks': 0,
-    'towersPlaced': 0
+    'towersPlaced': 0,
+    'replayRefresh': 0
 }
 
 achievementRequirements = {

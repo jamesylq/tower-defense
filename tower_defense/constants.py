@@ -234,20 +234,14 @@ COSDEGREES = {
     330: COS330
 }
 
-# Replay Constants
-HEAL = 'HEAL'
-GAINCOINS = 'GAINCOINS'
-SELLTOWER = 'SELLTOWER'
-PLACETOWER = 'PLACETOWER'
-USEABILITY = 'USEABILITY'
-SPAWNSPIKE = 'SPAWNSPIKE'
-USEPOWERUP = 'USEPOWERUP'
-UPGRADETOWER = 'UPGRADETOWER'
-PAUSEICETOWER = 'PAUSEICETOWER'
+# FPS Constants
+MaxFPS = 100
+ReplayFPS = 25
+ReplayRefreshRate = MaxFPS // ReplayFPS
 
 # Misc. Constants
 rainbowColors = [[255, 0, 0], [0, 127, 0], [255, 255, 0], [0, 255, 0], [0, 0, 255], [46, 43, 95], [139, 0, 255]]
 rainbowShift = [[0, 0.127, 0], [0.255, 0.127, 0], [-0.255, 0, 0], [0, -0.255, 0.255], [0.046, 0.043, -0.16], [0.093, -0.043, 0.16], [0.116, 0, -0.255]]
-gameAttrs = ['enemies', 'projectiles', 'piercingProjectiles', 'towers', 'HP', 'coins', 'selected', 'placing', 'nextWave', 'wave', 'shopScroll', 'spawnleft', 'spawndelay', 'ticksSinceNoEnemies', 'sandboxMode', 'gameReplayData', 'ticks', 'towersPlaced']
+gameAttrs = ['enemies', 'projectiles', 'piercingProjectiles', 'towers', 'HP', 'coins', 'selected', 'placing', 'nextWave', 'wave', 'shopScroll', 'spawnleft', 'spawndelay', 'ticksSinceNoEnemies', 'sandboxMode', 'ticks', 'towersPlaced', 'replayRefresh']
 
 LOCKED = 'LOCKED'
