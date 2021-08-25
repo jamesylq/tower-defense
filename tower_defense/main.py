@@ -2529,6 +2529,16 @@ def loadGame(filename: str):
         info.status = 'game'
         info.Map = game.Map
 
+        try:
+            PowerUps.objects.clear()
+        except AttributeError:
+            pass
+
+        try:
+            RuneEffects.effects.clear()
+        except AttributeError:
+            pass
+
     except (FileNotFoundError, EOFError, AttributeError, UnpicklingError):
         info = infoSave
 
@@ -2730,6 +2740,11 @@ def app() -> None:
                                         except AttributeError:
                                             pass
 
+                                        try:
+                                            RuneEffects.effects.clear()
+                                        except AttributeError:
+                                            pass
+
                                         mouseTrail.clear()
                                         cont = False
 
@@ -2744,6 +2759,11 @@ def app() -> None:
                                 except AttributeError:
                                     pass
 
+                                try:
+                                    RuneEffects.effects.clear()
+                                except AttributeError:
+                                    pass
+
                                 mouseTrail.clear()
                                 cont = False
 
@@ -2754,9 +2774,14 @@ def app() -> None:
                             if 525 <= mx <= 650 and 510 <= my <= 540:
                                 path = filedialog.askopenfilename()
                                 if type(path) is str and removeCharset(path, ' ') != '':
-                                    info.status = 'replay'
-                                    info.gameReplayData, info.Map = pickle.load(open(path, 'rb'))
-                                    cont = False
+                                    try:
+                                        info.gameReplayData, info.Map = pickle.load(open(path, 'rb'))
+                                        info.status = 'replay'
+                                        cont = False
+                                        print(f'Replaying {path}!')
+
+                                    except TypeError:
+                                        pass
 
                             if 675 <= mx <= 800 and 510 <= my <= 540:
                                 info.status = 'shop'
@@ -2833,6 +2858,7 @@ def app() -> None:
                         if event.key == pygame.K_SPACE:
                             info.status = 'mapSelect'
                             cont = False
+                            info.gameReplayData.clear()
 
                     elif event.type == pygame.MOUSEBUTTONDOWN:
                         if event.button == 1:
@@ -2842,6 +2868,7 @@ def app() -> None:
                                     with open(filename, 'wb') as file:
                                         pickle.dump([info.gameReplayData, info.Map], file)
                                     saved = True
+                                    info.gameReplayData.clear()
 
                     elif event.type == pygame.QUIT:
                         save()
@@ -2867,6 +2894,7 @@ def app() -> None:
                         if event.key == pygame.K_SPACE:
                             info.status = 'mapSelect'
                             cont = True
+                            info.gameReplayData.clear()
 
                     elif event.type == pygame.QUIT:
                         save()
@@ -3251,7 +3279,9 @@ def app() -> None:
             pygame.display.update()
 
             while True:
-                screen.fill((200, 200, 200))
+                mx, my = pygame.mouse.get_pos()
+
+                screen.fill((0, 0, 0))
 
                 pygame.draw.rect(screen, (0, 0, 0), (100, 75, 800, 450), 3)
                 pygame.draw.rect(screen, info.Map.backgroundColor, (100, 75, 800, 450))
@@ -3340,6 +3370,21 @@ def app() -> None:
                     if powerUpType == 'lightning':
                         pygame.draw.line(screen, (191, 0, 255), (500, -200), (x + 100, y + 75), 3)
 
+                pygame.draw.rect(screen, (200, 200, 200), (0, 0, 1000, 75))
+                pygame.draw.rect(screen, (200, 200, 200), (0, 0, 100, 675))
+                pygame.draw.rect(screen, (200, 200, 200), (900, 0, 100, 675))
+                pygame.draw.rect(screen, (200, 200, 200), (0, 525, 1000, 75))
+
+                centredPrint(mediumFont, 'Replay', (500, 35))
+
+                pygame.draw.rect(screen, (255, 0, 0), (30, 550, 100, 30))
+                centredPrint(font, 'Close', (80, 565))
+                if 30 <= mx <= 130 and 550 <= my <= 580:
+                    pygame.draw.rect(screen, (64, 64, 64), (30, 550, 100, 30), 3)
+                else:
+                    pygame.draw.rect(screen, (0, 0, 0), (30, 550, 100, 30), 3)
+
+                cont = True
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         info.ticks = 0
@@ -3347,8 +3392,17 @@ def app() -> None:
                         save()
                         quit()
 
+                    if event.type == pygame.MOUSEBUTTONDOWN:
+                        if event.button == 1:
+                            if 30 <= mx <= 130 and 550 <= my <= 580:
+                                cont = False
+                                info.status = 'mapSelect'
+
+                if not cont:
+                    break
+
                 clock.tick(ReplayFPS)
-                pygame.display.update((100, 75, 800, 450))
+                pygame.display.update()
 
                 info.ticks += 1
 
@@ -3864,6 +3918,7 @@ def app() -> None:
             if info.HP <= 0:
                 info.status = 'lose'
                 info.statistics['losses'] += 1
+                info.gameReplayData.clear()
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
