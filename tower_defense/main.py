@@ -2184,9 +2184,8 @@ def draw() -> None:
 
             pygame.draw.rect(screen, (200, 200, 200), (810, 40 + 80 * n + gameInfo.shopScroll, 100, 30))
             centredPrint(font, 'Buy New', (860, 55 + 80 * n + gameInfo.shopScroll))
-
             if 810 <= mx <= 910 and 40 + 80 * n + gameInfo.shopScroll <= my <= 70 + 80 * n + gameInfo.shopScroll:
-                pygame.draw.rect(screen, (128, 128, 128), (810, 40 + 80 * n + gameInfo.shopScroll, 100, 30), 3)
+                pygame.draw.rect(screen, (128, 128, 128), (810, 40 + 80 * n + gameInfo.shopScroll, 100, 30), 5)
             else:
                 pygame.draw.rect(screen, (0, 0, 0), (810, 40 + 80 * n + gameInfo.shopScroll, 100, 30), 3)
 
@@ -2217,7 +2216,7 @@ def draw() -> None:
     pygame.draw.rect(screen, (200, 200, 200), (810, 460, 50, 50))
     centredBlit(powerUps['spikes'][0], (835, 485))
     if 810 <= mx <= 860 and 460 <= my <= 510:
-        pygame.draw.rect(screen, (128, 128, 128), (810, 460, 50, 50), 3)
+        pygame.draw.rect(screen, (128, 128, 128), (810, 460, 50, 50), 5)
     else:
         pygame.draw.rect(screen, (0, 0, 0), (810, 460, 50, 50), 3)
     centredPrint(tinyFont, str(info.powerUps['spikes']), (835, 518))
@@ -2225,7 +2224,7 @@ def draw() -> None:
     pygame.draw.rect(screen, (200, 200, 200), (875, 460, 50, 50))
     centredBlit(powerUps['lightning'][0], (900, 485))
     if 875 <= mx <= 925 and 460 <= my <= 510:
-        pygame.draw.rect(screen, (128, 128, 128), (875, 460, 50, 50), 3)
+        pygame.draw.rect(screen, (128, 128, 128), (875, 460, 50, 50), 5)
     else:
         pygame.draw.rect(screen, (0, 0, 0), (875, 460, 50, 50), 3)
     centredPrint(tinyFont, str(info.powerUps['lightning']), (900, 518))
@@ -2233,7 +2232,7 @@ def draw() -> None:
     pygame.draw.rect(screen, (200, 200, 200), (940, 460, 50, 50))
     centredBlit(powerUps['antiCamo'][0], (965, 485))
     if 940 <= mx <= 990 and 440 <= my <= 510:
-        pygame.draw.rect(screen, (128, 128, 128), (940, 460, 50, 50), 3)
+        pygame.draw.rect(screen, (128, 128, 128), (940, 460, 50, 50), 5)
     else:
         pygame.draw.rect(screen, (0, 0, 0), (940, 460, 50, 50), 3)
     centredPrint(tinyFont, str(info.powerUps['antiCamo']), (965, 518))
@@ -2241,7 +2240,7 @@ def draw() -> None:
     pygame.draw.rect(screen, (200, 200, 200), (810, 530, 50, 50))
     centredBlit(powerUps['heal'][0], (835, 555))
     if 810 <= mx <= 860 and 530 <= my <= 580:
-        pygame.draw.rect(screen, (128, 128, 128), (810, 530, 50, 50), 3)
+        pygame.draw.rect(screen, (128, 128, 128), (810, 530, 50, 50), 5)
     else:
         pygame.draw.rect(screen, (0, 0, 0), (810, 530, 50, 50), 3)
     centredPrint(tinyFont, str(info.powerUps['heal']), (835, 588))
@@ -2249,7 +2248,7 @@ def draw() -> None:
     pygame.draw.rect(screen, (200, 200, 200), (875, 530, 50, 50))
     centredBlit(powerUps['freeze'][0], (900, 555))
     if 875 <= mx <= 925 and 530 <= my <= 580:
-        pygame.draw.rect(screen, (128, 128, 128), (875, 530, 50, 50), 3)
+        pygame.draw.rect(screen, (128, 128, 128), (875, 530, 50, 50), 5)
     else:
         pygame.draw.rect(screen, (0, 0, 0), (875, 530, 50, 50), 3)
     centredPrint(tinyFont, str(info.powerUps['freeze']), (900, 588))
@@ -2257,7 +2256,7 @@ def draw() -> None:
     pygame.draw.rect(screen, (200, 200, 200), (940, 530, 50, 50))
     centredBlit(powerUps['reload'][0], (965, 555))
     if 940 <= mx <= 990 and 530 <= my <= 580:
-        pygame.draw.rect(screen, (128, 128, 128), (940, 530, 50, 50), 3)
+        pygame.draw.rect(screen, (128, 128, 128), (940, 530, 50, 50), 5)
     else:
         pygame.draw.rect(screen, (0, 0, 0), (940, 530, 50, 50), 3)
     centredPrint(tinyFont, str(info.powerUps['reload']), (965, 588))
@@ -2266,7 +2265,7 @@ def draw() -> None:
     pygame.draw.line(screen, (0, 0, 0), (3, 453), (17, 467), 2)
     pygame.draw.line(screen, (0, 0, 0), (3, 467), (17, 453), 2)
     if mx <= 20 and 450 <= my <= 470:
-        pygame.draw.rect(screen, (64, 64, 64), (0, 450, 20, 20), 3)
+        pygame.draw.rect(screen, (128, 128, 128), (0, 450, 20, 20), 3)
     else:
         pygame.draw.rect(screen, (0, 0, 0), (0, 450, 20, 20), 3)
 
@@ -2326,7 +2325,7 @@ def draw() -> None:
                 if 295 <= mx <= 595 and 485 + 30 * n <= my <= 515 + 30 * n:
                     pygame.draw.rect(screen, (200, 200, 200), (295, 485 + 30 * n, 300, 30))
                 else:
-                    pygame.draw.rect(screen, (128, 128, 128), (295, 485 + 30 * n, 300, 30))
+                    pygame.draw.rect(screen, (100, 100, 100), (295, 485 + 30 * n, 300, 30))
 
                 if gameInfo.selected.upgrades[n] == 3:
                     pygame.draw.rect(screen, (255, 255, 191), (295, 485 + 30 * n, 300, 30))
@@ -2341,9 +2340,9 @@ def draw() -> None:
                         pygame.draw.circle(screen, (0, 255, 0), (560 + 12 * m, 497 + 30 * n), 5)
                     pygame.draw.circle(screen, (0, 0, 0), (560 + 12 * m, 497 + 30 * n), 5, 2)
 
-        pygame.draw.rect(screen, (128, 128, 128), (620, 545, 150, 25))
+        pygame.draw.rect(screen, (100, 100, 100), (620, 545, 150, 25))
         if 620 < mx < 820 and 545 < my < 570:
-            pygame.draw.rect(screen, (200, 200, 200), (620, 545, 150, 25), 3)
+            pygame.draw.rect(screen, (128, 128, 128), (620, 545, 150, 25), 5)
         else:
             pygame.draw.rect(screen, (0, 0, 0), (620, 545, 150, 25), 3)
         centredPrint(font, f'Sell: ${round(getSellPrice(gameInfo.selected))}', (695, 557))
@@ -2351,7 +2350,7 @@ def draw() -> None:
         if type(gameInfo.selected) is IceTower:
             pygame.draw.rect(screen, (0, 255, 0) if gameInfo.selected.enabled else (255, 0, 0), (620, 500, 150, 25))
             if 620 <= mx <= 770 and 500 <= my <= 525:
-                pygame.draw.rect(screen, (200, 200, 200), (620, 500, 150, 25), 3)
+                pygame.draw.rect(screen, (128, 128, 128), (620, 500, 150, 25), 5)
             else:
                 pygame.draw.rect(screen, (0, 0, 0), (620, 500, 150, 25), 3)
             centredPrint(font, 'ENABLED' if gameInfo.selected.enabled else 'DISABLED', (695, 512))
@@ -3058,7 +3057,7 @@ def app() -> None:
                         centredPrint(font, 'Next Step', (850, 465))
 
                         if 800 < mx < 900 and 450 < my < 480:
-                            pygame.draw.rect(screen, (128, 128, 128), (800, 450, 100, 30), 3)
+                            pygame.draw.rect(screen, (128, 128, 128), (800, 450, 100, 30), 5)
                         else:
                             pygame.draw.rect(screen, (0, 0, 0), (800, 450, 100, 30), 3)
 
@@ -3066,7 +3065,7 @@ def app() -> None:
                     centredPrint(font, 'Cancel', (80, 565))
 
                     if 30 < mx < 130 and 550 < my < 580:
-                        pygame.draw.rect(screen, (128, 128, 128), (30, 550, 100, 30), 3)
+                        pygame.draw.rect(screen, (128, 128, 128), (30, 550, 100, 30), 5)
                     else:
                         pygame.draw.rect(screen, (0, 0, 0), (30, 550, 100, 30), 3)
 
@@ -3266,28 +3265,28 @@ def app() -> None:
                     if down > 0:
                         centredPrint(font, str(down), (75, 287 + cy // 2))
 
-                    pygame.draw.rect(screen, (100, 100, 100), (0, 570, 60, 30))
-                    centredPrint(font, 'Clear', (30, 585))
-                    if mx <= 60 and 570 <= my:
-                        pygame.draw.rect(screen, (128, 128, 128), (0, 570, 60, 30), 3)
+                    pygame.draw.rect(screen, (100, 100, 100), (20, 540, 60, 30))
+                    centredPrint(font, 'Clear', (50, 555))
+                    if 20 <= mx <= 80 and 540 <= my <= 570:
+                        pygame.draw.rect(screen, (128, 128, 128), (20, 540, 60, 30), 5)
                     else:
-                        pygame.draw.rect(screen, (0, 0, 0), (0, 570, 60, 30), 3)
+                        pygame.draw.rect(screen, (0, 0, 0), (20, 540, 60, 30), 3)
 
-                    pygame.draw.rect(screen, (100, 100, 100), (0, 530, 60, 30))
-                    centredPrint(font, 'Undo', (30, 545))
-                    if mx <= 60 and 530 <= my <= 560:
-                        pygame.draw.rect(screen, (128, 128, 128), (0, 530, 60, 30), 3)
+                    pygame.draw.rect(screen, (100, 100, 100), (20, 500, 60, 30))
+                    centredPrint(font, 'Undo', (50, 515))
+                    if 20 <= mx <= 80 and 500 <= my <= 530:
+                        pygame.draw.rect(screen, (128, 128, 128), (20, 500, 60, 30), 5)
                     else:
-                        pygame.draw.rect(screen, (0, 0, 0), (0, 530, 60, 30), 3)
+                        pygame.draw.rect(screen, (0, 0, 0), (20, 500, 60, 30), 3)
 
                     if len(info.mapMakerData['path']) >= 2:
-                        pygame.draw.rect(screen, (44, 255, 44), (940, 570, 60, 30))
-                        centredPrint(font, 'Done', (970, 585))
+                        pygame.draw.rect(screen, (44, 255, 44), (920, 550, 60, 30))
+                        centredPrint(font, 'Done', (950, 565))
 
-                        if mx >= 940 and my >= 570:
-                            pygame.draw.rect(screen, (128, 128, 128), (940, 570, 60, 30), 3)
+                        if 920 <= mx <= 980 and 550 <= my <= 580:
+                            pygame.draw.rect(screen, (128, 128, 128), (920, 550, 60, 30), 5)
                         else:
-                            pygame.draw.rect(screen, (0, 0, 0), (940, 570, 60, 30), 3)
+                            pygame.draw.rect(screen, (0, 0, 0), (920, 550, 60, 30), 3)
 
                     pygame.display.update()
 
@@ -3302,10 +3301,10 @@ def app() -> None:
                                 if 100 <= cx <= 900 and 125 <= cy <= 575 and placable:
                                     info.mapMakerData['path'].append([cx, cy])
 
-                                if 0 <= mx <= 60 and 570 <= my:
+                                if 20 <= mx <= 80 and 550 <= my <= 580:
                                     info.mapMakerData['path'].clear()
 
-                                if 0 <= mx <= 60 and 530 <= my <= 560:
+                                if 20 <= mx <= 80 and 500 <= my <= 530:
                                     try:
                                         info.mapMakerData['path'] = info.mapMakerData['path'][:-1]
                                     except IndexError:
@@ -3469,11 +3468,11 @@ def app() -> None:
                     x = 100 + 300 * (n % 3)
                     y = 100 if n < 3 else 325
 
-                    pygame.draw.rect(screen, (128, 128, 128), (x, y, 200, 200))
+                    pygame.draw.rect(screen, (100, 100, 100), (x, y, 200, 200))
                     if x <= mx <= x + 200 and y <= my <= y + 200:
-                        pygame.draw.rect(screen, (64, 64, 64), (x, y, 200, 200), 5)
+                        pygame.draw.rect(screen, (128, 128, 128), (x, y, 200, 200), 5)
                     else:
-                        pygame.draw.rect(screen, (0, 0, 0), (x, y, 200, 200), 5)
+                        pygame.draw.rect(screen, (0, 0, 0), (x, y, 200, 200), 3)
 
                     rune = getRune(info.shopData[n]['item'])
                     if rune is None:
@@ -3530,7 +3529,7 @@ def app() -> None:
                 pygame.draw.rect(screen, (255, 0, 0), (30, 550, 100, 30))
                 centredPrint(font, 'Close', (80, 565))
                 if 30 <= mx <= 130 and 550 <= my <= 580:
-                    pygame.draw.rect(screen, (64, 64, 64), (30, 550, 100, 30), 3)
+                    pygame.draw.rect(screen, (128, 128, 128), (30, 550, 100, 30), 5)
                 else:
                     pygame.draw.rect(screen, (0, 0, 0), (30, 550, 100, 30), 3)
 
@@ -3574,7 +3573,7 @@ def app() -> None:
                 pygame.draw.rect(screen, (255, 0, 0), (30, 550, 100, 30))
                 centredPrint(font, 'Close', (80, 565))
                 if 30 <= mx <= 130 and 550 <= my <= 580:
-                    pygame.draw.rect(screen, (64, 64, 64), (30, 550, 100, 30), 3)
+                    pygame.draw.rect(screen, (128, 128, 128), (30, 550, 100, 30), 5)
                 else:
                     pygame.draw.rect(screen, (0, 0, 0), (30, 550, 100, 30), 3)
 
@@ -3794,9 +3793,9 @@ def app() -> None:
                 pygame.draw.rect(screen, (255, 0, 0), (20, 550, 100, 30))
                 centredPrint(font, 'Close', (70, 565))
                 if 20 <= mx <= 120 and 550 <= my <= 580:
-                    pygame.draw.rect(screen, (0, 0, 0), (20, 550, 100, 30), 3)
-                else:
                     pygame.draw.rect(screen, (128, 128, 128), (20, 550, 100, 30), 5)
+                else:
+                    pygame.draw.rect(screen, (0, 0, 0), (20, 550, 100, 30), 3)
 
                 maxScroll = len(achievements) * 110 - 440
                 cont = True
