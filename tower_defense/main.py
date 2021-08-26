@@ -2632,7 +2632,7 @@ def app() -> None:
                     if event.button == 1:
                         if 375 < my < 425:
                             if 225 < mx < 400:
-                                info.reset()
+                                gameInfo.reset()
                                 info.status = 'mapSelect'
                                 cont = True
                             elif 600 < mx < 775:
@@ -2836,7 +2836,7 @@ def app() -> None:
 
                             if 675 <= mx <= 800 and 510 <= my <= 540:
                                 info.status = 'shop'
-                                if time.time() - info.lastOpenShop >= 86400:
+                                if time.time() // 86400 > info.lastOpenShop // 86400:
                                     refreshShop()
                                     info.lastOpenShop = time.time()
                                 cont = False
@@ -2931,7 +2931,7 @@ def app() -> None:
 
         elif info.status == 'lose':
             cont = False
-            info.reset()
+            gameInfo.reset()
             save()
 
             while True:
@@ -3439,7 +3439,7 @@ def app() -> None:
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         gameInfo.ticks = 0
-                        info.reset()
+                        gameInfo.reset()
                         save()
                         quit()
 
@@ -3499,9 +3499,13 @@ def app() -> None:
                 pygame.draw.rect(screen, (0, 0, 0), (850, 15, 100, 30), 2)
                 leftAlignPrint(font, str(info.tokens), (860, 30))
 
-                h = math.floor((info.lastOpenShop + 86400 - time.time()) // 3600)
-                m = math.floor((info.lastOpenShop + 86400 - time.time() - 3600 * h) // 60)
-                s = math.floor(info.lastOpenShop + 86400 - time.time() - 3600 * h - 60 * m)
+                t = -28800 - time.time() % 86400
+                if t < 0:
+                    t += 86400
+
+                h = math.floor(t // 3600)
+                m = math.floor((t - h * 3600) // 60)
+                s = math.floor(t - h * 3600 - m * 60)
 
                 if h == m == s == 0:
                     refreshShop()
@@ -3510,7 +3514,7 @@ def app() -> None:
                     if m == 0:
                         txt = f'{s}s'
                     elif s == 0:
-                            txt = f'{m}min'
+                        txt = f'{m}min'
                     else:
                         txt = f'{m}min {s}s'
                 elif s == 0:
@@ -3888,7 +3892,7 @@ def app() -> None:
                         info.statistics['mapsBeat'] = len([m for m in info.PBs.keys() if type(info.PBs[m]) is int])
 
                         info.FinalHP = gameInfo.HP
-                        info.reset()
+                        gameInfo.reset()
                         save()
 
                     else:
@@ -4016,7 +4020,7 @@ def app() -> None:
                                 n += 1
 
                         if mx <= 20 and 450 <= my <= 470:
-                            info.reset()
+                            gameInfo.reset()
                             info.status = 'mapSelect'
 
                         if 460 <= my <= 510:
