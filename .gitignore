@@ -126,4 +126,6 @@ dmypy.json
 
 # Additional
 /save.txt
-/tower_defense/*.txt
+/tower_defense/game.txt
+/tower_defense/save.txt
+/tower_defense/replay-files/

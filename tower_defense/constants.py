@@ -243,5 +243,6 @@ ReplayRefreshRate = MaxFPS // ReplayFPS
 rainbowColors = [[255, 0, 0], [0, 127, 0], [255, 255, 0], [0, 255, 0], [0, 0, 255], [46, 43, 95], [139, 0, 255]]
 rainbowShift = [[0, 0.127, 0], [0.255, 0.127, 0], [-0.255, 0, 0], [0, -0.255, 0.255], [0.046, 0.043, -0.16], [0.093, -0.043, 0.16], [0.116, 0, -0.255]]
 gameAttrs = ['enemies', 'projectiles', 'piercingProjectiles', 'towers', 'HP', 'coins', 'selected', 'placing', 'nextWave', 'wave', 'shopScroll', 'spawnleft', 'spawndelay', 'ticksSinceNoEnemies', 'sandboxMode', 'ticks', 'towersPlaced', 'replayRefresh']
+playerAttrs = ['mapMakerData', 'statistics', 'achievements', 'mapsBeat', 'runes',  'equippedRune', 'newRunes', 'powerUps', 'powerUpData', 'tokens', 'lastOpenShop', 'shopData', 'gameReplayData']
 
 LOCKED = 'LOCKED'
