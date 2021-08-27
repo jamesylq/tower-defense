@@ -152,12 +152,13 @@ enemiesSpawnNew = {
     '28': '26' * 5,
 }
 regenPath = ['0', '1', '2', '3', '4', '5', '6']
+strengthPath = ['0', '1', '2', '3', '4', '5', '6', '7', '9', '8', 'A', 'B', 'C', 'D']
 
 # Enemy Property Constants
-bosses = ['A', 'B', 'C', 'D']
 onlyExplosiveTiers = ['7', 'D']
-resistant = ['9']
+bosses = ['A', 'B', 'C', 'D']
 freezeImmune = ['E']
+resistant = ['9']
 
 # Math Constants
 SQRT2 = math.sqrt(2)
@@ -239,10 +240,83 @@ MaxFPS = 100
 ReplayFPS = 25
 ReplayRefreshRate = MaxFPS // ReplayFPS
 
+# Targeting constants
+STRONG = 'STRONG'
+CLOSE = 'CLOSE'
+FIRST = 'FIRST'
+LAST = 'LAST'
+
 # Misc. Constants
 rainbowColors = [[255, 0, 0], [0, 127, 0], [255, 255, 0], [0, 255, 0], [0, 0, 255], [46, 43, 95], [139, 0, 255]]
 rainbowShift = [[0, 0.127, 0], [0.255, 0.127, 0], [-0.255, 0, 0], [0, -0.255, 0.255], [0.046, 0.043, -0.16], [0.093, -0.043, 0.16], [0.116, 0, -0.255]]
-gameAttrs = ['enemies', 'projectiles', 'piercingProjectiles', 'towers', 'HP', 'coins', 'selected', 'placing', 'nextWave', 'wave', 'shopScroll', 'spawnleft', 'spawndelay', 'ticksSinceNoEnemies', 'sandboxMode', 'ticks', 'towersPlaced', 'replayRefresh']
-playerAttrs = ['mapMakerData', 'statistics', 'achievements', 'mapsBeat', 'runes',  'equippedRune', 'newRunes', 'powerUps', 'powerUpData', 'tokens', 'lastOpenShop', 'shopData', 'gameReplayData']
+gameAttrs = ['enemies', 'projectiles', 'piercingProjectiles', 'towers', 'HP', 'coins', 'selected', 'placing', 'nextWave', 'wave', 'shopScroll', 'spawnleft', 'spawndelay', 'ticksSinceNoEnemies', 'ticks', 'towersPlaced', 'replayRefresh']
+playerAttrs = ['mapMakerData', 'statistics', 'achievements', 'mapsBeat', 'runes',  'equippedRune', 'newRunes', 'powerUps', 'powerUpData', 'tokens', 'lastOpenShop', 'shopData', 'gameReplayData', 'sandboxMode']
+defaults = {
+    'enemies': [],
+    'projectiles': [],
+    'piercingProjectiles': [],
+    'towers': [],
+    'HP': 250,
+    'FinalHP': None,
+    'coins': 50,
+    'selected': None,
+    'placing': '',
+    'nextWave': 299,
+    'wave': 0,
+    'shopScroll': 0,
+    'spawnleft': '',
+    'spawndelay': 9,
+    'Map': None,
+    'status': 'mapSelect',
+    'mapMakerData': {
+        'name': '',
+        'backgroundColor': '',
+        'pathColor': '',
+        'path': None,
+        'field': None
+    },
+    'sandboxMode': False,
+    'statistics': {
+        'pops': 0,
+        'towersPlaced': 0,
+        'towersSold': 0,
+        'enemiesMissed': 0,
+        'wavesPlayed': 0,
+        'wins': {},
+        'losses': 0,
+        'coinsSpent': 0,
+        'totalWins': 0,
+        'mapsBeat': 0,
+        'bossesKilled': 0
+    },
+    'ticksSinceNoEnemies': 1,
+    'achievements': {
+        'pops': 0,
+        'wins': 0,
+        'spendCoins': 0,
+        'beatMaps': 0
+    },
+    'mapsBeat': 0,
+    'runes': [],
+    'equippedRune': None,
+    'newRunes': 0,
+    'powerUps': {
+        'lightning': 0,
+        'spikes': 0,
+        'antiCamo': 0,
+        'heal': 0,
+        'freeze': 0,
+        'reload': 0
+    },
+    'powerUpData': None,
+    'doubleReloadTicks': 0,
+    'tokens': 0,
+    'lastOpenShop': 0,
+    'shopData': [],
+    'gameReplayData': [],
+    'ticks': 0,
+    'towersPlaced': 0,
+    'replayRefresh': 0
+}
 
 LOCKED = 'LOCKED'

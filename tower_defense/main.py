@@ -13,249 +13,15 @@ from tkinter import Tk, filedialog
 from _pickle import UnpicklingError
 
 from tower_defense import __version__
+from tower_defense.maps import *
+from tower_defense.runes import *
+from tower_defense.update import *
+from tower_defense.powerups import *
 from tower_defense.constants import *
+from tower_defense.functions import *
 
 curr_path = os.path.dirname(__file__)
 resource_path = os.path.join(curr_path, 'resources')
-
-# Map/Rune Setup
-Maps = []
-Runes = []
-
-
-class Map:
-    def __init__(self, path: list, name: str, backgroundColor: Tuple[int], pathColor: Tuple[int], displayColor: Tuple[int] = None):
-        self.name = name
-        self.path = path
-        self.backgroundColor = backgroundColor
-        self.pathColor = pathColor
-        self.displayColor = self.backgroundColor if displayColor is None else displayColor
-        Maps.append(self)
-        # print(self.name, sum([abs(self.path[n][0] - self.path[n+1][0]) + abs(self.path[n][1] - self.path[n+1][1]) for n in range(len(self.path) - 1)]))
-
-    def __str__(self):
-        return self.name
-
-Map([[25, 0], [25, 375], [775, 375], [775, 25], [40, 25], [40, 360], [760, 360], [760, 40], [55, 40], [55, 345], [745, 345], [745, 55], [0, 55]], 'Race Track', (19, 109, 21), (189, 22, 44), (189, 22, 44))
-Map([[400, 225], [400, 50], [50, 50], [50, 400], [50, 50], [750, 50], [750, 400], [750, 50], [400, 50], [400, 225]], 'The Sky', (171, 205, 239), (255, 255, 255))
-Map([[0, 25], [775, 25], [775, 425], [25, 425], [25, 75], [725, 75], [725, 375], [0, 375]], 'Wizard\'s Lair', (187, 11, 255), (153, 153, 153))
-Map([[0, 25], [700, 25], [700, 375], [100, 375], [100, 75], [800, 75]], 'Pond', (6, 50, 98), (0, 0, 255))
-Map([[0, 400], [725, 400], [725, 325], [650, 325], [650, 375], [750, 375], [750, 75], [650, 75], [650, 125], [725, 125], [725, 50], [0, 50]], 'The Moon', (100, 100, 100), (255, 255, 102), (255, 255, 102))
-Map([[25, 0], [25, 425], [525, 425], [525, 25], [275, 25], [275, 275], [750, 275], [750, 0]], 'Plains', (19, 109, 21), (155, 118, 83))
-Map([[0, 25], [475, 25], [575, 125], [575, 275], [475, 375], [325, 375], [225, 275], [225, 125], [325, 25], [800, 25]], 'Octagon', (218, 112, 214), (0, 255, 255))
-Map([[350, 0], [350, 150], [25, 150], [25, 300], [350, 300], [350, 450], [450, 450], [450, 300], [775, 300], [775, 150], [450, 150], [450, 0]], 'Candyland', (255, 105, 180), (199, 21, 133))
-Map([[300, 225], [575, 225], [575, 325], [125, 325], [125, 125], [675, 125], [675, 425], [25, 425], [25, 0]], 'Lava Spiral', (207, 16, 32), (255, 140, 0), (178, 66, 0))
-Map([[0, 25], [750, 25], [750, 200], [25, 200], [25, 375], [800, 375]], 'Desert', (170, 108, 35), (178, 151, 5))
-Map([[125, 0], [125, 500], [400, 500], [400, -50], [675, -50], [675, 500]], 'Disconnected', (64, 64, 64), (100, 100, 100), (100, 0, 0))
-Map([[0, 225], [800, 225]], 'The End', (100, 100, 100), (200, 200, 200))
-
-
-class Rune:
-    def __init__(self, name: str, dropChance: float, lore: str, shopPrice: int = 0, imageName: str = 'rune.png'):
-        self.name = name
-        self.ID = len(Runes)
-        self.dropChance = dropChance
-        self.shopPrice = shopPrice
-        self.lore = lore
-
-        try:
-            self.imageTexture = pygame.image.load(os.path.join(resource_path, imageName))
-        except FileNotFoundError:
-            self.imageTexture = pygame.image.load(os.path.join(resource_path, 'rune.png'))
-
-        if self.imageTexture.get_size() != (99, 99):
-            self.imageTexture = pygame.transform.scale(self.imageTexture, (99, 99))
-
-        self.smallImageTexture = pygame.transform.scale(self.imageTexture, (66, 66))
-
-        Runes.append(self)
-
-    def roll(self) -> bool:
-        if random.randint(1, 100) <= self.dropChance and self.name not in info.runes:
-            return True
-        return False
-
-    def draw(self, x: int, y: int, size: int = 99):
-        if size == 99:
-            texture = self.imageTexture
-        elif size == 66:
-            texture = self.smallImageTexture
-        else:
-            texture = pygame.transform.scale(self.imageTexture, (size, size))
-
-        screen.blit(texture, texture.get_rect(center=[x, y]))
-
-    def __str__(self):
-        return self.name
-
-
-class RuneEffect:
-    class BloodRuneEffect:
-        def __init__(self, x: int, y: int):
-            self.x = x
-            self.y = y
-            self.visibleTicks = 50
-
-        def draw(self):
-            pygame.draw.circle(screen, (255, 0, 0), (self.x, self.y), 2)
-
-    class IceRuneEffect:
-        def __init__(self, x: int, y: int):
-            self.x = x
-            self.y = y
-            self.visibleTicks = 50
-
-        def draw(self):
-            pygame.draw.circle(screen, (0, 0, 255), (self.x, self.y), 2)
-
-    class GoldRuneEffect:
-        def __init__(self, x: int, y: int):
-            self.x = x
-            self.y = y
-            self.visibleTicks = 50
-
-        def draw(self):
-            pygame.draw.circle(screen, (255, 255, 0), (self.x, self.y), 2)
-
-    class LightningRuneEffect:
-        def __init__(self, x: int, y: int):
-            self.x = x
-            self.y = y
-            self.visibleTicks = 50
-
-        def draw(self):
-            pygame.draw.line(screen, (191, 0, 255), (self.x, self.y), (500, -200), 3)
-
-    class ShrinkRuneEffect:
-        def __init__(self, x: int, y: int, radius: int, color: Tuple[int], camo: bool, regen: bool):
-            self.x = x
-            self.y = y
-            self.radius = radius
-            self.color = color
-            self.visibleTicks = 50
-            self.camo = camo
-            self.regen = regen
-
-        def draw(self):
-            pygame.draw.circle(screen, self.color, (self.x, self.y), self.radius * self.visibleTicks // 50)
-            if self.camo:
-                pygame.draw.circle(screen, (0, 0, 0), (self.x, self.y), self.radius * self.visibleTicks // 50, 2)
-            if self.regen:
-                pygame.draw.circle(screen, (255, 105, 180), (self.x, self.y), self.radius * self.visibleTicks // 50, 2)
-
-    class LeapRuneEffect:
-        def __init__(self, x: int, y: int, radius: int, color: Tuple[int], camo: bool, regen: bool):
-            self.x = x
-            self.y = y
-            self.radius = radius
-            self.color = color
-            self.visibleTicks = 50
-            self.camo = camo
-            self.regen = regen
-
-        def draw(self):
-            pygame.draw.circle(screen, self.color, (self.x, self.y - 600 + 12 * self.visibleTicks), self.radius)
-            if self.camo:
-                pygame.draw.circle(screen, (0, 0, 0), (self.x, self.y - 600 + 12 * self.visibleTicks), self.radius, 2)
-            if self.regen:
-                pygame.draw.circle(screen, (255, 105, 180), (self.x, self.y - 600 + 12 * self.visibleTicks), self.radius, 2)
-
-    def __init__(self):
-        self.rune = info.equippedRune
-        self.effects = []
-
-    def createEffects(self, target, *, color: Tuple[int] = None):
-        if self.rune == 'Blood Rune':
-            for n in range(5):
-                self.effects.append(self.BloodRuneEffect(target.x + random.randint(-3, 3), target.y + random.randint(-3, 3)))
-
-        elif self.rune == 'Ice Rune':
-            for n in range(5):
-                self.effects.append(self.IceRuneEffect(target.x + random.randint(-3, 3), target.y + random.randint(-3, 3)))
-
-        elif self.rune == 'Gold Rune':
-            for n in range(5):
-                self.effects.append(self.GoldRuneEffect(target.x + random.randint(-3, 3), target.y + random.randint(-3, 3)))
-
-        elif self.rune == 'Lightning Rune':
-            self.effects.append(self.LightningRuneEffect(target.x, target.y))
-
-        elif self.rune == 'Shrink Rune':
-            self.effects.append(self.ShrinkRuneEffect(target.x, target.y, 20 if target.isBoss else 10, enemyColors[str(target.tier)] if color is None else color, target.camo, target.regen))
-
-        elif self.rune == 'Leap Rune':
-            self.effects.append(self.LeapRuneEffect(target.x, target.y, 20 if target.isBoss else 10, enemyColors[str(target.tier)] if color is None else color, target.camo, target.regen))
-
-    def draw(self):
-        for effect in self.effects:
-            effect.draw()
-            effect.visibleTicks -= 1
-
-            if effect.visibleTicks == 0:
-                self.effects.remove(effect)
-
-    def update(self):
-        self.rune = info.equippedRune
-
-
-Rune('null', 0, 'A glitched rune. How did you get this?')
-Rune('Blood Rune', 15, 'The rune forged by the Blood Gods.', 75, 'blood_rune.png')
-Rune('Ice Rune', 12, 'A rune as cold as ice.', 75, 'ice_rune.png')
-Rune('Gold Rune', 8, 'The rune of the wealthy - Classy!', 75, 'gold_rune.png')
-Rune('Leap Rune', 8, 'Jump!', 125, 'leap_rune.png')
-Rune('Lightning Rune', 5, 'Legends say it was created by Zeus himself.', 125, 'lightning_rune.png')
-Rune('Shrink Rune', 3, 'This magical rune compresses its foes!', 150, 'shrink_rune.png')
-Rune('Rainbow Rune', 2, 'A rainbow tail forms behind your cursor!', 150, 'rainbow_rune.png')
-
-# Powerups
-class PhysicalPowerUp:
-    class Spike:
-        def __init__(self, x, y, parent):
-            self.x = x
-            self.y = y
-            self.parent = parent
-
-        def update(self):
-            for enemy in gameInfo.enemies:
-                if enemy.isBoss:
-                    if abs(self.x - enemy.x) ** 2 + abs(self.y - enemy.y) ** 2 <= 484:
-                        enemy.kill(bossDamage=25)
-                        self.parent.objects.remove(self)
-                        break
-                else:
-                    if abs(self.x - enemy.x) ** 2 + abs(self.y - enemy.y) ** 2 <= 144:
-                        enemy.kill()
-                        self.parent.objects.remove(self)
-                        break
-
-        def draw(self, *, sx: int = 0, sy: int = 0):
-            pygame.draw.circle(screen, (0, 0, 0), (self.x + sx, self.y + sy), 3)
-
-    class Lightning:
-        def __init__(self, x, y, parent):
-            self.x = x
-            self.y = y
-            self.parent = parent
-            self.visibleTicks = 50
-
-        def update(self):
-            self.visibleTicks -= 1
-            if self.visibleTicks == 0:
-                self.parent.objects.remove(self)
-
-        def draw(self, *, sx: int = 0, sy: int = 0):
-            pygame.draw.line(screen, (191, 0, 255), (500, -200), (self.x + sx, self.y + sy), 3)
-
-    def __init__(self):
-        self.objects = []
-
-    def update(self):
-        for obj in self.objects:
-            obj.update()
-
-    def draw(self):
-        for obj in self.objects:
-            obj.draw()
 
 
 # Classes
@@ -432,6 +198,7 @@ class Turret(Towers):
 
             except AttributeError:
                 pass
+
         else:
             self.timer += 1
 
@@ -596,22 +363,27 @@ class SpikeTower(Towers):
                         enemy.fireIgnitedBy = self.parent
 
                     color = enemyColors[str(enemy.tier)]
-                    new = enemy
 
                     if self.parent.upgrades[2] == 0:
                         damage = 1
                     else:
                         damage = 2
 
+                    toDamage = [enemy]
                     for n in range(damage):
-                        new = new.kill(coinMultiplier=getCoinMultiplier(self.parent), overrideRuneColor=color)
-                        if not gameInfo.sandboxMode:
-                            info.statistics['pops'] += 1
-                        self.parent.hits += 1
-                        self.ignore.append(enemy if enemy.isBoss else new)
+                        newToDamage = []
 
-                        if new is None:
-                            break
+                        for e in toDamage:
+                            newToDamage += e.kill(coinMultiplier=getCoinMultiplier(self.parent), overrideRuneColor=color)
+
+                            if not gameInfo.sandboxMode:
+                                info.statistics['pops'] += 1
+                            self.parent.hits += 1
+
+                            for eTD in newToDamage:
+                                self.ignore.append(eTD)
+
+                        toDamage = newToDamage
 
         def draw(self):
             if not self.visible:
@@ -1342,6 +1114,124 @@ class Village(Towers):
             self.villagers.append(self.Villager(self))
 
 
+class Sniper(Towers):
+    name = 'Sniper'
+    imageName = 'sniper.png'
+    color = (64, 255, 64)
+    req = 15
+    price = 250
+    upgradePrices = [
+        [150, 400, 1000],
+        [100, 200, 450],
+        [125, 250, 400],
+        5000
+    ]
+    upgradeNames = [
+        ['Faster Reload', 'Semi-automatic Gun', 'Super Sniper'],
+        ['Anti-boss Rifle', 'Boss Shredder', 'Ultimate Slayer'],
+        ['Radar Goggles', 'Lead-Pierce', 'Ceramic Destroyer'],
+        'Elite Sniper'
+    ]
+    range = 0
+    cooldown = 50
+    bossDamage = 5
+    ceramDamage = 1
+    totalAbilityCooldown = 6000
+
+    def __init__(self, x: int, y: int):
+        super().__init__(x, y)
+        self.rotation = 0
+        self.abilityData = {
+            'tick': 0,
+            'active': False
+        }
+        self.abilityCooldown = 0
+        self.rifleFireTicks = 0
+
+    def attack(self):
+        if self.stun > 0:
+            self.stun -= 1
+            return
+
+        if self.timer >= getActualCooldown(self.x, self.y, self.cooldown):
+            try:
+                closest = getTarget(self, overrideRange=1000)
+                if (closest.tier in onlyExplosiveTiers and self.upgrades[2] >= 2) or closest.tier not in onlyExplosiveTiers:
+                    if self.abilityData['active']:
+                        if closest.isBoss:
+                            closest.kill(coinMultiplier=getCoinMultiplier(self), bossDamage=self.bossDamage)
+                        else:
+                            try:
+                                gameInfo.enemies.remove(closest)
+                                info.coins += getCoinMultipler(self)
+                            except ValueError:
+                                pass
+
+                    else:
+                        closest.kill(coinMultiplier=getCoinMultiplier(self), bossDamage=self.bossDamage, ceramDamage=self.ceramDamage)
+
+                    self.rifleFireTicks = 10
+
+                proj = Projectile(self, self.x, self.y, closest.x, closest.y, overrideAddToProjectiles=True)
+                proj.move(0)
+
+                try:
+                    if 1 >= proj.dx >= 0.5 >= proj.dy >= 0:
+                        self.rotation = 0
+                    elif 1 >= proj.dx >= 0.5 >= proj.dy >= 0:
+                        self.rotation = 1
+                    elif -0.5 <= proj.dx <= 0 <= 0.5 <= proj.dy <= 1:
+                        self.rotation = 7
+                    elif 1 >= proj.dx >= 0.5 >= 0 >= proj.dy >= -0.5:
+                        self.rotation = 2
+                    elif -1 <= proj.dx <= -0.5 <= 0 <= proj.dy <= 0.5:
+                        self.rotation = 6
+                    elif -1 <= proj.dx <= -0.5 <= proj.dy <= 0:
+                        self.rotation = 5
+                    elif 0.5 >= proj.dx >= 0 >= -0.5 >= proj.dy >= -1:
+                        self.rotation = 3
+                    elif 0 >= proj.dx >= -0.5 >= proj.dy >= -1:
+                        self.rotation = 4
+
+                except TypeError:
+                    pass
+
+                self.timer = 0
+
+            except AttributeError:
+                pass
+
+        else:
+            self.timer += 1
+
+    def update(self):
+        if self.abilityData['active']:
+            if self.abilityData['tick'] <= 250:
+                self.abilityData['tick'] += 1
+            else:
+                self.abilityData['active'] = False
+
+        if self.abilityCooldown < self.totalAbilityCooldown:
+            self.abilityCooldown += 1
+
+        self.cooldown = [50, 25, 10, 5][self.upgrades[0]]
+        self.bossDamage = [5, 12, 25, 50][self.upgrades[1]]
+        self.ceramDamage = 5 if self.upgrades[2] == 3 else 1
+
+    def draw(self):
+        super().draw()
+        if self.rifleFireTicks > 0:
+            dx = [0, 7, 14, 7, 0, -7, -14, -7][self.rotation]
+            dy = [14, 7, 0, -7, -14, -7, 0, 7][self.rotation]
+
+            pygame.draw.circle(screen, (255, 128, 0), (self.x + dx, self.y + dy), 3)
+
+            self.rifleFireTicks -= 1
+
+    def getImageFrame(self) -> int:
+        return self.rotation
+
+
 class Elemental(Towers):
     name = 'Elemental'
     imageName = 'elemental.png'
@@ -1669,10 +1559,14 @@ class Enemy:
             if self.fireTicks % 100 == 0:
                 new = self.kill(burn=True, reduceFireTicks=True)
                 self.fireIgnitedBy.hits += 1
+
                 if not gameInfo.sandboxMode:
                     info.statistics['pops'] += 1
-                if new is not None:
-                    self.fireTicks -= 1
+
+                if new:
+                    for e in new:
+                        e.fireTicks -= 1
+
             else:
                 self.fireTicks -= 1
 
@@ -1687,28 +1581,38 @@ class Enemy:
                         projectile.explode(self)
                         if self.tier in onlyExplosiveTiers:
                             color = enemyColors[str(self.tier)]
-                            new = self
+                            toDamage = [self]
 
                             for n in range(projectile.impactDamage):
-                                new = new.kill(coinMultiplier=projectile.coinMultiplier, bossDamage=projectile.bossDamage, overrideRuneColor=color)
-                                projectile.parent.hits += 1
-                                if not gameInfo.sandboxMode:
-                                    info.statistics['pops'] += 1
+                                newToDamage = []
 
-                                if new is None:
+                                for e in toDamage:
+                                    newToDamage += e.kill(coinMultiplier=projectile.coinMultiplier, bossDamage=projectile.bossDamage, overrideRuneColor=color)
+
+                                    projectile.parent.hits += 1
+                                    if not gameInfo.sandboxMode:
+                                        info.statistics['pops'] += 1
+
+                                toDamage = newToDamage
+
+                                if not toDamage:
                                     break
 
                     if self.tier not in onlyExplosiveTiers:
                         color = enemyColors[str(self.tier)]
-                        new = self
+                        toDamage = [self]
 
                         for n in range(projectile.impactDamage):
-                            new = new.kill(coinMultiplier=projectile.coinMultiplier, bossDamage=projectile.bossDamage, overrideRuneColor=color)
-                            projectile.parent.hits += 1
-                            if not gameInfo.sandboxMode:
-                                info.statistics['pops'] += 1
+                            newToDamage = []
 
-                            if new is None:
+                            for e in toDamage:
+                                newToDamage += e.kill(coinMultiplier=projectile.coinMultiplier, bossDamage=projectile.bossDamage, overrideRuneColor=color)
+
+                                projectile.parent.hits += 1
+                                if not gameInfo.sandboxMode:
+                                    info.statistics['pops'] += 1
+
+                            if not toDamage:
                                 break
 
         if not(self.tier in onlyExplosiveTiers or self.tier in resistant):
@@ -1723,17 +1627,24 @@ class Enemy:
                             elif projectile.parent.upgrades[0] == 3:
                                 damage = 2 * (projectile.movement // 100 + 1) * projectile.damageMultiplier
 
-                        new = self
+                        toDamage = [self]
+
                         for n in range(damage):
-                            new = new.kill(coinMultiplier=projectile.coinMultiplier, overrideRuneColor=color)
+                            newToDamage = []
+
+                            for e in toDamage:
+                                newToDamage += e.kill(coinMultiplier=projectile.coinMultiplier, overrideRuneColor=color)
+
                             projectile.parent.hits += 1
                             if not gameInfo.sandboxMode:
                                 info.statistics['pops'] += 1
 
-                            if new is None:
+                            toDamage = newToDamage
+                            if not toDamage:
                                 break
 
-                        projectile.ignore.append(new)
+                        for e in toDamage:
+                            projectile.ignore.append(e)
 
                         if projectile.pierce <= 1:
                             try:
@@ -1770,7 +1681,7 @@ class Enemy:
         if self.regen:
             pygame.draw.circle(screen, (255, 105, 180), (self.x + sx, self.y + sy), 20 if self.isBoss else 10, 2)
 
-    def kill(self, *, spawnNew: bool = True, coinMultiplier: int = 1, ignoreBoss: bool = False, burn: bool = False, bossDamage: int = 1, overrideRuneColor: Tuple[int] = None, ignoreRegularEnemyHealth: bool = False, reduceFireTicks: bool = False):
+    def kill(self, *, spawnNew: bool = True, coinMultiplier: int = 1, ignoreBoss: bool = False, burn: bool = False, bossDamage: int = 1, overrideRuneColor: Tuple[int] = None, ignoreRegularEnemyHealth: bool = False, reduceFireTicks: bool = False, ceramDamage: int = 1) -> list:
         if reduceFireTicks:
             self.fireTicks -= 1
 
@@ -1799,13 +1710,18 @@ class Enemy:
                         info.statistics['bossesKilled'] += 1
 
                 else:
-                    return self
+                    return [self]
 
         else:
             if not ignoreRegularEnemyHealth:
-                if self.HP > 1:
-                    self.HP -= 1
-                    return self
+                if not str(self.tier) == '8':
+                    if self.HP > 1:
+                        self.HP -= 1
+                        return [self]
+                else:
+                    if self.HP > ceramDamage:
+                        self.HP -= ceramDamage
+                        return [self]
 
             try:
                 gameInfo.enemies.remove(self)
@@ -1828,7 +1744,7 @@ class Enemy:
                 gameInfo.coins += bossCoins[self.tier] * max(1, coinMultiplier / 4)
 
             if newSpawn is not None:
-                new = None
+                spawned = []
                 for n in range(len(newSpawn) // 2):
                     newSpawnType = newSpawn[2 * n]
                     newSpawnTier = newSpawn[2 * n + 1]
@@ -1839,7 +1755,11 @@ class Enemy:
                     new.totalMovement = self.totalMovement
                     new.move(n)
 
-                return new
+                    spawned.append(new)
+
+                return spawned
+
+        return []
 
     def updateRegen(self):
         if not self.regen:
@@ -1864,8 +1784,10 @@ def reset() -> None:
     try:
         open('save.txt', 'r').close()
         open('game.txt', 'r').close()
+
     except FileNotFoundError:
         print('tower-defense.core: No save file detected')
+
     else:
         with open('save.txt', 'w') as saveFile:
             saveFile.write('')
@@ -1886,7 +1808,7 @@ def removeCharset(s, charset) -> str:
     return s
 
 
-def getSellPrice(tower: Towers) -> float:
+def getSellPrice(tower: Towers, *, pricePercent: SupportsFloat = 80) -> float:
     price = tower.price
 
     if type(tower) is not Elemental:
@@ -1897,7 +1819,7 @@ def getSellPrice(tower: Towers) -> float:
         if tower.upgrades[3]:
             price += tower.upgradePrices[3]
 
-    return price * 0.8
+    return price * pricePercent / 100
 
 
 def leftAlignPrint(font: pygame.font.Font, text: str, pos: Tuple[int], color: Tuple[int] = (0, 0, 0)) -> None:
@@ -1951,6 +1873,9 @@ def canSeeCamo(Tower: Towers) -> bool:
     if type(Tower) is Village and Tower.upgrades[0] >= 1:
         return True
 
+    if type(Tower) is Sniper and Tower.upgrades[2] >= 1:
+        return True
+
     if type(Tower) is Elemental:
         return True
 
@@ -1961,7 +1886,7 @@ def canSeeCamo(Tower: Towers) -> bool:
     return False
 
 
-def getTarget(tower: Towers, *, ignore: [Enemy] = None, overrideRange: int = None, ignoreBosses: bool = False) -> Enemy:
+def getTarget(tower: Towers, *, targeting: str = FIRST, ignore: [Enemy] = None, overrideRange: int = None, ignoreBosses: bool = False) -> Enemy:
     if ignore is None:
         ignore = []
 
@@ -1970,30 +1895,107 @@ def getTarget(tower: Towers, *, ignore: [Enemy] = None, overrideRange: int = Non
     else:
         rangeRadius = overrideRange
 
-    maxDistance = None
+    target = None
 
-    for enemy in gameInfo.enemies:
-        if not (0 <= enemy.x <= 800 and 0 <= enemy.y <= 450) and overrideRange is None:
-            continue
+    if targeting == STRONG:
+        maxStrength = None
 
-        if enemy in ignore:
-            continue
-
-        if ignoreBosses and enemy.isBoss:
-            continue
-
-        if abs(enemy.x - tower.x) ** 2 + abs(enemy.y - tower.y) ** 2 <= rangeRadius ** 2:
-            if (enemy.camo and canSeeCamo(tower)) or (not enemy.camo):
-                try:
-                    if enemy.totalMovement > maxDistance:
-                        maxDistance = enemy.totalMovement
-                except TypeError:
-                    maxDistance = enemy.totalMovement
-
-    if maxDistance is not None:
         for enemy in gameInfo.enemies:
-            if enemy.totalMovement == maxDistance:
-                return enemy
+            if not (0 <= enemy.x <= 800 and 0 <= enemy.y <= 450) and overrideRange is None:
+                continue
+
+            if enemy in ignore:
+                continue
+
+            if ignoreBosses and enemy.isBoss:
+                continue
+
+            strength = strengthPath.index(str(enemy.tier))
+            if abs(enemy.x - tower.x) ** 2 + abs(enemy.y - tower.y) ** 2 <= rangeRadius ** 2:
+                if (enemy.camo and canSeeCamo(tower)) or (not enemy.camo):
+                    try:
+                        if strength > maxStrength:
+                            maxStrength = strength
+                            target = enemy
+
+                    except TypeError:
+                        maxStrength = strength
+                        target = enemy
+
+    if targeting == CLOSE:
+        minDistance = None
+
+        for enemy in gameInfo.enemies:
+            if not (0 <= enemy.x <= 800 and 0 <= enemy.y <= 450) and overrideRange is None:
+                continue
+
+            if enemy in ignore:
+                continue
+
+            if ignoreBosses and enemy.isBoss:
+                continue
+
+            pythagoreanDistance = abs(enemy.x - tower.x) ** 2 + abs(enemy.y - tower.y) ** 2
+            if pythagoreanDistance <= rangeRadius ** 2:
+                if (enemy.camo and canSeeCamo(tower)) or (not enemy.camo):
+                    try:
+                        if pythagoreanDistance < minDistance:
+                            minDistance = pythagoreanDistance
+                            target = enemy
+
+                    except TypeError:
+                        minDistance = pythagoreanDistance
+                        target = enemy
+
+    if targeting == LAST:
+        minDistance = None
+
+        for enemy in gameInfo.enemies:
+            if not (0 <= enemy.x <= 800 and 0 <= enemy.y <= 450) and overrideRange is None:
+                continue
+
+            if enemy in ignore:
+                continue
+
+            if ignoreBosses and enemy.isBoss:
+                continue
+
+            if abs(enemy.x - tower.x) ** 2 + abs(enemy.y - tower.y) ** 2 <= rangeRadius ** 2:
+                if (enemy.camo and canSeeCamo(tower)) or (not enemy.camo):
+                    try:
+                        if enemy.totalMovement < minDistance:
+                            minDistance = enemy.totalMovement
+                            target = enemy
+
+                    except TypeError:
+                        minDistance = enemy.totalMovement
+                        target = enemy
+
+    if targeting == FIRST:
+        maxDistance = None
+
+        for enemy in gameInfo.enemies:
+            if not (0 <= enemy.x <= 800 and 0 <= enemy.y <= 450) and overrideRange is None:
+                continue
+
+            if enemy in ignore:
+                continue
+
+            if ignoreBosses and enemy.isBoss:
+                continue
+
+            if abs(enemy.x - tower.x) ** 2 + abs(enemy.y - tower.y) ** 2 <= rangeRadius ** 2:
+                if (enemy.camo and canSeeCamo(tower)) or (not enemy.camo):
+                    try:
+                        if enemy.totalMovement > maxDistance:
+                            maxDistance = enemy.totalMovement
+                            target = enemy
+
+                    except TypeError:
+                        maxDistance = enemy.totalMovement
+                        target = enemy
+
+    return target
 
 
 def hexToRGB(hexString: str) -> Tuple[int]:
@@ -2097,8 +2099,8 @@ def draw() -> None:
     pygame.draw.circle(screen, info.Map.pathColor, info.Map.path[0], 10)
     pygame.draw.circle(screen, info.Map.pathColor, info.Map.path[-1], 10)
 
-    RuneEffects.draw()
-    PowerUps.draw()
+    RuneEffects.draw(screen)
+    PowerUps.draw(screen)
 
     if gameInfo.selected is not None:
         if gameInfo.selected.range in possibleRanges:
@@ -2295,23 +2297,18 @@ def draw() -> None:
                 pygame.draw.rect(screen, (0, 0, 0), (295, 485, 300, 90), 3)
 
                 if type(gameInfo.selected) is Village:
-                    towers = {
-                        'Turret': None,
-                        'Ice Tower': None,
-                        'Spike Tower': None,
-                        'Bomb Tower': None,
-                        'Banana Farm': None,
-                        'Bowler': None,
-                        'Wizard': None,
-                        'Inferno': None
-                    }
-
+                    price = 0
                     for tower in gameInfo.towers:
-                        if tower.name in towers.keys():
-                            if tower.upgrades == [3, 3, 3, True]:
-                                towers[tower.name] = tower
+                        if tower == gameInfo.selected:
+                            continue
 
-                    if None not in towers.values():
+                        if type(tower) is Elemental:
+                            continue
+
+                        if abs(tower.x - gameInfo.selected.x) ** 2 + abs(tower.y - gameInfo.selected.y) ** 2 <= gameInfo.selected.range ** 2:
+                            price += getSellPrice(tower, pricePercent=100)
+
+                    if price >= 25000:
                         leftAlignPrint(font, f'{gameInfo.selected.upgradeNames[3]} [${gameInfo.selected.upgradePrices[3]}]', (300, 500))
                     else:
                         centredPrint(font, 'The Elemental demands', (445, 515))
@@ -2428,33 +2425,6 @@ def getActualCooldown(x: int, y: int, originalCooldown: int) -> int:
     return math.floor(cooldown)
 
 
-def updateDict(d: dict, l: list) -> dict:
-    """Re-order the items in d based on the items in l and deletes redundant items."""
-
-    newDict = {}
-    oldDict = d.copy()
-
-    keys = list(oldDict.keys())
-    values = list(oldDict.values())
-
-    for item in l:
-        try:
-            index = keys.index(item)
-            newDict[keys[index]] = values[index]
-        except ValueError:
-            continue
-
-    return newDict
-
-
-def hasAllUnlocked() -> bool:
-    for score in info.PBs.values():
-        if score is None or score == LOCKED:
-            return False
-
-    return True
-
-
 def save() -> None:
     info.powerUpData = PowerUps
     pickle.dump(info, open('save.txt', 'wb'))
@@ -2482,71 +2452,7 @@ def load() -> None:
         info.update()
         gameInfo.update()
 
-        for attr in ['win', 'lose', 'mapSelect', 'totalWaves', 'pausedFrom', 'settingsPrev'] + gameAttrs:     # Redundant Attributes
-            if hasattr(info, attr):
-                delattr(info, attr)
-
-        for attr, default in defaults['statistics'].items():        # Update Statistics
-            try:
-                info.statistics[attr] = info.statistics[attr]
-            except KeyError:
-                if attr == 'totalWins':
-                    try:
-                        info.statistics[attr] = sum([val for val in info.statistics['wins'].values()])
-                    except KeyError:
-                        info.statistics[attr] = 0
-                else:
-                    info.statistics[attr] = default
-
-        for attr, default in defaults['achievements'].items():          # Update Achievements
-            try:
-                info.achievements[attr] = info.achievements[attr]
-            except KeyError:
-                info.achievements[attr] = default
-
-        for powerUp, default in defaults['powerUps'].items():           # Update Powerups
-            try:
-                info.powerUps[powerUp] = info.powerUps[powerUp]
-            except KeyError:
-                info.powerUps[powerUp] = default
-
-        for attr in ['ID']:     # Update pre-2.4
-            for tower in gameInfo.towers:
-                if not hasattr(tower, attr):
-                    setattr(tower, attr, gameInfo.towers.index(tower))
-
-        if info.powerUpData is not None:        # Update Powerups
-            PowerUps = info.powerUpData
-
-        info.PBs = updateDict(info.PBs, [Map.name for Map in Maps])     # Update PBs
-
-        info.statistics['mapsBeat'] = len([m for m in info.PBs.keys() if type(info.PBs[m]) is int])     # Update Statistic
-
-        foundUnlocked = False           # Update for new Map
-        for Map in Maps:
-            if Map.name not in info.PBs.keys():
-                info.PBs[Map.name] = LOCKED
-
-            if info.PBs[Map.name] != LOCKED:
-                foundUnlocked = True
-
-            elif not foundUnlocked:
-                info.PBs[Map.name] = None
-
-        Maps.reverse()
-
-        foundCompleted = False
-        for Map in Maps:
-            if foundCompleted and info.PBs[Map.name] == LOCKED:
-                info.PBs[Map.name] = None
-
-            elif type(info.PBs[Map.name]) is int:
-                foundCompleted = True
-
-        Maps.reverse()
-
-        if not hasAllUnlocked():        # Update Sandboxmode
-            gameInfo.sandboxMode = False
+        info, gameInfo, PowerUps = update(info, gameInfo, PowerUps)
 
     except FileNotFoundError:
         open('save.txt', 'w')
@@ -2706,7 +2612,7 @@ def app() -> None:
                 else:
                     pygame.draw.rect(screen, (0, 0, 0), (25, 550, 125, 30), 3)
 
-                if hasAllUnlocked():
+                if hasAllUnlocked(info):
                     pygame.draw.rect(screen, (0, 225, 0) if gameInfo.sandboxMode else (255, 0, 0), (200, 550, 200, 30))
                     centredPrint(font, 'Sandbox Mode: ' + ('ON' if gameInfo.sandboxMode else 'OFF'), (300, 565))
                     if 200 <= mx <= 400 and 550 <= my <= 580:
@@ -2862,7 +2768,7 @@ def app() -> None:
                                 cont = False
 
                             if 200 <= mx <= 400 and 550 <= my <= 580:
-                                if hasAllUnlocked():
+                                if hasAllUnlocked(info):
                                     gameInfo.sandboxMode = not gameInfo.sandboxMode
 
                         elif event.button == 4:
@@ -3590,7 +3496,7 @@ def app() -> None:
                 for rune in info.runes:
                     try:
                         pygame.draw.rect(screen, (64, 64, 64), (x * 75 + 52, y * 75 + 252, 70, 70))
-                        getRune(rune).draw(x * 75 + 87, y * 75 + 287, 66)
+                        getRune(rune).draw(screen, x * 75 + 87, y * 75 + 287, 66)
 
                         if rune == info.equippedRune:
                             pygame.draw.rect(screen, (128, 128, 128), (x * 75 + 52, y * 75 + 252, 70, 70), 5)
@@ -3606,7 +3512,7 @@ def app() -> None:
 
                 if info.equippedRune is not None:
                     try:
-                        getRune(info.equippedRune).draw(500, 160)
+                        getRune(info.equippedRune).draw(screen, 500, 160)
                         leftAlignPrint(font, info.equippedRune, (600, 120))
                         leftAlignPrint(tinyFont, getRune(info.equippedRune).lore, (600, 150))
 
@@ -3963,8 +3869,8 @@ def app() -> None:
 
             pygame.display.update()
 
-            RuneEffects.update()
-            PowerUps.update()
+            RuneEffects.update(info)
+            PowerUps.update(gameInfo)
 
             if info.doubleReloadTicks > 0:
                 info.doubleReloadTicks -= 1
@@ -3984,7 +3890,9 @@ def app() -> None:
                         if mx <= 800 and my <= 450:
                             if gameInfo.placing == 'spikes':
                                 for n in range(25):
-                                    PowerUps.objects.append(PhysicalPowerUp.Spike(mx + random.randint(-25, 25), my + random.randint(-25, 25), PowerUps))
+                                    theta = random.randint(1, 360) * math.pi / 180
+                                    radius = random.randint(0, 10)
+                                    PowerUps.objects.append(PhysicalPowerUp.Spike(mx + radius * math.sin(theta), my + radius * math.cos(theta), PowerUps))
                                 gameInfo.placing = ''
 
                             else:
@@ -4096,35 +4004,35 @@ def app() -> None:
                                             gameInfo.selected.abilityData['active'] = True
 
                                     elif type(gameInfo.selected) is Village:
-                                        towers = {
-                                            'Turret': None,
-                                            'Ice Tower': None,
-                                            'Spike Tower': None,
-                                            'Bomb Tower': None,
-                                            'Banana Farm': None,
-                                            'Bowler': None,
-                                            'Wizard': None,
-                                            'Inferno': None
-                                        }
-
+                                        price = 0
+                                        sacrifice = []
                                         for tower in gameInfo.towers:
-                                            if tower.name in towers.keys():
-                                                if tower.upgrades == [3, 3, 3, True]:
-                                                    towers[tower.name] = tower
+                                            if tower == gameInfo.selected:
+                                                continue
 
-                                        if None not in towers.values():
+                                            if type(tower) is Elemental:
+                                                continue
+
+                                            if abs(tower.x - gameInfo.selected.x) ** 2 + abs(tower.y - gameInfo.selected.y) ** 2 <= gameInfo.selected.range ** 2:
+                                                price += getSellPrice(tower, pricePercent=100)
+                                                sacrifice.append(tower)
+
+                                            if price >= 25000:
+                                                break
+
+                                        if price >= 25000:
                                             cost = Village.upgradePrices[3]
                                             if gameInfo.coins >= cost:
                                                 gameInfo.coins -= cost
                                                 if not gameInfo.sandboxMode:
                                                     info.statistics['coinsSpent'] += cost
 
-                                                for tower in towers.values():
+                                                for tower in sacrifice:
                                                     gameInfo.towers.remove(tower)
                                                 gameInfo.towers.remove(gameInfo.selected)
 
                                                 elemental = Elemental(gameInfo.selected.x, gameInfo.selected.y)
-                                                elemental.hits = sum([t.hits for t in towers.values()])
+                                                elemental.hits = sum([t.hits for t in sacrifice])
                                                 gameInfo.towersPlaced += 1
 
                                                 gameInfo.selected = elemental
@@ -4216,74 +4124,6 @@ pygame.display.update()
 
 root = Tk()
 root.withdraw()
-
-defaults = {
-    'enemies': [],
-    'projectiles': [],
-    'piercingProjectiles': [],
-    'towers': [],
-    'HP': 250,
-    'FinalHP': None,
-    'coins': 50,
-    'selected': None,
-    'placing': '',
-    'nextWave': 299,
-    'wave': 0,
-    'shopScroll': 0,
-    'spawnleft': '',
-    'spawndelay': 9,
-    'Map': None,
-    'status': 'mapSelect',
-    'mapMakerData': {
-        'name': '',
-        'backgroundColor': '',
-        'pathColor': '',
-        'path': None,
-        'field': None
-    },
-    'sandboxMode': False,
-    'statistics': {
-        'pops': 0,
-        'towersPlaced': 0,
-        'towersSold': 0,
-        'enemiesMissed': 0,
-        'wavesPlayed': 0,
-        'wins': {},
-        'losses': 0,
-        'coinsSpent': 0,
-        'totalWins': 0,
-        'mapsBeat': 0,
-        'bossesKilled': 0
-    },
-    'ticksSinceNoEnemies': 1,
-    'achievements': {
-        'pops': 0,
-        'wins': 0,
-        'spendCoins': 0,
-        'beatMaps': 0
-    },
-    'mapsBeat': 0,
-    'runes': [],
-    'equippedRune': None,
-    'newRunes': 0,
-    'powerUps': {
-        'lightning': 0,
-        'spikes': 0,
-        'antiCamo': 0,
-        'heal': 0,
-        'freeze': 0,
-        'reload': 0
-    },
-    'powerUpData': None,
-    'doubleReloadTicks': 0,
-    'tokens': 0,
-    'lastOpenShop': 0,
-    'shopData': [],
-    'gameReplayData': [],
-    'ticks': 0,
-    'towersPlaced': 0,
-    'replayRefresh': 0
-}
 
 achievementRequirements = {
     'beatMaps': {
@@ -4389,10 +4229,10 @@ tokenImage = pygame.image.load(os.path.join(resource_path, 'token.png'))
 
 info = data()
 gameInfo = gameData()
-RuneEffects = RuneEffect()
 PowerUps = PhysicalPowerUp()
-mouseTrail = []
+RuneEffects = RuneEffect(info)
 
+mouseTrail = []
 rainbowShiftCount = random.randint(0, 999)
 rainbowShiftIndex = random.randint(0, 6)
 
