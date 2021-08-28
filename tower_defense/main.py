@@ -3774,7 +3774,7 @@ def app() -> None:
                                 info.statistics['totalWins'] += 1
 
                             for rune in Runes:
-                                if rune.roll():
+                                if rune.roll(info):
                                     info.runes.append(rune.name)
                                     info.newRunes += 1
 

@@ -1,5 +1,6 @@
 import os
 import pygame
+import random
 
 from typing import *
 
