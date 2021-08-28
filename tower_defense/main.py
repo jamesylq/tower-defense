@@ -1210,6 +1210,7 @@ class Sniper(Towers):
                 self.abilityData['tick'] += 1
             else:
                 self.abilityData['active'] = False
+                self.abilityData['tick'] = 0
 
         if self.abilityCooldown < self.totalAbilityCooldown:
             self.abilityCooldown += 1
@@ -3216,7 +3217,7 @@ def app() -> None:
                                     except IndexError:
                                         pass
 
-                                if 940 <= mx and 570 <= my:
+                                if 920 <= mx <= 980 and 550 <= my <= 580:
                                     mapShiftedPath = [[point[0] - 100, point[1] - 125] for point in info.mapMakerData['path']]
 
                                     print(f'This is the map code for your map!\n\nMap({mapShiftedPath}, \'{info.mapMakerData["name"]}\', {tuple(info.mapMakerData["backgroundColor"])}, {tuple(info.mapMakerData["pathColor"])})')
