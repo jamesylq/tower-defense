@@ -32,10 +32,13 @@ def update(info, gameInfo, PowerUps):
         except KeyError:
             info.powerUps[powerUp] = default
 
-    for attr in ['ID']:     # Update pre-2.4
-        for tower in gameInfo.towers:
-            if not hasattr(tower, attr):
-                setattr(tower, attr, gameInfo.towers.index(tower))
+    for tower in gameInfo.towers:       # Update pre-2.4
+        if not hasattr(tower, 'ID'):
+            setattr(tower, 'ID', gameInfo.towers.index(tower))
+
+    for tower in gameInfo.towers:
+        if not hasattr(tower, 'targeting'):
+            setattr(tower, 'targeting', targetingCycle[0])
 
     if info.powerUpData is not None:        # Update Powerups
         PowerUps = info.powerUpData

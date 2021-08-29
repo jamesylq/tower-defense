@@ -85,6 +85,7 @@ class Towers:
         self.hits = 0
         self.camoDetectionOverride = overrideCamoDetect
         self.ID = gameInfo.towersPlaced
+        self.targeting = targetingCycle[0]
 
         if not overrideAddToTowers:
             gameInfo.towers.append(self)
@@ -169,7 +170,7 @@ class Turret(Towers):
 
         if self.timer >= getActualCooldown(self.x, self.y, self.cooldown):
             try:
-                closest = getTarget(self)
+                closest = getTarget(self, targeting=self.targeting)
                 proj = Projectile(self, self.x, self.y, closest.x, closest.y, bossDamage=self.bossDamage, explosiveRadius=self.explosiveRadius)
                 proj.move(0)
 
@@ -291,7 +292,7 @@ class IceTower(Towers):
                 return
 
             try:
-                closest = getTarget(self)
+                closest = getTarget(self, targeting=self.targeting)
                 Projectile(self, self.x, self.y, closest.x, closest.y, freezeDuration=self.freezeDuration)
                 self.timer = 0
 
@@ -555,7 +556,7 @@ class BombTower(Towers):
 
         if self.timer >= getActualCooldown(self.x, self.y, self.cooldown):
             try:
-                closest = getTarget(self)
+                closest = getTarget(self, targeting=self.targeting)
 
                 Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=self.explosionRadius, impactDamage=self.impactDamage, fireTicks=self.fireTicks)
                 if self.upgrades[1] == 3:
@@ -623,7 +624,7 @@ class BananaFarm(Towers):
         if self.upgrades[0] >= 1:
             if self.timer >= getActualCooldown(self.x, self.y, self.cooldown):
                 try:
-                    closest = getTarget(self)
+                    closest = getTarget(self, targeting=self.targeting)
                     Projectile(self, self.x, self.y, closest.x, closest.y)
                     self.timer = 0
 
@@ -722,31 +723,31 @@ class Wizard(Towers):
         def attack(self, bossDamage: int = 25):
             pops = 0
             self.visibleTicks = 50
-            self.t1 = getTarget(Towers(self.parent.x, self.parent.y, overrideCamoDetect=self.parent.upgrades[1] >= 2, overrideAddToTowers=True), overrideRange=1000)
+            self.t1 = getTarget(Towers(self.parent.x, self.parent.y, overrideCamoDetect=self.parent.upgrades[1] >= 2, overrideAddToTowers=True), targeting=self.parent.targeting, overrideRange=1000)
             if type(self.t1) is Enemy:
                 self.t1.kill(coinMultiplier=getCoinMultiplier(self.parent), bossDamage=bossDamage)
                 self.parent.hits += 1
                 pops += 1
-                self.t2 = getTarget(Towers(self.t1.x, self.t1.y, overrideCamoDetect=self.parent.upgrades[1] >= 2, overrideAddToTowers=True), ignore=[self.t1], overrideRange=1000)
+                self.t2 = getTarget(Towers(self.t1.x, self.t1.y, overrideCamoDetect=self.parent.upgrades[1] >= 2, overrideAddToTowers=True), ignore=[self.t1], targeting=self.parent.targeting, overrideRange=1000)
 
                 if type(self.t2) is Enemy:
                     self.t2.kill(coinMultiplier=getCoinMultiplier(self.parent), bossDamage=bossDamage)
                     self.parent.hits += 1
                     pops += 1
-                    self.t3 = getTarget(Towers(self.t2.x, self.t2.y, overrideCamoDetect=self.parent.upgrades[1] >= 2, overrideAddToTowers=True), ignore=[self.t1, self.t2], overrideRange=1000)
+                    self.t3 = getTarget(Towers(self.t2.x, self.t2.y, overrideCamoDetect=self.parent.upgrades[1] >= 2, overrideAddToTowers=True), ignore=[self.t1, self.t2], targeting=self.parent.targeting, overrideRange=1000)
 
                     if type(self.t3) is Enemy:
                         self.t3.kill(coinMultiplier=getCoinMultiplier(self.parent), bossDamage=bossDamage)
                         self.parent.hits += 1
                         pops += 1
                         if self.parent.upgrades[1] == 3:
-                            self.t4 = getTarget(Towers(self.t3.x, self.t3.y, overrideCamoDetect=self.parent.upgrades[1] >= 2, overrideAddToTowers=True), ignore=[self.t1, self.t2, self.t3], overrideRange=1000)
+                            self.t4 = getTarget(Towers(self.t3.x, self.t3.y, overrideCamoDetect=self.parent.upgrades[1] >= 2, overrideAddToTowers=True), ignore=[self.t1, self.t2, self.t3], targeting=self.parent.targeting, overrideRange=1000)
 
                             if type(self.t4) is Enemy:
                                 self.t4.kill(coinMultiplier=getCoinMultiplier(self.parent), bossDamage=bossDamage)
                                 self.parent.hits += 1
                                 pops += 1
-                                self.t5 = getTarget(Towers(self.t4.x, self.t4.y, overrideCamoDetect=self.parent.upgrades[1] >= 2, overrideAddToTowers=True), ignore=[self.t1, self.t2, self.t3, self.t4], overrideRange=1000)
+                                self.t5 = getTarget(Towers(self.t4.x, self.t4.y, overrideCamoDetect=self.parent.upgrades[1] >= 2, overrideAddToTowers=True), ignore=[self.t1, self.t2, self.t3, self.t4], targeting=self.parent.targeting, overrideRange=1000)
 
                                 if type(self.t5) is Enemy:
                                     self.t5.kill(coinMultiplier=getCoinMultiplier(self.parent), bossDamage=bossDamage)
@@ -834,7 +835,7 @@ class Wizard(Towers):
 
         if self.timer >= getActualCooldown(self.x, self.y, self.cooldown):
             try:
-                closest = getTarget(self)
+                closest = getTarget(self, targeting=self.targeting)
                 Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=60 if self.upgrades[2] else 30)
                 self.timer = 0
             except AttributeError:
@@ -984,7 +985,7 @@ class Village(Towers):
             self.timer = 0
 
         def attack(self, overrideExplosiveRadius: int = None):
-            closest = getTarget(Towers(self.x, self.y, overrideAddToTowers=True), overrideRange=self.parent.range)
+            closest = getTarget(Towers(self.x, self.y, overrideAddToTowers=True), targeting=self.parent.targeting, overrideRange=self.parent.range)
             if closest is None:
                 self.parent.timer = 100
             else:
@@ -1007,7 +1008,7 @@ class Village(Towers):
             if self.dx is None:
                 if self.tx is None:
                     if self.moveCooldown >= 250:
-                        closest = getTarget(Towers(self.x, self.y, overrideAddToTowers=True), overrideRange=self.parent.range, ignore=self.parent.targets)
+                        closest = getTarget(Towers(self.x, self.y, overrideAddToTowers=True), targeting=self.parent.targeting, overrideRange=self.parent.range, ignore=self.parent.targets)
                         if closest is None:
                             self.tx = self.parent.x
                             self.ty = self.parent.y
@@ -1018,7 +1019,7 @@ class Village(Towers):
                             self.moveCooldown = 0
                             self.parent.targets = [villager.target for villager in self.parent.villagers]
 
-                    elif getTarget(Towers(self.x, self.y, overrideAddToTowers=True), overrideRange=self.parent.range) is None or (self.x - self.parent.x) ** 2 + (self.y - self.parent.y) ** 2 < 625:
+                    elif getTarget(Towers(self.x, self.y, overrideAddToTowers=True), targeting=self.parent.targeting, overrideRange=self.parent.range) is None or (self.x - self.parent.x) ** 2 + (self.y - self.parent.y) ** 2 < 625:
                         self.moveCooldown += 1
 
                 else:
@@ -1155,7 +1156,7 @@ class Sniper(Towers):
 
         if self.timer >= getActualCooldown(self.x, self.y, self.cooldown):
             try:
-                closest = getTarget(self, overrideRange=1000)
+                closest = getTarget(self, targeting=self.targeting, overrideRange=1000)
                 if (closest.tier in onlyExplosiveTiers and self.upgrades[2] >= 2) or closest.tier not in onlyExplosiveTiers:
                     if self.abilityData['active']:
                         if closest.isBoss:
@@ -1304,7 +1305,7 @@ class Elemental(Towers):
             return
 
         if self.timer >= getActualCooldown(self.x, self.y, 3):
-            closest = getTarget(self)
+            closest = getTarget(self, targeting=self.targeting)
             try:
                 Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=50, bossDamage=25, fireTicks=300)
                 self.timer = 0
@@ -2345,13 +2346,20 @@ def draw() -> None:
             pygame.draw.rect(screen, (0, 0, 0), (620, 545, 150, 25), 3)
         centredPrint(font, f'Sell: ${round(getSellPrice(gameInfo.selected))}', (695, 557))
 
+        pygame.draw.rect(screen, (100, 100, 100), (620, 515, 150, 25))
+        if 620 < mx < 820 and 515 < my < 540:
+            pygame.draw.rect(screen, (128, 128, 128), (620, 515, 150, 25), 5)
+        else:
+            pygame.draw.rect(screen, (0, 0, 0), (620, 515, 150, 25), 3)
+        centredPrint(font, f'Target: {gameInfo.selected.targeting.capitalize()}', (695, 527))
+
         if type(gameInfo.selected) is IceTower:
-            pygame.draw.rect(screen, (0, 255, 0) if gameInfo.selected.enabled else (255, 0, 0), (620, 500, 150, 25))
-            if 620 <= mx <= 770 and 500 <= my <= 525:
-                pygame.draw.rect(screen, (128, 128, 128), (620, 500, 150, 25), 5)
+            pygame.draw.rect(screen, (0, 255, 0) if gameInfo.selected.enabled else (255, 0, 0), (620, 485, 150, 25))
+            if 620 <= mx <= 770 and 485 <= my <= 510:
+                pygame.draw.rect(screen, (128, 128, 128), (620, 485, 150, 25), 5)
             else:
-                pygame.draw.rect(screen, (0, 0, 0), (620, 500, 150, 25), 3)
-            centredPrint(font, 'ENABLED' if gameInfo.selected.enabled else 'DISABLED', (695, 512))
+                pygame.draw.rect(screen, (0, 0, 0), (620, 485, 150, 25), 3)
+            centredPrint(font, 'ENABLED' if gameInfo.selected.enabled else 'DISABLED', (695, 497))
 
     if mx <= 800 and my <= 450:
         pygame.display.update((0, 0, 800, 450))
@@ -3257,75 +3265,93 @@ def app() -> None:
                     gameInfo.ticks = 0
                     break
 
-                for tower in data['towers']:
-                    towerName, x, y, imageFrame = tower
+                try:
+                    for tower in data['towers']:
+                        towerName, x, y, imageFrame = tower
 
-                    color = None
-                    for TowerType in Towers.__subclasses__():
-                        if TowerType.name == towerName:
-                            color = TowerType.color
+                        color = None
+                        for TowerType in Towers.__subclasses__():
+                            if TowerType.name == towerName:
+                                color = TowerType.color
 
-                    try:
-                        if towerImages[towerName] is not None:
-                            try:
-                                screen.blit(towerImages[towerName], (x + 85, y + 55))
-                            except TypeError:
-                                screen.blit(towerImages[towerName][imageFrame], (x + 85, y + 55))
+                        try:
+                            if towerImages[towerName] is not None:
+                                try:
+                                    screen.blit(towerImages[towerName], (x + 85, y + 55))
+                                except TypeError:
+                                    screen.blit(towerImages[towerName][imageFrame], (x + 85, y + 55))
 
-                        elif color is None:
-                            raise AttributeError
-                        else:
-                            pygame.draw.circle(screen, color, (x + 100, y + 75), 15)
+                            elif color is None:
+                                raise AttributeError
+                            else:
+                                pygame.draw.circle(screen, color, (x + 100, y + 75), 15)
 
-                    except AttributeError:
-                        pygame.draw.circle(screen, (200, 200, 200), (x + 100, y + 75), 15)
+                        except AttributeError:
+                            pygame.draw.circle(screen, (200, 200, 200), (x + 100, y + 75), 15)
 
-                for enemy in data['enemies']:
-                    camo, regen, tier, x, y, HP, MaxHP = enemy
+                except KeyError:
+                    pass
 
-                    if tier in bosses:
-                        healthPercent = HP / trueHP[tier]
+                try:
+                    for enemy in data['enemies']:
+                        camo, regen, tier, x, y, HP, MaxHP = enemy
 
-                        if healthPercent >= 0.8:
-                            color = (191, 255, 0)
-                        elif healthPercent >= 0.6:
-                            color = (196, 211, 0)
-                        elif healthPercent >= 0.4:
-                            color = (255, 255, 0)
-                        elif healthPercent >= 0.2:
-                            color = (255, 69, 0)
-                        else:
-                            color = (255, 0, 0)
+                        if tier in bosses:
+                            healthPercent = HP / trueHP[tier]
 
-                        pygame.draw.rect(screen, (128, 128, 128), (x + 50, y + 50, 100, 5))
-                        pygame.draw.rect(screen, color, (x + 50, y + 50, round(HP / MaxHP * 100), 5))
-                        pygame.draw.rect(screen, (0, 0, 0), (x + 50, y + 50, 100, 5), 1)
-                        centredPrint(font, f'{math.ceil(HP / MaxHP * 100)}%', (x + 100, y + 40))
+                            if healthPercent >= 0.8:
+                                color = (191, 255, 0)
+                            elif healthPercent >= 0.6:
+                                color = (196, 211, 0)
+                            elif healthPercent >= 0.4:
+                                color = (255, 255, 0)
+                            elif healthPercent >= 0.2:
+                                color = (255, 69, 0)
+                            else:
+                                color = (255, 0, 0)
 
-                    pygame.draw.circle(screen, enemyColors[str(tier)], (x + 100, y + 75), 20 if tier in bosses else 10)
-                    if camo:
-                        pygame.draw.circle(screen, (0, 0, 0), (x + 100, y + 75), 20 if tier in bosses else 10, 2)
-                    if regen:
-                        pygame.draw.circle(screen, (255, 105, 180), (x + 100, y + 75), 20 if tier in bosses else 10, 2)
+                            pygame.draw.rect(screen, (128, 128, 128), (x + 50, y + 50, 100, 5))
+                            pygame.draw.rect(screen, color, (x + 50, y + 50, round(HP / MaxHP * 100), 5))
+                            pygame.draw.rect(screen, (0, 0, 0), (x + 50, y + 50, 100, 5), 1)
+                            centredPrint(font, f'{math.ceil(HP / MaxHP * 100)}%', (x + 100, y + 40))
 
-                for proj in data['projectiles']:
-                    color, x, y = proj
+                        pygame.draw.circle(screen, enemyColors[str(tier)], (x + 100, y + 75), 20 if tier in bosses else 10)
+                        if camo:
+                            pygame.draw.circle(screen, (0, 0, 0), (x + 100, y + 75), 20 if tier in bosses else 10, 2)
+                        if regen:
+                            pygame.draw.circle(screen, (255, 105, 180), (x + 100, y + 75), 20 if tier in bosses else 10, 2)
 
-                    pygame.draw.circle(screen, color, (x + 100, y + 75), 3)
+                except KeyError:
+                    pass
 
-                for piercingProj in data['piercingProjectiles']:
-                    x, y = piercingProj
+                try:
+                    for proj in data['projectiles']:
+                        color, x, y = proj
 
-                    pygame.draw.circle(screen, (16, 16, 16), (x + 100, y + 75), 5)
+                        pygame.draw.circle(screen, color, (x + 100, y + 75), 3)
 
-                for powerUp in data['powerups']:
-                    powerUpType, x, y = powerUp
+                except KeyError:
+                    pass
 
-                    if powerUpType == 'spikes':
-                        pygame.draw.circle(screen, (0, 0, 0), (x + 100, y + 75), 3)
+                try:
+                    for piercingProj in data['piercingProjectiles']:
+                        x, y = piercingProj
 
-                    if powerUpType == 'lightning':
-                        pygame.draw.line(screen, (191, 0, 255), (500, -200), (x + 100, y + 75), 3)
+                        pygame.draw.circle(screen, (16, 16, 16), (x + 100, y + 75), 5)
+
+                except KeyError:
+                    pass
+
+                try:
+                    for effect in data['effects']:
+                        if effect[0] == 'circle':
+                            pygame.draw.circle(screen, effect[1], (effect[2][0] + 100, effect[2][1] + 75), effect[3])
+
+                        if effect[0] == 'line':
+                            pygame.draw.line(screen, effect[1], (effect[2][0] + 100, effect[2][1] + 75), (effect[3][0] + 100, effect[3][1] + 75), 3)
+
+                except KeyError:
+                    pass
 
                 pygame.draw.rect(screen, (200, 200, 200), (0, 0, 1000, 75))
                 pygame.draw.rect(screen, (200, 200, 200), (0, 0, 100, 675))
@@ -3826,10 +3852,39 @@ def app() -> None:
                 replayEnemies = []
                 replayProjectiles = []
                 replayPiercingProjectiles = []
-                replayPowerUps = []
+                replayEffects = []
 
                 for tower in gameInfo.towers:
                     replayTowers.append([tower.name, tower.x, tower.y, tower.getImageFrame()])
+
+                    if type(tower) is SpikeTower:
+                        for spike in tower.spikes.spikes:
+                            if spike.visible:
+                                replayEffects.append(['circle', (0, 0, 0), (spike.x, spike.y), 2])
+
+                    if type(tower) is Wizard:
+                        if tower.lightning.visibleTicks >= 0:
+                            if tower.lightning.t1 is not None:
+                                replayEffects.append(['line', (191, 0, 255), (tower.x, tower.y), (tower.lightning.t1.x, tower.lightning.t1.y)])
+                                if tower.lightning.t2 is not None:
+                                    replayEffects.append(['line', (191, 0, 255), (tower.lightning.t1.x, tower.lightning.t1.y), (tower.lightning.t2.x, tower.lightning.t2.y)])
+                                    if tower.lightning.t3 is not None:
+                                        replayEffects.append(['line', (191, 0, 255), (tower.lightning.t2.x, tower.lightning.t2.y), (tower.lightning.t3.x, tower.lightning.t3.y)])
+                                        if tower.lightning.t4 is not None:
+                                            replayEffects.append(['line', (191, 0, 255), (tower.lightning.t2.x, tower.lightning.t3.y), (tower.lightning.t4.x, tower.lightning.t4.y)])
+                                            if tower.lightning.t5 is not None:
+                                                replayEffects.append(['line', (191, 0, 255), (tower.lightning.t2.x, tower.lightning.t4.y), (tower.lightning.t5.x, tower.lightning.t5.y)])
+
+                    if type(tower) is Sniper:
+                        if tower.rifleFireTicks > 0:
+                            dx = [0, 7, 14, 7, 0, -7, -14, -7][tower.rotation]
+                            dy = [14, 7, 0, -7, -14, -7, 0, 7][tower.rotation]
+
+                            replayEffects.append(['circle', (255, 128, 0), (tower.x + dx, tower.y + dy), 3])
+
+                    if type(tower) in [InfernoTower, Elemental]:
+                        for render in tower.inferno.renders:
+                            replayEffects.append(['line', (255, 69, 0), (render.target.x, render.target.y), (tower.x, tower.y - 12)])
 
                 for enemy in gameInfo.enemies:
                     replayEnemies.append([enemy.camo, enemy.regen, enemy.tier, enemy.x, enemy.y, enemy.HP, enemy.MaxHP])
@@ -3842,18 +3897,20 @@ def app() -> None:
 
                 for powerUp in PowerUps.objects:
                     if type(powerUp) is PhysicalPowerUp.Spike:
-                        replayPowerUps.append(['spike', powerUp.x, powerUp.y])
+                        replayEffects.append(['circle', (0, 0, 0), (powerUp.x, powerUp.y), 3])
 
                     if type(powerUp) is PhysicalPowerUp.Lightning:
-                        replayPowerUps.append(['lightning', powerUp.x, powerUp.y])
+                        replayEffects.append(['line', (191, 0, 255), (500, -200), (powerUp.x, powerUp.y)])
 
-                info.gameReplayData.append({
+                toAppend = {
                     'towers': replayTowers,
                     'enemies': replayEnemies,
                     'projectiles': replayProjectiles,
                     'piercingProjectiles': replayPiercingProjectiles,
-                    'powerups': replayPowerUps
-                })
+                    'effects': replayEffects
+                }
+
+                info.gameReplayData.append({k: v for k, v in toAppend.items() if v})
 
                 gameInfo.replayRefresh = 0
             else:
@@ -4056,16 +4113,18 @@ def app() -> None:
                                                 info.statistics['coinsSpent'] += cost
                                             gameInfo.selected.upgrades[n] += 1
 
-                            elif 620 <= mx < 770 and 545 <= my <= 570:
+                            if 620 <= mx < 770 and 545 <= my <= 570:
                                 gameInfo.towers.remove(gameInfo.selected)
                                 gameInfo.coins += getSellPrice(gameInfo.selected)
                                 info.statistics['towersSold'] += 1
                                 gameInfo.selected = None
 
-
-                            elif type(gameInfo.selected) is IceTower:
-                                if 620 <= mx <= 770 and 500 <= my <= 525:
+                            if type(gameInfo.selected) is IceTower:
+                                if 620 <= mx <= 770 and 485 <= my <= 510:
                                     gameInfo.selected.enabled = not gameInfo.selected.enabled
+
+                            if 620 <= mx <= 770 and 515 <= my <= 540:
+                                gameInfo.selected.targeting = targetingCycle[(targetingCycle.index(gameInfo.selected.targeting) + 1) % len(targetingCycle)]
 
                     elif event.button == 4:
                         if mx > 800 and my < 450:
