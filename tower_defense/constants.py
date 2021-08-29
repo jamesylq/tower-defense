@@ -156,8 +156,8 @@ strengthPath = ['0', '1', '2', '3', '4', '5', '6', '7', '9', '8', 'A', 'B', 'C',
 
 # Enemy Property Constants
 onlyExplosiveTiers = ['7', 'D']
+freezeImmune = ['6', 'C', 'D']
 bosses = ['A', 'B', 'C', 'D']
-freezeImmune = ['E']
 resistant = ['9']
 
 # Math Constants

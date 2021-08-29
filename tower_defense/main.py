@@ -942,8 +942,8 @@ class InfernoTower(Towers):
                 if abs(enemy.x - self.x) ** 2 + abs(enemy.y - self.y) ** 2 <= self.range ** 2:
                     enemy.freezeTimer = max(enemy.freezeTimer, 1000)
                     self.inferno.renders.append(self.AttackRender(self, enemy))
-                    enemy.fireTicks = max(enemy.fireTicks, (500 if self.parent.upgrades[2] else 300))
-                    enemy.fireIgnitedBy = self.parent
+                    enemy.fireTicks = max(enemy.fireTicks, 500)
+                    enemy.fireIgnitedBy = self
 
             self.abilityData['active'] = False
 
@@ -1160,11 +1160,11 @@ class Sniper(Towers):
                 if (closest.tier in onlyExplosiveTiers and self.upgrades[2] >= 2) or closest.tier not in onlyExplosiveTiers:
                     if self.abilityData['active']:
                         if closest.isBoss:
-                            closest.kill(coinMultiplier=getCoinMultiplier(self), bossDamage=self.bossDamage)
+                            closest.kill(coinMultiplier=getCoinMultiplier(self), bossDamage=self.bossDamage * 3)
                         else:
                             try:
                                 gameInfo.enemies.remove(closest)
-                                info.coins += getCoinMultipler(self)
+                                gameInfo.coins += getCoinMultiplier(self)
                             except ValueError:
                                 pass
 
@@ -1308,6 +1308,8 @@ class Elemental(Towers):
             closest = getTarget(self, targeting=self.targeting)
             try:
                 Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=50, bossDamage=25, fireTicks=300)
+                twin = Projectile(self, self.x, self.y, closest.x, closest.y, bossDamage=25, freezeDuration=100)
+                twin.move(7)
                 self.timer = 0
             except AttributeError:
                 pass
@@ -1487,7 +1489,7 @@ class Enemy:
             self.timer = 100
             Enemy(7, [self.x, self.y], self.lineIndex)
 
-        if self.freezeTimer > 0 and not self.tier in freezeImmune:
+        if self.freezeTimer > 0 and not str(self.tier) in freezeImmune:
             self.freezeTimer -= 1
         else:
             for n in range(speed):
@@ -2280,7 +2282,7 @@ def draw() -> None:
 
         if gameInfo.selected.upgrades[0] == gameInfo.selected.upgrades[1] == gameInfo.selected.upgrades[2] == 3 or type(gameInfo.selected) is Elemental:
             if gameInfo.selected.upgrades[3] or type(gameInfo.selected) is Elemental:
-                if 295 <= my <= 595 and 485 <= my <= 605:
+                if 295 <= mx <= 595 and 485 <= my <= 575:
                     pygame.draw.rect(screen, (255, 255, 225), (295, 485, 300, 90))
                 else:
                     pygame.draw.rect(screen, (255, 255, 191), (295, 485, 300, 90))
@@ -2346,12 +2348,13 @@ def draw() -> None:
             pygame.draw.rect(screen, (0, 0, 0), (620, 545, 150, 25), 3)
         centredPrint(font, f'Sell: ${round(getSellPrice(gameInfo.selected))}', (695, 557))
 
-        pygame.draw.rect(screen, (100, 100, 100), (620, 515, 150, 25))
-        if 620 < mx < 820 and 515 < my < 540:
-            pygame.draw.rect(screen, (128, 128, 128), (620, 515, 150, 25), 5)
-        else:
-            pygame.draw.rect(screen, (0, 0, 0), (620, 515, 150, 25), 3)
-        centredPrint(font, f'Target: {gameInfo.selected.targeting.capitalize()}', (695, 527))
+        if type(gameInfo.selected) not in [Bowler, InfernoTower]:
+            pygame.draw.rect(screen, (100, 100, 100), (620, 515, 150, 25))
+            if 620 < mx < 820 and 515 < my < 540:
+                pygame.draw.rect(screen, (128, 128, 128), (620, 515, 150, 25), 5)
+            else:
+                pygame.draw.rect(screen, (0, 0, 0), (620, 515, 150, 25), 3)
+            centredPrint(font, f'Target: {gameInfo.selected.targeting.capitalize()}', (695, 527))
 
         if type(gameInfo.selected) is IceTower:
             pygame.draw.rect(screen, (0, 255, 0) if gameInfo.selected.enabled else (255, 0, 0), (620, 485, 150, 25))
@@ -4123,8 +4126,9 @@ def app() -> None:
                                 if 620 <= mx <= 770 and 485 <= my <= 510:
                                     gameInfo.selected.enabled = not gameInfo.selected.enabled
 
-                            if 620 <= mx <= 770 and 515 <= my <= 540:
-                                gameInfo.selected.targeting = targetingCycle[(targetingCycle.index(gameInfo.selected.targeting) + 1) % len(targetingCycle)]
+                            if type(gameInfo.selected) not in [Bowler, InfernoTower]:
+                                if 620 <= mx <= 770 and 515 <= my <= 540:
+                                    gameInfo.selected.targeting = targetingCycle[(targetingCycle.index(gameInfo.selected.targeting) + 1) % len(targetingCycle)]
 
                     elif event.button == 4:
                         if mx > 800 and my < 450:
