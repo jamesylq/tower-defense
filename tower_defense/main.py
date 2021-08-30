@@ -1876,6 +1876,7 @@ def fileSelection(path: str) -> str:
                         if oldpath == os.path.join(path, ''):
                             path = os.path.dirname(path)
 
+                        scroll = 0
                         textfiles = glob.glob(os.path.join(path, '*.txt'))
                         subdirectories = glob.glob(os.path.join(path, '*', ''))
                         displayedFiles = textfiles + subdirectories
@@ -1884,6 +1885,7 @@ def fileSelection(path: str) -> str:
                     for pathToFile in displayedFiles:
                         if 25 <= mx <= 975 and 60 + 30 * n - scroll <= my <= 85 + 30 * n - scroll and 60 <= my <= 550:
                             if pathToFile in subdirectories:
+                                scroll = 0
                                 path = pathToFile
 
                                 textfiles = glob.glob(os.path.join(path, '*.txt'))
@@ -2828,7 +2830,7 @@ def app() -> None:
 
                             if 675 <= mx <= 800 and 510 <= my <= 540:
                                 info.status = 'shop'
-                                if time.time() // 86400 > info.lastOpenShop // 86400:
+                                if (time.time() - 28800) // 86400 > (info.lastOpenShop - 28800) // 86400:
                                     refreshShop()
                                     info.lastOpenShop = time.time()
                                 cont = False
@@ -3509,7 +3511,7 @@ def app() -> None:
                 m = math.floor((t - h * 3600) // 60)
                 s = math.floor(t - h * 3600 - m * 60)
 
-                if h == m == s == 0:
+                if t <= 0:
                     refreshShop()
 
                 if h == 0:
