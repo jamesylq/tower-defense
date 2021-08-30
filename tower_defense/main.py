@@ -1,15 +1,13 @@
 # Imports
 import os
+import glob
 import math
 import time
-import tkinter
-
-import pygame
 import pickle
+import pygame
 import random
 
 from typing import *
-from tkinter import Tk, filedialog
 from _pickle import UnpicklingError
 
 from tower_defense import __version__
@@ -1784,6 +1782,12 @@ class Enemy:
             self.regenTimer += 1
 
 # Functions
+@overload
+def removeCharset(s: str, charset: List[str]) -> str: ...
+@overload
+def removeCharset(s: str, charset: str) -> str: ...
+
+
 def reset() -> None:
     try:
         open('save.txt', 'r').close()
@@ -1800,10 +1804,104 @@ def reset() -> None:
         print('tower-defense.core: Save file cleared!')
 
 
-@overload
-def removeCharset(s: str, charset: List[str]) -> str: ...
-@overload
-def removeCharset(s: str, charset: str) -> str: ...
+def fileSelection(path: str) -> str:
+    textfiles = glob.glob(os.path.join(path, '*.txt'))
+    subdirectories = glob.glob(os.path.join(path, '*', ''))
+    displayedFiles = textfiles + subdirectories
+
+    scroll = 0
+    while True:
+        screen.fill((200, 200, 200))
+
+        mx, my = pygame.mouse.get_pos()
+        maxScroll = max(30 * len(displayedFiles) - 490, 0)
+
+        if len(displayedFiles) == 0:
+            centredPrint(font, 'No suitable files detected!', (500, 260))
+        else:
+            n = 0
+            for pathToFile in displayedFiles:
+                pygame.draw.rect(screen, (100, 100, 100), (25, 60 + 30 * n - scroll, 950, 25))
+                if 25 <= mx <= 975 and 60 + 30 * n - scroll <= my <= 85 + 30 * n - scroll and 60 <= my <= 550:
+                    pygame.draw.rect(screen, (128, 128, 128), (25, 60 + 30 * n - scroll, 950, 25), 5)
+                else:
+                    pygame.draw.rect(screen, (0, 0, 0), (25, 60 + 30 * n - scroll, 950, 25), 3)
+
+                centredPrint(font, pathToFile, (500, 72 + 30 * n - scroll))
+
+                n += 1
+
+        pygame.draw.rect(screen, (200, 200, 200), (0, 0, 1000, 60))
+        centredPrint(mediumFont, 'File Selection', (500, 30))
+
+        pygame.draw.rect(screen, (200, 200, 200), (0, 550, 1000, 50))
+
+        pygame.draw.rect(screen, (255, 0, 0), (30, 560, 100, 30))
+        centredPrint(font, 'Cancel', (80, 575))
+        if 30 <= mx <= 130 and 560 <= my <= 590:
+            pygame.draw.rect(screen, (128, 128, 128), (30, 560, 100, 30), 5)
+        else:
+            pygame.draw.rect(screen, (0, 0, 0), (30, 560, 100, 30), 3)
+
+        pygame.draw.rect(screen, (100, 100, 100), (150, 560, 200, 30))
+        centredPrint(font, 'Parent Folder', (250, 575))
+        if 150 <= mx <= 350 and 560 <= my <= 590:
+            pygame.draw.rect(screen, (128, 128, 128), (150, 560, 200, 30), 5)
+        else:
+            pygame.draw.rect(screen, (0, 0, 0), (150, 560, 200, 30), 3)
+
+        rightAlignPrint(tinyFont, path, (1000, 590))
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                save()
+                quit()
+
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    if 30 <= mx <= 130 and 560 <= my <= 590:
+                        return ''
+
+                    if 150 <= mx <= 350 and 560 <= my <= 590:
+                        oldpath = path
+                        path = os.path.dirname(path)
+
+                        if oldpath == os.path.join(path, ''):
+                            path = os.path.dirname(path)
+
+                        textfiles = glob.glob(os.path.join(path, '*.txt'))
+                        subdirectories = glob.glob(os.path.join(path, '*', ''))
+                        displayedFiles = textfiles + subdirectories
+
+                    n = 0
+                    for pathToFile in displayedFiles:
+                        if 25 <= mx <= 975 and 60 + 30 * n - scroll <= my <= 85 + 30 * n - scroll and 60 <= my <= 550:
+                            if pathToFile in subdirectories:
+                                path = pathToFile
+
+                                textfiles = glob.glob(os.path.join(path, '*.txt'))
+                                subdirectories = glob.glob(os.path.join(path, '*', ''))
+                                displayedFiles = textfiles + subdirectories
+
+                            if pathToFile in textfiles:
+                                return pathToFile
+
+                        n += 1
+
+                if event.button == 4:
+                    scroll = max(0, scroll - 5)
+
+                if event.button == 5:
+                    scroll = min(maxScroll, scroll + 5)
+
+        pressed = pygame.key.get_pressed()
+        if pressed[pygame.K_UP]:
+            scroll = max(0, scroll - 3)
+        if pressed[pygame.K_DOWN]:
+            scroll = min(maxScroll, scroll - 3)
+
+        pygame.display.update()
+
 
 def removeCharset(s, charset) -> str:
     for char in charset:
@@ -2485,32 +2583,6 @@ def load() -> None:
             pass
 
 
-def loadGame(filename: str):
-    global info
-
-    infoSave = info
-    try:
-        game = pickle.load(open(filename, 'rb'))
-        for attr in gameAttrs:
-            setattr(info, attr, getattr(game, attr))
-
-        info.status = 'game'
-        info.Map = game.Map
-
-        try:
-            PowerUps.objects.clear()
-        except AttributeError:
-            pass
-
-        try:
-            RuneEffects.effects.clear()
-        except AttributeError:
-            pass
-
-    except (FileNotFoundError, EOFError, AttributeError, UnpicklingError):
-        info = infoSave
-
-
 # Main
 def app() -> None:
     load()
@@ -2634,42 +2706,35 @@ def app() -> None:
 
                 pygame.draw.rect(screen, (200, 200, 200), (525, 510, 125, 30))
                 centredPrint(font, 'Replay', (587, 525))
-                if 525 <= mx <= 650 and 510 < my <= 540:
+                if 525 <= mx <= 650 and 510 <= my <= 540:
                     pygame.draw.rect(screen, (128, 128, 128), (525, 510, 125, 30), 5)
                 else:
                     pygame.draw.rect(screen, (0, 0, 0), (525, 510, 125, 30), 3)
 
                 pygame.draw.rect(screen, (200, 200, 200), (675, 510, 125, 30))
                 centredPrint(font, 'Shop', (737, 525))
-                if 675 <= mx <= 800 and 510 < my <= 540:
+                if 675 <= mx <= 800 and 510 <= my <= 540:
                     pygame.draw.rect(screen, (128, 128, 128), (675, 510, 125, 30), 5)
                 else:
                     pygame.draw.rect(screen, (0, 0, 0), (675, 510, 125, 30), 3)
 
                 pygame.draw.rect(screen, (200, 200, 200), (825, 510, 150, 30))
                 centredPrint(font, 'Cosmetics', (900, 525))
-                if 825 <= mx <= 975 and 510 < my <= 540:
+                if 825 <= mx <= 975 and 510 <= my <= 540:
                     pygame.draw.rect(screen, (128, 128, 128), (825, 510, 150, 30), 5)
                 else:
                     pygame.draw.rect(screen, (0, 0, 0), (825, 510, 150, 30), 3)
 
-                pygame.draw.rect(screen, (200, 200, 200), (525, 550, 125, 30))
-                centredPrint(font, 'Load', (587, 565))
-                if 525 <= mx <= 650 and 550 < my <= 580:
-                    pygame.draw.rect(screen, (128, 128, 128), (525, 550, 125, 30), 5)
-                else:
-                    pygame.draw.rect(screen, (0, 0, 0), (525, 550, 125, 30), 3)
-
                 pygame.draw.rect(screen, (200, 200, 200), (675, 550, 125, 30))
                 centredPrint(font, 'Stats', (737, 565))
-                if 675 <= mx <= 800 and 550 < my <= 580:
+                if 675 <= mx <= 800 and 550 <= my <= 580:
                     pygame.draw.rect(screen, (128, 128, 128), (675, 550, 125, 30), 5)
                 else:
                     pygame.draw.rect(screen, (0, 0, 0), (675, 550, 125, 30), 3)
 
                 pygame.draw.rect(screen, (200, 200, 200), (825, 550, 150, 30))
                 centredPrint(font, 'Achievements', (900, 565))
-                if 825 <= mx <= 975 and 550 < my <= 580:
+                if 825 <= mx <= 975 and 550 <= my <= 580:
                     pygame.draw.rect(screen, (128, 128, 128), (825, 550, 150, 30), 5)
                 else:
                     pygame.draw.rect(screen, (0, 0, 0), (825, 550, 150, 30), 3)
@@ -2740,7 +2805,7 @@ def app() -> None:
                                 cont = False
 
                             if 525 <= mx <= 650 and 510 <= my <= 540:
-                                path = filedialog.askopenfilename()
+                                path = fileSelection(os.path.join(curr_path, 'replay-files'))
                                 if type(path) is str and removeCharset(path, ' ') != '':
                                     try:
                                         info.gameReplayData, info.Map = pickle.load(open(path, 'rb'))
@@ -2748,7 +2813,10 @@ def app() -> None:
                                         cont = False
                                         print(f'Replaying {path}!')
 
-                                    except TypeError:
+                                    except FileNotFoundError:
+                                        print(f'File {path} not found!')
+
+                                    except (EOFError, TypeError, ValueError, UnpicklingError):
                                         pass
 
                             if 675 <= mx <= 800 and 510 <= my <= 540:
@@ -2762,13 +2830,6 @@ def app() -> None:
                                 info.status = 'cosmetics'
                                 info.newRunes = 0
                                 cont = False
-
-                            if 525 <= mx <= 650 and 550 <= my <= 580:
-                                path = filedialog.askopenfilename()
-                                if type(path) is str and removeCharset(path, ' ') != '':
-                                    loadGame(path)
-                                    print(f'Loaded game from savefile {path}!')
-                                    cont = False
 
                             if 675 <= mx <= 800 and 550 <= my <= 580:
                                 info.status = 'statistics'
@@ -2974,15 +3035,14 @@ def app() -> None:
                         pygame.draw.rect(screen, (44, 255, 44), (800, 450, 100, 30))
                         centredPrint(font, 'Next Step', (850, 465))
 
-                        if 800 < mx < 900 and 450 < my < 480:
+                        if 800 <= mx <= 900 and 450 <= my <= 480:
                             pygame.draw.rect(screen, (128, 128, 128), (800, 450, 100, 30), 5)
                         else:
                             pygame.draw.rect(screen, (0, 0, 0), (800, 450, 100, 30), 3)
 
                     pygame.draw.rect(screen, (255, 0, 0), (30, 550, 100, 30))
                     centredPrint(font, 'Cancel', (80, 565))
-
-                    if 30 < mx < 130 and 550 < my < 580:
+                    if 30 <= mx <= 130 and 550 <= my <= 580:
                         pygame.draw.rect(screen, (128, 128, 128), (30, 550, 100, 30), 5)
                     else:
                         pygame.draw.rect(screen, (0, 0, 0), (30, 550, 100, 30), 3)
@@ -4185,9 +4245,6 @@ screen.fill((200, 200, 200))
 centredPrint(largeFont, f'Tower Defense v{__version__}', (500, 200), (100, 100, 100))
 centredPrint(mediumFont, 'Loading...', (500, 300), (100, 100, 100))
 pygame.display.update()
-
-root = Tk()
-root.withdraw()
 
 achievementRequirements = {
     'beatMaps': {
