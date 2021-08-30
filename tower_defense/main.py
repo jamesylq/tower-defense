@@ -1159,15 +1159,22 @@ class Sniper(Towers):
                     if self.abilityData['active']:
                         if closest.isBoss:
                             closest.kill(coinMultiplier=getCoinMultiplier(self), bossDamage=self.bossDamage * 3)
+                            self.hits += self.bossDamage * 3
+
                         else:
                             try:
                                 gameInfo.enemies.remove(closest)
                                 gameInfo.coins += getCoinMultiplier(self)
+                                self.hits += 1
+
                             except ValueError:
                                 pass
 
                     else:
-                        closest.kill(coinMultiplier=getCoinMultiplier(self), bossDamage=self.bossDamage, ceramDamage=self.ceramDamage)
+                        spawn = closest.kill(coinMultiplier=getCoinMultiplier(self), bossDamage=self.bossDamage, ceramDamage=self.ceramDamage)
+                        if closest.isBoss and not spawn:
+                            info.statistics['bossesKilled'] += 1
+                        self.hits += 1
 
                     self.rifleFireTicks = 10
 
@@ -2816,8 +2823,8 @@ def app() -> None:
                                     except FileNotFoundError:
                                         print(f'File {path} not found!')
 
-                                    except (EOFError, TypeError, ValueError, UnpicklingError):
-                                        pass
+                                    except (EOFError, ValueError, TypeError, UnpicklingError) as e:
+                                        print(f'Error loading reload file! See details: {e}')
 
                             if 675 <= mx <= 800 and 510 <= my <= 540:
                                 info.status = 'shop'
