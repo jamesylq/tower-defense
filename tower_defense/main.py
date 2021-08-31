@@ -1909,6 +1909,7 @@ def fileSelection(path: str) -> str:
         if pressed[pygame.K_DOWN]:
             scroll = min(maxScroll, scroll - 3)
 
+        clock.tick(MaxFPS)
         pygame.display.update()
 
 
@@ -3098,11 +3099,11 @@ def app() -> None:
                                                 letter = '('
 
                                             if charInsertIndex == 0:
-                                                info.mapMakerData[field] = (letter.upper() if uppercase else letter.lower()) + info.mapMakerData[field]
+                                                info.mapMakerData[field] = (letter.upper() if (uppercase or shifting) else letter.lower()) + info.mapMakerData[field]
                                             elif charInsertIndex == len(info.mapMakerData[field]):
-                                                info.mapMakerData[field] += (letter.upper() if uppercase else letter.lower())
+                                                info.mapMakerData[field] += (letter.upper() if (uppercase or shifting) else letter.lower())
                                             else:
-                                                info.mapMakerData[field] = info.mapMakerData[field][:charInsertIndex] + (letter.upper() if uppercase else letter.lower()) + info.mapMakerData[field][charInsertIndex:]
+                                                info.mapMakerData[field] = info.mapMakerData[field][:charInsertIndex] + (letter.upper() if (uppercase or shifting) else letter.lower()) + info.mapMakerData[field][charInsertIndex:]
 
                                             charInsertIndex += 1
 
