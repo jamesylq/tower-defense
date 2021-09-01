@@ -2222,6 +2222,14 @@ def draw() -> None:
             modified = original.copy()
             modified.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
 
+        if type(gameInfo.selected) in [Village, BananaFarm]:
+            for tower in gameInfo.towers:
+                if tower == gameInfo.selected:
+                    continue
+
+                if abs(tower.x - gameInfo.selected.x) ** 2 + abs(tower.y - gameInfo.selected.y) ** 2 < gameInfo.selected.range ** 2:
+                    pygame.draw.circle(screen, gameInfo.selected.color, (tower.x, tower.y), 17, 5)
+
         screen.blit(modified, (gameInfo.selected.x - gameInfo.selected.range, gameInfo.selected.y - gameInfo.selected.range))
 
     if gameInfo.placing != '':
