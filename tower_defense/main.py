@@ -2544,7 +2544,7 @@ def getClosestPoint(mx: int, my: int, *, sx: int = None, sy: int = None) -> Tupl
 def getActualCooldown(x: int, y: int, originalCooldown: int) -> int:
     cooldown = originalCooldown
 
-    if info.doubleReloadTicks > 0:
+    if gameInfo.doubleReloadTicks > 0:
         cooldown /= 2
 
     foundVillageWithAbility = False
@@ -2885,7 +2885,7 @@ def app() -> None:
                 screen.fill((32, 32, 32))
 
                 centredPrint(largeFont, 'You Win!', (500, 125), (255, 255, 255))
-                centredPrint(font, f'Your Final Score: {info.FinalHP}', (500, 250), (255, 255, 255))
+                centredPrint(font, f'Your Final Score: {gameInfo.FinalHP}', (500, 250), (255, 255, 255))
                 centredPrint(font, f'Press [SPACE] to continue!', (500, 280), (255, 255, 255))
 
                 if not saved:
@@ -2899,8 +2899,8 @@ def app() -> None:
                 if info.sandboxMode:
                     centredPrint(font, 'You were playing on Sandbox Mode!', (500, 350), (255, 255, 255))
                 else:
-                    totalLength = font.size(f'+{info.FinalHP // 2 + 10}')[0] + 40
-                    leftAlignPrint(font, f'+{info.FinalHP // 2 + 10}', (500 - totalLength // 2, 350), (255, 255, 255))
+                    totalLength = font.size(f'+{gameInfo.FinalHP // 2 + 10}')[0] + 40
+                    leftAlignPrint(font, f'+{gameInfo.FinalHP // 2 + 10}', (500 - totalLength // 2, 350), (255, 255, 255))
                     centredBlit(tokenImage, (485 + totalLength // 2, 350))
 
                 pygame.display.update()
@@ -3910,7 +3910,7 @@ def app() -> None:
 
                         info.statistics['mapsBeat'] = len([m for m in info.PBs.keys() if type(info.PBs[m]) is int])
 
-                        info.FinalHP = gameInfo.HP
+                        gameInfo.FinalHP = gameInfo.HP
                         gameInfo.reset()
                         save()
 
@@ -4017,8 +4017,8 @@ def app() -> None:
             RuneEffects.update(info)
             PowerUps.update(gameInfo)
 
-            if info.doubleReloadTicks > 0:
-                info.doubleReloadTicks -= 1
+            if gameInfo.doubleReloadTicks > 0:
+                gameInfo.doubleReloadTicks -= 1
 
             if gameInfo.HP <= 0:
                 info.status = 'lose'
@@ -4135,7 +4135,7 @@ def app() -> None:
 
                             if 940 <= mx <= 990 and info.powerUps['reload'] > 0:
                                 if len(gameInfo.towers) > 0:
-                                    info.doubleReloadTicks = 1000
+                                    gameInfo.doubleReloadTicks = 1000
 
                                     if not info.sandboxMode:
                                         info.powerUps['reload'] -= 1
