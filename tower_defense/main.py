@@ -2605,7 +2605,7 @@ def load() -> None:
 def app() -> None:
     load()
 
-    if gameInfo.Map is not None and info.status == 'game':
+    if info.status == 'game':
         cont = False
 
         while True:
