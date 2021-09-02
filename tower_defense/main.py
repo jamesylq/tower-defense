@@ -375,7 +375,7 @@ class SpikeTower(Towers):
                         for e in toDamage:
                             newToDamage += e.kill(coinMultiplier=getCoinMultiplier(self.parent), overrideRuneColor=color)
 
-                            if not gameInfo.sandboxMode:
+                            if not info.sandboxMode:
                                 info.statistics['pops'] += 1
                             self.parent.hits += 1
 
@@ -1416,7 +1416,7 @@ class Projectile:
 
                 enemy.kill(coinMultiplier=getCoinMultiplier(self.parent))
                 self.parent.hits += 1
-                if not gameInfo.sandboxMode:
+                if not info.sandboxMode:
                     info.statistics['pops'] += 1
 
 
@@ -1569,7 +1569,7 @@ class Enemy:
                 new = self.kill(burn=True, reduceFireTicks=True)
                 self.fireIgnitedBy.hits += 1
 
-                if not gameInfo.sandboxMode:
+                if not info.sandboxMode:
                     info.statistics['pops'] += 1
 
                 if new:
@@ -1599,7 +1599,7 @@ class Enemy:
                                     newToDamage += e.kill(coinMultiplier=projectile.coinMultiplier, bossDamage=projectile.bossDamage, overrideRuneColor=color)
 
                                     projectile.parent.hits += 1
-                                    if not gameInfo.sandboxMode:
+                                    if not info.sandboxMode:
                                         info.statistics['pops'] += 1
 
                                 toDamage = newToDamage
@@ -1618,7 +1618,7 @@ class Enemy:
                                 newToDamage += e.kill(coinMultiplier=projectile.coinMultiplier, bossDamage=projectile.bossDamage, overrideRuneColor=color)
 
                                 projectile.parent.hits += 1
-                                if not gameInfo.sandboxMode:
+                                if not info.sandboxMode:
                                     info.statistics['pops'] += 1
 
                             if not toDamage:
@@ -1645,7 +1645,7 @@ class Enemy:
                                 newToDamage += e.kill(coinMultiplier=projectile.coinMultiplier, overrideRuneColor=color)
 
                             projectile.parent.hits += 1
-                            if not gameInfo.sandboxMode:
+                            if not info.sandboxMode:
                                 info.statistics['pops'] += 1
 
                             toDamage = newToDamage
@@ -1709,13 +1709,13 @@ class Enemy:
 
                     try:
                         self.fireIgnitedBy.hits += 1
-                        if not gameInfo.sandboxMode:
+                        if not info.sandboxMode:
                             info.statistics['pops'] += 1
                     except AttributeError:
                         pass
 
                     RuneEffects.createEffects(self, color=overrideRuneColor)
-                    if not gameInfo.sandboxMode:
+                    if not info.sandboxMode:
                         info.statistics['bossesKilled'] += 1
 
                 else:
@@ -1798,12 +1798,18 @@ def removeCharset(s: str, charset: str) -> str: ...
 def reset() -> None:
     try:
         open('save.txt', 'r').close()
-        open('game.txt', 'r').close()
 
     except FileNotFoundError:
         print('tower-defense.core: No save file detected')
 
     else:
+        try:
+            open('game.txt', 'r').close()
+
+        except FileNotFoundError:
+            pass
+
+    finally:
         with open('save.txt', 'w') as saveFile:
             saveFile.write('')
         with open('game.txt', 'w') as gameFile:
@@ -2289,7 +2295,7 @@ def draw() -> None:
         if towerType is Elemental:
             continue
 
-        if gameInfo.wave >= towerType.req or gameInfo.sandboxMode:
+        if gameInfo.wave >= towerType.req or info.sandboxMode:
             leftAlignPrint(font, f'{towerType.name} (${towerType.price})', (810, 20 + 80 * n + gameInfo.shopScroll))
 
             pygame.draw.rect(screen, (187, 187, 187), (945, 30 + 80 * n + gameInfo.shopScroll, 42, 42))
@@ -2326,13 +2332,13 @@ def draw() -> None:
 
     leftAlignPrint(font, str(gameInfo.HP), (10, 500))
     screen.blit(healthImage if gameInfo.HP <= 250 else goldenHealthImage, (font.size(str(gameInfo.HP))[0] + 17, 493))
-    if gameInfo.sandboxMode:
+    if info.sandboxMode:
         leftAlignPrint(font, 'Coins: ∞', (10, 550))
     else:
         try:
             leftAlignPrint(font, f'Coins: {math.floor(gameInfo.coins)}', (10, 550))
         except OverflowError:
-            gameInfo.sandboxMode = True
+            info.sandboxMode = True
     leftAlignPrint(font, f'Wave {max(gameInfo.wave, 1)} of {len(waves)}', (10, 575))
 
     pygame.draw.rect(screen, (200, 200, 200), (810, 460, 50, 50))
@@ -2715,8 +2721,8 @@ def app() -> None:
                     pygame.draw.rect(screen, (0, 0, 0), (25, 550, 125, 30), 3)
 
                 if hasAllUnlocked(info):
-                    pygame.draw.rect(screen, (0, 225, 0) if gameInfo.sandboxMode else (255, 0, 0), (200, 550, 200, 30))
-                    centredPrint(font, 'Sandbox Mode: ' + ('ON' if gameInfo.sandboxMode else 'OFF'), (300, 565))
+                    pygame.draw.rect(screen, (0, 225, 0) if info.sandboxMode else (255, 0, 0), (200, 550, 200, 30))
+                    centredPrint(font, 'Sandbox Mode: ' + ('ON' if info.sandboxMode else 'OFF'), (300, 565))
                     if 200 <= mx <= 400 and 550 <= my <= 580:
                         pygame.draw.rect(screen, (128, 128, 128), (200, 550, 200, 30), 5)
                     else:
@@ -2783,7 +2789,7 @@ def app() -> None:
                                     if 40 * n + 60 - scroll <= my <= 40 * n + 90 - scroll and 50 <= my <= 500 and list(info.PBs.values())[n] != LOCKED:
                                         gameInfo.Map = Maps[n]
                                         info.status = 'game'
-                                        gameInfo.coins = math.inf if gameInfo.sandboxMode else 50
+                                        gameInfo.coins = math.inf if info.sandboxMode else 50
                                         info.gameReplayData.clear()
 
                                         try:
@@ -2802,7 +2808,7 @@ def app() -> None:
                             if 10 <= mx <= 935 and 40 * len(Maps) + 60 <= my + scroll <= 40 * len(Maps) + 90 and my <= 500:
                                 gameInfo.Map = random.choice([Map for Map in Maps if info.PBs[Map.name] != LOCKED])
                                 info.status = 'game'
-                                gameInfo.coins = math.inf if gameInfo.sandboxMode else 50
+                                gameInfo.coins = math.inf if info.sandboxMode else 50
                                 info.gameReplayData.clear()
 
                                 try:
@@ -2860,7 +2866,7 @@ def app() -> None:
 
                             if 200 <= mx <= 400 and 550 <= my <= 580:
                                 if hasAllUnlocked(info):
-                                    gameInfo.sandboxMode = not gameInfo.sandboxMode
+                                    info.sandboxMode = not info.sandboxMode
 
                         elif event.button == 4:
                             scroll = max(scroll - 5, 0)
@@ -2890,7 +2896,7 @@ def app() -> None:
                     else:
                         pygame.draw.rect(screen, (0, 0, 0), (800, 550, 175, 30), 3)
 
-                if gameInfo.sandboxMode:
+                if info.sandboxMode:
                     centredPrint(font, 'You were playing on Sandbox Mode!', (500, 350), (255, 255, 255))
                 else:
                     totalLength = font.size(f'+{info.FinalHP // 2 + 10}')[0] + 40
@@ -3873,7 +3879,7 @@ def app() -> None:
                     except IndexError:
                         info.status = 'win'
 
-                        if not gameInfo.sandboxMode:
+                        if not info.sandboxMode:
                             try:
                                 info.statistics['wins'][gameInfo.Map.name] += 1
                             except KeyError:
@@ -3894,7 +3900,7 @@ def app() -> None:
                         except IndexError:
                             pass
 
-                        if not gameInfo.sandboxMode:
+                        if not info.sandboxMode:
                             if info.PBs[gameInfo.Map.name] is None or info.PBs[gameInfo.Map.name] == LOCKED:
                                 info.PBs[gameInfo.Map.name] = gameInfo.HP
                             elif info.PBs[gameInfo.Map.name] < gameInfo.HP:
@@ -4057,11 +4063,11 @@ def app() -> None:
                                 if tower is Elemental:
                                     continue
 
-                                if 40 + n * 80 + gameInfo.shopScroll <= my <= 70 + n * 80 + gameInfo.shopScroll and my <= 450 and gameInfo.coins >= tower.price and gameInfo.placing == '' and (gameInfo.wave >= tower.req or gameInfo.sandboxMode):
+                                if 40 + n * 80 + gameInfo.shopScroll <= my <= 70 + n * 80 + gameInfo.shopScroll and my <= 450 and gameInfo.coins >= tower.price and gameInfo.placing == '' and (gameInfo.wave >= tower.req or info.sandboxMode):
                                     gameInfo.coins -= tower.price
                                     gameInfo.placing = tower.name
                                     gameInfo.selected = None
-                                    if not gameInfo.sandboxMode:
+                                    if not info.sandboxMode:
                                         info.statistics['coinsSpent'] += tower.price
                                 n += 1
 
@@ -4071,7 +4077,7 @@ def app() -> None:
 
                         if 460 <= my <= 510:
                             if 810 <= mx <= 860 and info.powerUps['spikes'] > 0 and gameInfo.placing == '':
-                                if not gameInfo.sandboxMode:
+                                if not info.sandboxMode:
                                     info.powerUps['spikes'] -= 1
 
                                 gameInfo.placing = 'spikes'
@@ -4098,7 +4104,7 @@ def app() -> None:
                                                     t5.kill(spawnNew=False, ignoreRegularEnemyHealth=True)
                                                     PowerUps.objects.append(PhysicalPowerUp.Lightning(t5.x, t5.y, PowerUps))
 
-                                    if not gameInfo.sandboxMode:
+                                    if not info.sandboxMode:
                                         info.powerUps['lightning'] -= 1
 
                             if 940 <= mx <= 990 and info.powerUps['antiCamo'] > 0:
@@ -4108,7 +4114,7 @@ def app() -> None:
                                         enemy.camo = False
                                         found = True
 
-                                if found and not gameInfo.sandboxMode:
+                                if found and not info.sandboxMode:
                                     info.powerUps['antiCamo'] -= 1
 
                         if 530 <= my <= 580:
@@ -4116,7 +4122,7 @@ def app() -> None:
                                 if gameInfo.HP < 250:
                                     gameInfo.HP = min(250, gameInfo.HP + 5)
 
-                                    if not gameInfo.sandboxMode:
+                                    if not info.sandboxMode:
                                         info.powerUps['heal'] -= 1
 
                             if 875 <= mx <= 925 and info.powerUps['freeze'] > 0:
@@ -4124,14 +4130,14 @@ def app() -> None:
                                     for enemy in gameInfo.enemies:
                                         enemy.freezeTimer = max(500, enemy.freezeTimer)
 
-                                    if not gameInfo.sandboxMode:
+                                    if not info.sandboxMode:
                                         info.powerUps['freeze'] -= 1
 
                             if 940 <= mx <= 990 and info.powerUps['reload'] > 0:
                                 if len(gameInfo.towers) > 0:
                                     info.doubleReloadTicks = 1000
 
-                                    if not gameInfo.sandboxMode:
+                                    if not info.sandboxMode:
                                         info.powerUps['reload'] -= 1
 
                         if issubclass(type(gameInfo.selected), Towers):
@@ -4163,7 +4169,7 @@ def app() -> None:
                                             cost = Village.upgradePrices[3]
                                             if gameInfo.coins >= cost:
                                                 gameInfo.coins -= cost
-                                                if not gameInfo.sandboxMode:
+                                                if not info.sandboxMode:
                                                     info.statistics['coinsSpent'] += cost
 
                                                 for tower in sacrifice:
@@ -4180,7 +4186,7 @@ def app() -> None:
                                         cost = type(gameInfo.selected).upgradePrices[3]
                                         if gameInfo.coins >= cost:
                                             gameInfo.coins -= cost
-                                            if not gameInfo.sandboxMode:
+                                            if not info.sandboxMode:
                                                 info.statistics['coinsSpent'] += cost
                                             gameInfo.selected.upgrades[3] = True
 
@@ -4188,9 +4194,9 @@ def app() -> None:
                                     n = (my - 485) // 30
                                     if gameInfo.selected.upgrades[n] < 3:
                                         cost = type(gameInfo.selected).upgradePrices[n][gameInfo.selected.upgrades[n]]
-                                        if gameInfo.coins >= cost and (gameInfo.wave >= gameInfo.selected.req or gameInfo.sandboxMode):
+                                        if gameInfo.coins >= cost and (gameInfo.wave >= gameInfo.selected.req or info.sandboxMode):
                                             gameInfo.coins -= cost
-                                            if not gameInfo.sandboxMode:
+                                            if not info.sandboxMode:
                                                 info.statistics['coinsSpent'] += cost
                                             gameInfo.selected.upgrades[n] += 1
 
@@ -4214,20 +4220,20 @@ def app() -> None:
 
                     elif event.button == 5:
                         if mx > 800 and my < 450:
-                            maxScroll = len([tower for tower in Towers.__subclasses__() if (gameInfo.wave >= tower.req or gameInfo.sandboxMode) and not tower is Elemental]) * 80 - 450
+                            maxScroll = len([tower for tower in Towers.__subclasses__() if (gameInfo.wave >= tower.req or info.sandboxMode) and not tower is Elemental]) * 80 - 450
                             if maxScroll > 0:
                                 gameInfo.shopScroll = max(-maxScroll, gameInfo.shopScroll - 10)
 
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
                         if gameInfo.placing == 'spikes':
-                            if not gameInfo.sandboxMode:
+                            if not info.sandboxMode:
                                 info.powerUps['spikes'] += 1
                         else:
                             try:
                                 price = {t.name: t.price for t in Towers.__subclasses__()}[gameInfo.placing]
                                 gameInfo.coins += price
-                                if not gameInfo.sandboxMode:
+                                if not info.sandboxMode:
                                     info.statistics['coinsSpent'] -= price
                             except KeyError:
                                 pass
@@ -4238,7 +4244,7 @@ def app() -> None:
             if pressed[pygame.K_UP]:
                 gameInfo.shopScroll = min(0, gameInfo.shopScroll + 5)
             elif pressed[pygame.K_DOWN]:
-                maxScroll = len([tower for tower in Towers.__subclasses__() if (gameInfo.wave >= tower.req or gameInfo.sandboxMode) and tower is not Elemental]) * 80 - 450
+                maxScroll = len([tower for tower in Towers.__subclasses__() if (gameInfo.wave >= tower.req or info.sandboxMode) and tower is not Elemental]) * 80 - 450
                 if maxScroll > 0:
                     gameInfo.shopScroll = max(-maxScroll, gameInfo.shopScroll - 5)
 
