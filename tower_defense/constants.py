@@ -1,6 +1,8 @@
 # Imports
 import math
 
+from tower_defense.maps import *
+
 # Enemy General Constants
 waves = [
     '00' * 3,
@@ -249,10 +251,11 @@ LAST = 'LAST'
 targetingCycle = [FIRST, STRONG, CLOSE, LAST]
 
 # Misc. Constants
+LOCKED = 'LOCKED'
 rainbowColors = [[255, 0, 0], [0, 127, 0], [255, 255, 0], [0, 255, 0], [0, 0, 255], [46, 43, 95], [139, 0, 255]]
 rainbowShift = [[-0.255, 0.127, 0], [0.255, 0.127, 0], [-0.255, 0, 0], [0, -0.255, 0.255], [0.046, 0.043, -0.16], [0.093, -0.043, 0.16], [0.116, 0, -0.255]]
-gameAttrs = ['enemies', 'projectiles', 'piercingProjectiles', 'towers', 'HP', 'coins', 'selected', 'placing', 'nextWave', 'wave', 'shopScroll', 'spawnleft', 'spawndelay', 'ticksSinceNoEnemies', 'ticks', 'towersPlaced', 'replayRefresh']
-playerAttrs = ['mapMakerData', 'statistics', 'achievements', 'mapsBeat', 'runes',  'equippedRune', 'newRunes', 'powerUps', 'powerUpData', 'tokens', 'lastOpenShop', 'shopData', 'gameReplayData', 'sandboxMode']
+gameAttrs = ['enemies', 'projectiles', 'piercingProjectiles', 'towers', 'HP', 'coins', 'selected', 'placing', 'nextWave', 'wave', 'shopScroll', 'spawnleft', 'spawndelay', 'ticksSinceNoEnemies', 'ticks', 'towersPlaced', 'replayRefresh', 'Map']
+playerAttrs = ['mapMakerData', 'statistics', 'achievements', 'mapsBeat', 'runes',  'equippedRune', 'newRunes', 'powerUps', 'powerUpData', 'tokens', 'lastOpenShop', 'shopData', 'gameReplayData', 'sandboxMode', 'status', 'PBs']
 defaults = {
     'enemies': [],
     'projectiles': [],
@@ -270,6 +273,7 @@ defaults = {
     'spawndelay': 9,
     'Map': None,
     'status': 'mapSelect',
+    'PBs': {m.name: (None if Maps.index(m) == 0 else LOCKED) for m in Maps},
     'mapMakerData': {
         'name': '',
         'backgroundColor': '',
@@ -320,5 +324,3 @@ defaults = {
     'towersPlaced': 0,
     'replayRefresh': 0
 }
-
-LOCKED = 'LOCKED'

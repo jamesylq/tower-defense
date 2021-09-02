@@ -1498,7 +1498,7 @@ class Enemy:
             self.freezeTimer -= 1
         else:
             for n in range(speed):
-                if len(info.Map.path) - 1 == self.lineIndex:
+                if len(gameInfo.Map.path) - 1 == self.lineIndex:
                     if not self.reachedEnd:
                         self.kill(spawnNew=False, ignoreBoss=True, ignoreRegularEnemyHealth=True)
                         info.statistics['enemiesMissed'] += 1
@@ -1507,8 +1507,8 @@ class Enemy:
                         break
 
                 else:
-                    current = info.Map.path[self.lineIndex]
-                    new = info.Map.path[self.lineIndex + 1]
+                    current = gameInfo.Map.path[self.lineIndex]
+                    new = gameInfo.Map.path[self.lineIndex + 1]
                     foundMove = False
                     newLineIndex = self.lineIndex + 1
 
@@ -1522,7 +1522,7 @@ class Enemy:
                             self.x += speed
                             if self.x >= new[0]:
                                 self.lineIndex = newLineIndex
-                                self.x, self.y = info.Map.path[newLineIndex]
+                                self.x, self.y = gameInfo.Map.path[newLineIndex]
 
                             foundMove = True
 
@@ -1530,7 +1530,7 @@ class Enemy:
                             self.x -= speed
                             if self.x <= new[0]:
                                 self.lineIndex = newLineIndex
-                                self.x, self.y = info.Map.path[newLineIndex]
+                                self.x, self.y = gameInfo.Map.path[newLineIndex]
 
                             foundMove = True
 
@@ -1538,7 +1538,7 @@ class Enemy:
                             self.y += speed
                             if self.y >= new[1]:
                                 self.lineIndex = newLineIndex
-                                self.x, self.y = info.Map.path[newLineIndex]
+                                self.x, self.y = gameInfo.Map.path[newLineIndex]
 
                             foundMove = True
 
@@ -1546,7 +1546,7 @@ class Enemy:
                             self.y -= speed
                             if self.y <= new[1]:
                                 self.lineIndex = newLineIndex
-                                self.x, self.y = info.Map.path[newLineIndex]
+                                self.x, self.y = gameInfo.Map.path[newLineIndex]
 
                             foundMove = True
 
@@ -2202,14 +2202,14 @@ def refreshShop() -> None:
 def draw() -> None:
     mx, my = pygame.mouse.get_pos()
 
-    screen.fill(info.Map.backgroundColor)
+    screen.fill(gameInfo.Map.backgroundColor)
 
-    for i in range(len(info.Map.path) - 1):
-        lineWidth = 14 if info.Map.path[i][0] != info.Map.path[i + 1][0] and info.Map.path[i][1] != info.Map.path[i + 1][1] else 10
-        pygame.draw.line(screen, info.Map.pathColor, info.Map.path[i], info.Map.path[i + 1], lineWidth)
-        pygame.draw.circle(screen, info.Map.pathColor, info.Map.path[i + 1], lineWidth // 2)
-    pygame.draw.circle(screen, info.Map.pathColor, info.Map.path[0], 10)
-    pygame.draw.circle(screen, info.Map.pathColor, info.Map.path[-1], 10)
+    for i in range(len(gameInfo.Map.path) - 1):
+        lineWidth = 14 if gameInfo.Map.path[i][0] != gameInfo.Map.path[i + 1][0] and gameInfo.Map.path[i][1] != gameInfo.Map.path[i + 1][1] else 10
+        pygame.draw.line(screen, gameInfo.Map.pathColor, gameInfo.Map.path[i], gameInfo.Map.path[i + 1], lineWidth)
+        pygame.draw.circle(screen, gameInfo.Map.pathColor, gameInfo.Map.path[i + 1], lineWidth // 2)
+    pygame.draw.circle(screen, gameInfo.Map.pathColor, gameInfo.Map.path[0], 10)
+    pygame.draw.circle(screen, gameInfo.Map.pathColor, gameInfo.Map.path[-1], 10)
 
     RuneEffects.draw(screen)
     PowerUps.draw(screen)
@@ -2605,7 +2605,7 @@ def load() -> None:
 def app() -> None:
     load()
 
-    if info.Map is not None and info.status == 'game':
+    if gameInfo.Map is not None and info.status == 'game':
         cont = False
 
         while True:
@@ -2781,7 +2781,7 @@ def app() -> None:
                             if 10 <= mx <= 835:
                                 for n in range(len(Maps)):
                                     if 40 * n + 60 - scroll <= my <= 40 * n + 90 - scroll and 50 <= my <= 500 and list(info.PBs.values())[n] != LOCKED:
-                                        info.Map = Maps[n]
+                                        gameInfo.Map = Maps[n]
                                         info.status = 'game'
                                         gameInfo.coins = math.inf if gameInfo.sandboxMode else 50
                                         info.gameReplayData.clear()
@@ -2800,7 +2800,7 @@ def app() -> None:
                                         cont = False
 
                             if 10 <= mx <= 935 and 40 * len(Maps) + 60 <= my + scroll <= 40 * len(Maps) + 90 and my <= 500:
-                                info.Map = random.choice([Map for Map in Maps if info.PBs[Map.name] != LOCKED])
+                                gameInfo.Map = random.choice([Map for Map in Maps if info.PBs[Map.name] != LOCKED])
                                 info.status = 'game'
                                 gameInfo.coins = math.inf if gameInfo.sandboxMode else 50
                                 info.gameReplayData.clear()
@@ -2826,7 +2826,7 @@ def app() -> None:
                                 path = fileSelection(os.path.join(curr_path, 'replay-files'))
                                 if type(path) is str and removeCharset(path, ' ') != '':
                                     try:
-                                        info.gameReplayData, info.Map = pickle.load(open(path, 'rb'))
+                                        info.gameReplayData, gameInfo.Map = pickle.load(open(path, 'rb'))
                                         info.status = 'replay'
                                         cont = False
                                         print(f'Replaying {path}!')
@@ -2913,7 +2913,7 @@ def app() -> None:
                                 if 800 <= mx <= 975 and 550 <= my <= 580:
                                     filename = f'replay-{int(time.time())}.txt'
                                     with open(os.path.join(curr_path, 'replay-files', filename), 'wb') as file:
-                                        pickle.dump([info.gameReplayData, info.Map], file)
+                                        pickle.dump([info.gameReplayData, gameInfo.Map], file)
                                     saved = True
                                     info.gameReplayData.clear()
 
@@ -3330,14 +3330,14 @@ def app() -> None:
                 screen.fill((0, 0, 0))
 
                 pygame.draw.rect(screen, (0, 0, 0), (100, 75, 800, 450), 3)
-                pygame.draw.rect(screen, info.Map.backgroundColor, (100, 75, 800, 450))
+                pygame.draw.rect(screen, gameInfo.Map.backgroundColor, (100, 75, 800, 450))
 
-                for i in range(len(info.Map.path) - 1):
-                    lineWidth = 14 if info.Map.path[i][0] != info.Map.path[i + 1][0] and info.Map.path[i][1] != info.Map.path[i + 1][1] else 10
-                    x1, y1 = info.Map.path[i]
-                    x2, y2 = info.Map.path[i + 1]
-                    pygame.draw.line(screen, info.Map.pathColor, [x1 + 100, y1 + 75], [x2 + 100, y2 + 75], lineWidth)
-                    pygame.draw.circle(screen, info.Map.pathColor, [x2 + 100, y2 + 75], lineWidth // 2)
+                for i in range(len(gameInfo.Map.path) - 1):
+                    lineWidth = 14 if gameInfo.Map.path[i][0] != gameInfo.Map.path[i + 1][0] and gameInfo.Map.path[i][1] != gameInfo.Map.path[i + 1][1] else 10
+                    x1, y1 = gameInfo.Map.path[i]
+                    x2, y2 = gameInfo.Map.path[i + 1]
+                    pygame.draw.line(screen, gameInfo.Map.pathColor, [x1 + 100, y1 + 75], [x2 + 100, y2 + 75], lineWidth)
+                    pygame.draw.circle(screen, gameInfo.Map.pathColor, [x2 + 100, y2 + 75], lineWidth // 2)
 
                 try:
                     data = info.gameReplayData.copy()[gameInfo.ticks]
@@ -3853,7 +3853,7 @@ def app() -> None:
                 mouseTrail = mouseTrail[:-10]
 
             if gameInfo.spawndelay == 0 and len(gameInfo.spawnleft) > 0:
-                Enemy(gameInfo.spawnleft[1], info.Map.path[0], 0, camo=gameInfo.spawnleft[0] == '1', regen=gameInfo.spawnleft[0] == '2')
+                Enemy(gameInfo.spawnleft[1], gameInfo.Map.path[0], 0, camo=gameInfo.spawnleft[0] == '1', regen=gameInfo.spawnleft[0] == '2')
 
                 gameInfo.spawnleft = gameInfo.spawnleft[2:]
                 gameInfo.spawndelay = 20
@@ -3875,9 +3875,9 @@ def app() -> None:
 
                         if not gameInfo.sandboxMode:
                             try:
-                                info.statistics['wins'][info.Map.name] += 1
+                                info.statistics['wins'][gameInfo.Map.name] += 1
                             except KeyError:
-                                info.statistics['wins'][info.Map.name] = 1
+                                info.statistics['wins'][gameInfo.Map.name] = 1
                             finally:
                                 info.statistics['totalWins'] += 1
 
@@ -3887,7 +3887,7 @@ def app() -> None:
                                     info.newRunes += 1
 
                         try:
-                            nextMap = Maps[[m.name for m in Maps].index(info.Map.name) + 1].name
+                            nextMap = Maps[[m.name for m in Maps].index(gameInfo.Map.name) + 1].name
                             if info.PBs[nextMap] == LOCKED:
                                 info.PBs[nextMap] = None
 
@@ -3895,10 +3895,10 @@ def app() -> None:
                             pass
 
                         if not gameInfo.sandboxMode:
-                            if info.PBs[info.Map.name] is None or info.PBs[info.Map.name] == LOCKED:
-                                info.PBs[info.Map.name] = gameInfo.HP
-                            elif info.PBs[info.Map.name] < gameInfo.HP:
-                                info.PBs[info.Map.name] = gameInfo.HP
+                            if info.PBs[gameInfo.Map.name] is None or info.PBs[gameInfo.Map.name] == LOCKED:
+                                info.PBs[gameInfo.Map.name] = gameInfo.HP
+                            elif info.PBs[gameInfo.Map.name] < gameInfo.HP:
+                                info.PBs[gameInfo.Map.name] = gameInfo.HP
 
                             info.tokens += gameInfo.HP // 2 + 10
 
