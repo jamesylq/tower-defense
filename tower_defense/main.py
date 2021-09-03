@@ -53,6 +53,9 @@ class gameData:
 
     def reset(self):
         for attr in gameAttrs:
+            if attr in ['Map', 'FinalHP']:
+                continue
+
             default = defaults[attr]
 
             if type(default) in [dict, list]:
@@ -2165,12 +2168,12 @@ def getNotObtainedRune(ignore: List[str] = None) -> dict:
 
 def getRandomPowerUp() -> dict:
     powerUpPrices = {
-        'lightning': 10,
-        'spikes': 8,
-        'antiCamo': 8,
-        'heal': 10,
-        'freeze': 5,
-        'reload': 12
+        'lightning': 25,
+        'spikes': 12,
+        'antiCamo': 12,
+        'heal': 15,
+        'freeze': 10,
+        'reload': 16
     }
 
     powerUp = random.choice([p for p in powerUpPrices.keys()])
@@ -2206,6 +2209,9 @@ def refreshShop() -> None:
 
 
 def draw() -> None:
+    if gameInfo.Map is None:
+        return
+
     mx, my = pygame.mouse.get_pos()
 
     screen.fill(gameInfo.Map.backgroundColor)
@@ -2838,10 +2844,10 @@ def app() -> None:
                                         print(f'Replaying {path}!')
 
                                     except FileNotFoundError:
-                                        print(f'File {path} not found!')
+                                        print(f'File \"{path}\" not found!')
 
                                     except (EOFError, ValueError, TypeError, UnpicklingError) as e:
-                                        print(f'Error loading reload file! See details: {e}')
+                                        print(f'Error loading Replay File \"{path}\"! See details: {e}')
 
                             if 675 <= mx <= 800 and 510 <= my <= 540:
                                 info.status = 'shop'
@@ -3752,13 +3758,14 @@ def app() -> None:
                 pygame.display.update()
 
         elif info.status == 'achievements':
+            highestAchievementTiers = {}
             for achievement, requirement in achievementRequirements.items():
                 stat = info.statistics[requirement['attr']]
                 highest = 0
                 for tier in requirement['tiers']:
                     if stat >= tier:
                         highest += 1
-                info.achievements[achievement] = highest
+                highestAchievementTiers[achievement] = highest
 
             scroll = 0
             while True:
@@ -3770,29 +3777,42 @@ def app() -> None:
                     pygame.draw.rect(screen, (100, 100, 100), (10, 80 + 110 * n - scroll, 980, 100))
                     leftAlignPrint(font, information['names'][min(info.achievements[achievement], 2)], (20, 93 + 110 * n - scroll))
 
-                    leftAlignPrint(tinyFont, information['lore'].replace('[%]', str(achievementRequirements[achievement]['tiers'][min(info.achievements[achievement], 2)])), (20, 120 + 110 * n - scroll))
+                    leftAlignPrint(tinyFont, information['lore'].replace('[%]', str(achievementRequirements[achievement]['tiers'][min(info.claimedAchievementRewards[achievement], 2)])), (20, 120 + 110 * n - scroll))
 
                     for m in range(3):
-                        if info.achievements[achievement] > m:
+                        if info.claimedAchievementRewards[achievement] > m:
                             pygame.draw.circle(screen, (255, 255, 0), (900 + m * 20, 100 + 110 * n - scroll), 7)
                         pygame.draw.circle(screen, (0, 0, 0), (900 + m * 20, 100 + 110 * n - scroll), 7, 2)
 
-                    if info.achievements[achievement] < len(achievementRequirements[achievement]['tiers']):
+                    if info.claimedAchievementRewards[achievement] < len(achievementRequirements[achievement]['tiers']):
                         current = info.statistics[achievementRequirements[achievement]['attr']]
-                        target = achievementRequirements[achievement]['tiers'][info.achievements[achievement]]
-                        percent = current / target * 100
+                        target = achievementRequirements[achievement]['tiers'][info.claimedAchievementRewards[achievement]]
+                        percent = min(current / target * 100, 100)
 
                         pygame.draw.rect(screen, (0, 255, 0), (40, 140 + 110 * n - scroll, percent * 8, 20))
 
                         txt = f'{round(percent, 1)}%'
                         if 10 <= mx <= 990 and 80 + 110 * n <= my + scroll <= 180 + 110 * n:
                             txt += f' ({current} / {target})'
-
                         centredPrint(font, txt, (440, 150 + 110 * n - scroll))
+
+                        if highestAchievementTiers[achievement] > info.claimedAchievementRewards[achievement]:
+                            pygame.draw.rect(screen, (255, 255, 0), (860, 140 + 110 * n - scroll, 120, 20))
+                            if 860 <= mx <= 980 and 140 + 110 * n - scroll <= my <= 160 + 110 * n - scroll:
+                                pygame.draw.rect(screen, (128, 128, 128), (860, 140 + 110 * n - scroll, 120, 20), 3)
+                            else:
+                                pygame.draw.rect(screen, (0, 0, 0), (860, 140 + 110 * n - scroll, 120, 20), 2)
+                        else:
+                            pygame.draw.rect(screen, (64, 64, 64), (860, 140 + 110 * n - scroll, 120, 20))
+
+                        txt = f'{achievements[achievement]["rewards"][info.claimedAchievementRewards[achievement]]}'
+                        txtLength = font.size(txt)[0]
+                        centredPrint(font, txt, (915 - txtLength // 2, 150 + 110 * n - scroll))
+                        centredBlit(smallTokenImage, (920 + txtLength // 2, 150 + 110 * n - scroll))
 
                     else:
                         current = info.statistics[achievementRequirements[achievement]['attr']]
-                        target = achievementRequirements[achievement]['tiers'][info.achievements[achievement] - 1]
+                        target = achievementRequirements[achievement]['tiers'][info.claimedAchievementRewards[achievement] - 1]
 
                         pygame.draw.rect(screen, (0, 255, 0), (40, 140 + 110 * n - scroll, 800, 20))
 
@@ -3829,6 +3849,15 @@ def app() -> None:
                             if 20 <= mx <= 120 and 550 <= my <= 580:
                                 info.status = 'mapSelect'
                                 cont = False
+
+                            n = 0
+                            for achievement in achievements.keys():
+                                if highestAchievementTiers[achievement] > info.claimedAchievementRewards[achievement]:
+                                    if 860 <= mx <= 980 and 140 + 110 * n - scroll <= my <= 160 + 110 * n - scroll:
+                                        info.tokens += achievements[achievement]["rewards"][info.claimedAchievementRewards[achievement]]
+                                        info.claimedAchievementRewards[achievement] += 1
+
+                                n += 1
 
                         elif event.button == 4:
                             scroll = max(0, scroll - 10)
@@ -4270,52 +4299,6 @@ centredPrint(largeFont, f'Tower Defense v{__version__}', (500, 200), (100, 100, 
 centredPrint(mediumFont, 'Loading...', (500, 300), (100, 100, 100))
 pygame.display.update()
 
-achievementRequirements = {
-    'beatMaps': {
-        'attr': 'mapsBeat',
-        'tiers': [1, len(Maps) // 2, len(Maps)]
-    },
-    'pops': {
-        'attr': 'pops',
-        'tiers': [1000, 100000, 1000000]
-    },
-    'wins': {
-        'attr': 'totalWins',
-        'tiers': [5, 20, 50]
-    },
-    'spendCoins': {
-        'attr': 'coinsSpent',
-        'tiers': [10000, 100000, 1000000]
-    },
-    'killBosses': {
-        'attr': 'bossesKilled',
-        'tiers': [1, 50, 500]
-    }
-}
-
-achievements = {
-    'beatMaps': {
-        'names': ['First Map!', 'Map Conqueror', 'Master of The End'],
-        'lore': 'Beat [%] unique maps!'
-    },
-    'pops': {
-        'names': ['Balloon Popper', 'Balloon Fighter', 'Balloon Exterminator'],
-        'lore': 'Pop [%] balloons!'
-    },
-    'wins': {
-        'names': ['Tower-defense Rookie', 'Tower-defense Pro', 'Tower-defense Legend'],
-        'lore': 'Win [%] games!'
-    },
-    'spendCoins': {
-        'names': ['Money Spender', 'Rich Player', 'Millionaire!'],
-        'lore': 'Spend [%] coins!'
-    },
-    'killBosses': {
-        'names': ['Slayer', 'Large Enemies Popper', 'Boss Exterminator'],
-        'lore': 'Kill [%] bosses!'
-    }
-}
-
 powerUps = {
     'lightning': [pygame.image.load(os.path.join(resource_path, 'lightning_power_up.png')), pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'lightning_power_up.png')), (60, 60))],
     'spikes': [pygame.image.load(os.path.join(resource_path, 'spikes_power_up.png')), pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'spikes_power_up.png')), (60, 60))],
@@ -4371,6 +4354,7 @@ for towerType in Towers.__subclasses__():
 healthImage = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'heart_0.png')), (16, 16))
 goldenHealthImage = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'heart_1.png')), (16, 16))
 tokenImage = pygame.image.load(os.path.join(resource_path, 'token.png'))
+smallTokenImage = pygame.transform.scale(tokenImage, (15, 15))
 
 info = data()
 gameInfo = gameData()

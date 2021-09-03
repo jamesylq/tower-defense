@@ -158,11 +158,11 @@ class RuneEffect:
 
 Runes = [
     Rune('null', 0, 'A glitched rune. How did you get this?'),
-    Rune('Blood Rune', 15, 'The rune forged by the Blood Gods.', 75, 'blood_rune.png'),
-    Rune('Ice Rune', 12, 'A rune as cold as ice.', 75, 'ice_rune.png'),
-    Rune('Gold Rune', 8, 'The rune of the wealthy - Classy!', 75, 'gold_rune.png'),
-    Rune('Leap Rune', 8, 'Jump!', 125, 'leap_rune.png'),
-    Rune('Lightning Rune', 5, 'Legends say it was created by Zeus himself.', 125, 'lightning_rune.png'),
-    Rune('Shrink Rune', 3, 'This magical rune compresses its foes!', 150, 'shrink_rune.png'),
-    Rune('Rainbow Rune', 2, 'A rainbow tail forms behind your cursor!', 150, 'rainbow_rune.png')
+    Rune('Blood Rune', 15, 'The rune forged by the Blood Gods.', 100, 'blood_rune.png'),
+    Rune('Ice Rune', 12, 'A rune as cold as ice.', 100, 'ice_rune.png'),
+    Rune('Gold Rune', 8, 'The rune of the wealthy - Classy!', 100, 'gold_rune.png'),
+    Rune('Leap Rune', 8, 'Jump!', 150, 'leap_rune.png'),
+    Rune('Lightning Rune', 5, 'Legends say it was created by Zeus himself.', 150, 'lightning_rune.png'),
+    Rune('Shrink Rune', 3, 'This magical rune compresses its foes!', 175, 'shrink_rune.png'),
+    Rune('Rainbow Rune', 2, 'A rainbow tail forms behind your cursor!', 200, 'rainbow_rune.png')
 ]

@@ -242,7 +242,7 @@ MaxFPS = 100
 ReplayFPS = 25
 ReplayRefreshRate = MaxFPS // ReplayFPS
 
-# Targeting constants
+# Targeting Constants
 STRONG = 'STRONG'
 CLOSE = 'CLOSE'
 FIRST = 'FIRST'
@@ -250,12 +250,64 @@ LAST = 'LAST'
 
 targetingCycle = [FIRST, STRONG, CLOSE, LAST]
 
+# Achievement Constants
+achievementRequirements = {
+    'beatMaps': {
+        'attr': 'mapsBeat',
+        'tiers': [1, len(Maps) // 2, len(Maps)]
+    },
+    'pops': {
+        'attr': 'pops',
+        'tiers': [1000, 100000, 1000000]
+    },
+    'wins': {
+        'attr': 'totalWins',
+        'tiers': [5, 20, 50]
+    },
+    'spendCoins': {
+        'attr': 'coinsSpent',
+        'tiers': [10000, 100000, 1000000]
+    },
+    'killBosses': {
+        'attr': 'bossesKilled',
+        'tiers': [1, 50, 500]
+    }
+}
+
+achievements = {
+    'beatMaps': {
+        'names': ['First Map!', 'Map Conqueror', 'Master of The End'],
+        'rewards': [50, 100, 250],
+        'lore': 'Beat [%] unique maps!'
+    },
+    'pops': {
+        'names': ['Balloon Popper', 'Balloon Fighter', 'Balloon Exterminator'],
+        'rewards': [75, 200, 1000],
+        'lore': 'Pop [%] balloons!'
+    },
+    'wins': {
+        'names': ['Tower-defense Rookie', 'Tower-defense Pro', 'Tower-defense Legend'],
+        'rewards': [85, 250, 1250],
+        'lore': 'Win [%] games!'
+    },
+    'spendCoins': {
+        'names': ['Money Spender', 'Rich Player', 'Millionaire!'],
+        'rewards': [75, 150, 400],
+        'lore': 'Spend [%] coins!'
+    },
+    'killBosses': {
+        'names': ['Slayer', 'Large Enemies Popper', 'Boss Exterminator'],
+        'rewards': [100, 250, 750],
+        'lore': 'Kill [%] bosses!'
+    }
+}
+
 # Misc. Constants
 LOCKED = 'LOCKED'
 rainbowColors = [[255, 0, 0], [0, 127, 0], [255, 255, 0], [0, 255, 0], [0, 0, 255], [46, 43, 95], [139, 0, 255]]
 rainbowShift = [[-0.255, 0.127, 0], [0.255, 0.127, 0], [-0.255, 0, 0], [0, -0.255, 0.255], [0.046, 0.043, -0.16], [0.093, -0.043, 0.16], [0.116, 0, -0.255]]
 gameAttrs = ['enemies', 'projectiles', 'piercingProjectiles', 'towers', 'HP', 'coins', 'selected', 'placing', 'nextWave', 'wave', 'shopScroll', 'spawnleft', 'spawndelay', 'ticksSinceNoEnemies', 'ticks', 'towersPlaced', 'replayRefresh', 'Map', 'doubleReloadTicks', 'FinalHP']
-playerAttrs = ['mapMakerData', 'statistics', 'achievements', 'mapsBeat', 'runes',  'equippedRune', 'newRunes', 'powerUps', 'powerUpData', 'tokens', 'lastOpenShop', 'shopData', 'gameReplayData', 'sandboxMode', 'status', 'PBs']
+playerAttrs = ['mapMakerData', 'statistics', 'achievements', 'mapsBeat', 'runes',  'equippedRune', 'newRunes', 'powerUps', 'powerUpData', 'tokens', 'lastOpenShop', 'shopData', 'gameReplayData', 'sandboxMode', 'status', 'PBs', 'claimedAchievementRewards']
 defaults = {
     'enemies': [],
     'projectiles': [],
@@ -300,7 +352,15 @@ defaults = {
         'pops': 0,
         'wins': 0,
         'spendCoins': 0,
-        'beatMaps': 0
+        'beatMaps': 0,
+        'killBosses': 0
+    },
+    'claimedAchievementRewards': {
+        'pops': 0,
+        'wins': 0,
+        'spendCoins': 0,
+        'beatMaps': 0,
+        'killBosses': 0
     },
     'mapsBeat': 0,
     'runes': [],
