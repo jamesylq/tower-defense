@@ -98,7 +98,7 @@ trueHP = {
     '9': 10,
     'A': 200,
     'B': 500,
-    'C': 300,
+    'C': 1000,
     'D': 10000
 }
 
@@ -154,7 +154,7 @@ enemiesSpawnNew = {
 }
 strengthPath = ['0', '1', '2', '3', '4', '5', '6', '7', '9', '8', 'A', 'B', 'C', 'D']
 regenPath = ['0', '1', '2', '3', '4', '5', '6']
-regenUpdateTimer = 0
+regenUpdateTimer = 50
 
 # Enemy Property Constants
 onlyExplosiveTiers = ['7', 'D']

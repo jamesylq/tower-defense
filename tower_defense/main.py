@@ -2907,7 +2907,12 @@ def app() -> None:
                 screen.fill((32, 32, 32))
 
                 centredPrint(largeFont, 'You Win!', (500, 125), (255, 255, 255))
-                centredPrint(font, f'Your Final Score: {gameInfo.FinalHP}', (500, 250), (255, 255, 255))
+
+                if gameInfo.FinalHP == math.inf:
+                    centredPrint(font, f'Your Final Score: {INFINITYSTR}')
+                else:
+                    centredPrint(font, f'Your Final Score: {gameInfo.FinalHP}', (500, 250), (255, 255, 255))
+
                 centredPrint(font, f'Press [SPACE] to continue!', (500, 280), (255, 255, 255))
 
                 if not saved:
@@ -4317,7 +4322,7 @@ def app() -> None:
             pressed = pygame.key.get_pressed()
             if pressed[pygame.K_UP]:
                 gameInfo.shopScroll = min(0, gameInfo.shopScroll + 5)
-            elif pressed[pygame.K_DOWN]:
+            if pressed[pygame.K_DOWN]:
                 maxScroll = len([tower for tower in Towers.__subclasses__() if (gameInfo.wave >= tower.req or info.sandboxMode) and tower is not Elemental]) * 80 - 450
                 if maxScroll > 0:
                     gameInfo.shopScroll = max(-maxScroll, gameInfo.shopScroll - 5)
