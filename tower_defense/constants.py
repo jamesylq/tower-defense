@@ -8,32 +8,32 @@ waves = [
     '00' * 3,
     '00' * 5 + '01' * 3,
     '01' * 5,
-    '02' * 12,
-    '03' * 15,
-    '04' * 15,
-    '05' * 20,
-    '06' * 20,
-    '06' * 50,
-    '0A',
-    '26' * 25,
-    '07' * 50,
-    '08' * 25,
-    '09' * 3,
-    '0B',
-    '09' * 25,
-    '10' * 3,
+    '02' * 10,
+    '03' * 10,
+    '04' * 10,
+    '05' * 15,
+    '06' * 15,
     '16' * 25,
-    '17' * 25,
-    '18' * 25,
-    '19' * 25,
+    '0A',
+    '06' * 15,
+    '07' * 30,
+    '08' * 20,
+    '09' * 5,
+    '0B',
+    '09' * 20,
+    '10' * 5,
+    '16' * 20,
+    '17' * 20,
+    '18' * 20,
+    '19' * 20,
     '1A' * 2,
     '18' * 50,
     '25' * 10,
     '19' * 50,
     '28' * 50,
-    '0A' * 3,
-    '0A' * 5,
-    '0A' * 8,
+    '1A' * 3,
+    '1A' * 5,
+    '1A' * 8,
     '0C',
     '0C' * 2,
     '0C' * 3,
@@ -91,16 +91,15 @@ speed = {
     'B': 1,     # True Speed: 1/5
     'C': 1,
     'D': 1,     # True Speed: 1/2
-    'E': 1      # True Speed: 1/10
 }
 
 trueHP = {
     '8': 10,
     '9': 10,
-    'A': 2000,
-    'B': 5000,
-    'C': 3000,
-    'D': 25000
+    'A': 200,
+    'B': 500,
+    'C': 300,
+    'D': 10000
 }
 
 bossCoins = {
@@ -153,13 +152,14 @@ enemiesSpawnNew = {
     '27': '26' * 3,
     '28': '26' * 5,
 }
-regenPath = ['0', '1', '2', '3', '4', '5', '6']
 strengthPath = ['0', '1', '2', '3', '4', '5', '6', '7', '9', '8', 'A', 'B', 'C', 'D']
+regenPath = ['0', '1', '2', '3', '4', '5', '6']
+regenUpdateTimer = 0
 
 # Enemy Property Constants
 onlyExplosiveTiers = ['7', 'D']
-freezeImmune = ['6', 'C', 'D']
 bosses = ['A', 'B', 'C', 'D']
+freezeImmune = ['6', 'D']
 resistant = ['9']
 
 # Math Constants
@@ -304,9 +304,12 @@ achievements = {
 
 # Misc. Constants
 LOCKED = 'LOCKED'
+INFINITYSTR = '∞'
+
 rainbowColors = [[255, 0, 0], [0, 127, 0], [255, 255, 0], [0, 255, 0], [0, 0, 255], [46, 43, 95], [139, 0, 255]]
 rainbowShift = [[-0.255, 0.127, 0], [0.255, 0.127, 0], [-0.255, 0, 0], [0, -0.255, 0.255], [0.046, 0.043, -0.16], [0.093, -0.043, 0.16], [0.116, 0, -0.255]]
-gameAttrs = ['enemies', 'projectiles', 'piercingProjectiles', 'towers', 'HP', 'coins', 'selected', 'placing', 'nextWave', 'wave', 'shopScroll', 'spawnleft', 'spawndelay', 'ticksSinceNoEnemies', 'ticks', 'towersPlaced', 'replayRefresh', 'Map', 'doubleReloadTicks', 'FinalHP']
+
+gameAttrs = ['enemies', 'projectiles', 'piercingProjectiles', 'towers', 'HP', 'coins', 'selected', 'placing', 'nextWave', 'wave', 'shopScroll', 'spawnleft', 'spawndelay', 'ticksSinceNoEnemies', 'ticks', 'towersPlaced', 'replayRefresh', 'Map', 'doubleReloadTicks', 'FinalHP', 'spawnPath']
 playerAttrs = ['mapMakerData', 'statistics', 'achievements', 'mapsBeat', 'runes',  'equippedRune', 'newRunes', 'powerUps', 'powerUpData', 'tokens', 'lastOpenShop', 'shopData', 'gameReplayData', 'sandboxMode', 'status', 'PBs', 'claimedAchievementRewards']
 defaults = {
     'enemies': [],
@@ -382,5 +385,6 @@ defaults = {
     'gameReplayData': [],
     'ticks': 0,
     'towersPlaced': 0,
-    'replayRefresh': 0
+    'replayRefresh': 0,
+    'spawnPath': 0
 }

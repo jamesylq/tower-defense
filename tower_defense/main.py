@@ -653,12 +653,12 @@ class Bowler(Towers):
     imageName = 'bowler.png'
     color = (64, 64, 64)
     req = 5
-    price = 175
+    price = 100
     upgradePrices = [
         [20, 40, 60],
-        [20, 50, 100],
-        [50, 100, 200],
-        500
+        [20, 45, 80],
+        [25, 50, 100],
+        225
     ]
     upgradeNames = [
         ['Faster Rocks', 'Double Damage', 'Snipe'],
@@ -1157,31 +1157,32 @@ class Sniper(Towers):
 
         if self.timer >= getActualCooldown(self.x, self.y, self.cooldown):
             try:
-                closest = getTarget(self, targeting=self.targeting, overrideRange=1000)
-                if (closest.tier in onlyExplosiveTiers and self.upgrades[2] >= 2) or closest.tier not in onlyExplosiveTiers:
+                target = getTarget(self, targeting=self.targeting, overrideRange=1000)
+                if (target.tier in onlyExplosiveTiers and self.upgrades[2] >= 2) or target.tier not in onlyExplosiveTiers:
                     if self.abilityData['active']:
-                        if closest.isBoss:
-                            closest.kill(coinMultiplier=getCoinMultiplier(self), bossDamage=self.bossDamage * 3)
+                        if target.isBoss:
+                            target.kill(coinMultiplier=getCoinMultiplier(self), bossDamage=self.bossDamage * 3)
                             self.hits += self.bossDamage * 3
 
                         else:
                             try:
-                                gameInfo.enemies.remove(closest)
+                                gameInfo.enemies.remove(target)
                                 gameInfo.coins += getCoinMultiplier(self)
+                                info.statistics['pops'] += 1
                                 self.hits += 1
 
                             except ValueError:
                                 pass
 
                     else:
-                        spawn = closest.kill(coinMultiplier=getCoinMultiplier(self), bossDamage=self.bossDamage, ceramDamage=self.ceramDamage)
-                        if closest.isBoss and not spawn:
+                        spawn = target.kill(coinMultiplier=getCoinMultiplier(self), bossDamage=self.bossDamage, ceramDamage=self.ceramDamage)
+                        if target.isBoss and not spawn:
                             info.statistics['bossesKilled'] += 1
                         self.hits += 1
 
                     self.rifleFireTicks = 10
 
-                proj = Projectile(self, self.x, self.y, closest.x, closest.y, overrideAddToProjectiles=True)
+                proj = Projectile(self, self.x, self.y, target.x, target.y, overrideAddToProjectiles=True)
                 proj.move(0)
 
                 try:
@@ -1215,7 +1216,7 @@ class Sniper(Towers):
 
     def update(self):
         if self.abilityData['active']:
-            if self.abilityData['tick'] <= 250:
+            if self.abilityData['tick'] <= 500:
                 self.abilityData['tick'] += 1
             else:
                 self.abilityData['active'] = False
@@ -1463,20 +1464,27 @@ class PiercingProjectile:
 
 
 class Enemy:
-    def __init__(self, tier: str or int, spawn: List[int], lineIndex: int, *, camo: bool = False, regen: bool = False):
+    def __init__(self, tier: str or int, lineIndex: int, *, spawn: List[int] = None, mapPath: int = 0, camo: bool = False, regen: bool = False):
         self.tier = tier
-        self.x, self.y = spawn
+
         self.lineIndex = lineIndex
+        self.mapPath = mapPath
+        if spawn is None:
+            self.x, self.y = gameInfo.Map.path[self.mapPath][0]
+        else:
+            self.x, self.y = spawn
+
         self.totalMovement = 0
         self.freezeTimer = 0
         self.fireTicks = 0
         self.fireIgnitedBy = None
         self.timer = 0
+        self.isBoss = self.tier in bosses
+        self.reachedEnd = False
+
         self.camo = camo
         self.regen = regen
         self.regenTimer = 0
-        self.isBoss = self.tier in bosses
-        self.reachedEnd = False
 
         if str(self.tier) in trueHP.keys():
             self.HP = self.MaxHP = trueHP[str(self.tier)] + 1
@@ -1492,16 +1500,16 @@ class Enemy:
             self.timer -= 1
         elif self.tier == 'B':
             self.timer = 250
-            Enemy(3, [self.x, self.y], self.lineIndex)
+            Enemy(3, self.lineIndex, spawn=[self.x, self.y], mapPath=self.mapPath)
         elif self.tier == 'D':
             self.timer = 100
-            Enemy(7, [self.x, self.y], self.lineIndex)
+            Enemy(7, self.lineIndex, spawn=[self.x, self.y], mapPath=self.mapPath)
 
         if self.freezeTimer > 0 and not str(self.tier) in freezeImmune:
             self.freezeTimer -= 1
         else:
             for n in range(speed):
-                if len(gameInfo.Map.path) - 1 == self.lineIndex:
+                if len(gameInfo.Map.path[self.mapPath]) - 1 == self.lineIndex:
                     if not self.reachedEnd:
                         self.kill(spawnNew=False, ignoreBoss=True, ignoreRegularEnemyHealth=True)
                         info.statistics['enemiesMissed'] += 1
@@ -1510,8 +1518,8 @@ class Enemy:
                         break
 
                 else:
-                    current = gameInfo.Map.path[self.lineIndex]
-                    new = gameInfo.Map.path[self.lineIndex + 1]
+                    current = gameInfo.Map.path[self.mapPath][self.lineIndex]
+                    new = gameInfo.Map.path[self.mapPath][self.lineIndex + 1]
                     foundMove = False
                     newLineIndex = self.lineIndex + 1
 
@@ -1525,7 +1533,7 @@ class Enemy:
                             self.x += speed
                             if self.x >= new[0]:
                                 self.lineIndex = newLineIndex
-                                self.x, self.y = gameInfo.Map.path[newLineIndex]
+                                self.x, self.y = gameInfo.Map.path[self.mapPath][newLineIndex]
 
                             foundMove = True
 
@@ -1533,7 +1541,7 @@ class Enemy:
                             self.x -= speed
                             if self.x <= new[0]:
                                 self.lineIndex = newLineIndex
-                                self.x, self.y = gameInfo.Map.path[newLineIndex]
+                                self.x, self.y = gameInfo.Map.path[self.mapPath][newLineIndex]
 
                             foundMove = True
 
@@ -1541,7 +1549,7 @@ class Enemy:
                             self.y += speed
                             if self.y >= new[1]:
                                 self.lineIndex = newLineIndex
-                                self.x, self.y = gameInfo.Map.path[newLineIndex]
+                                self.x, self.y = gameInfo.Map.path[self.mapPath][newLineIndex]
 
                             foundMove = True
 
@@ -1549,7 +1557,7 @@ class Enemy:
                             self.y -= speed
                             if self.y <= new[1]:
                                 self.lineIndex = newLineIndex
-                                self.x, self.y = gameInfo.Map.path[newLineIndex]
+                                self.x, self.y = gameInfo.Map.path[self.mapPath][newLineIndex]
 
                             foundMove = True
 
@@ -1761,7 +1769,7 @@ class Enemy:
                     newSpawnType = newSpawn[2 * n]
                     newSpawnTier = newSpawn[2 * n + 1]
 
-                    new = Enemy(str(newSpawnTier), (self.x, self.y), self.lineIndex, camo=newSpawnType == '1', regen=newSpawnType == '2')
+                    new = Enemy(str(newSpawnTier), self.lineIndex, mapPath=self.mapPath, spawn=[self.x, self.y], camo=newSpawnType == '1', regen=newSpawnType == '2')
                     new.fireTicks = self.fireTicks
                     new.fireIgnitedBy = self.fireIgnitedBy
                     new.totalMovement = self.totalMovement
@@ -1777,7 +1785,7 @@ class Enemy:
         if not self.regen:
             return
 
-        if self.regenTimer >= MaxFPS:
+        if self.regenTimer >= regenUpdateTimer:
             if self.isBoss:
                 self.HP = min(self.MaxHP, self.HP + 50)
             elif self.tier in regenPath:
@@ -2215,13 +2223,13 @@ def draw() -> None:
     mx, my = pygame.mouse.get_pos()
 
     screen.fill(gameInfo.Map.backgroundColor)
-
-    for i in range(len(gameInfo.Map.path) - 1):
-        lineWidth = 14 if gameInfo.Map.path[i][0] != gameInfo.Map.path[i + 1][0] and gameInfo.Map.path[i][1] != gameInfo.Map.path[i + 1][1] else 10
-        pygame.draw.line(screen, gameInfo.Map.pathColor, gameInfo.Map.path[i], gameInfo.Map.path[i + 1], lineWidth)
-        pygame.draw.circle(screen, gameInfo.Map.pathColor, gameInfo.Map.path[i + 1], lineWidth // 2)
-    pygame.draw.circle(screen, gameInfo.Map.pathColor, gameInfo.Map.path[0], 10)
-    pygame.draw.circle(screen, gameInfo.Map.pathColor, gameInfo.Map.path[-1], 10)
+    for i in range(len(gameInfo.Map.path)):
+        for j in range(len(gameInfo.Map.path[i]) - 1):
+            lineWidth = 14 if gameInfo.Map.path[i][j][0] != gameInfo.Map.path[i][j + 1][0] and gameInfo.Map.path[i][j][1] != gameInfo.Map.path[i][j + 1][1] else 10
+            pygame.draw.line(screen, gameInfo.Map.pathColor, gameInfo.Map.path[i][j], gameInfo.Map.path[i][j + 1], lineWidth)
+            pygame.draw.circle(screen, gameInfo.Map.pathColor, gameInfo.Map.path[i][j + 1], lineWidth // 2)
+        pygame.draw.circle(screen, gameInfo.Map.pathColor, gameInfo.Map.path[i][0], 10)
+        pygame.draw.circle(screen, gameInfo.Map.pathColor, gameInfo.Map.path[i][-1], 10)
 
     RuneEffects.draw(screen)
     PowerUps.draw(screen)
@@ -2336,15 +2344,21 @@ def draw() -> None:
     else:
         leftAlignPrint(font, f'FPS: {round(fps, 1)}', (10, 525))
 
-    leftAlignPrint(font, str(gameInfo.HP), (10, 500))
-    screen.blit(healthImage if gameInfo.HP <= 250 else goldenHealthImage, (font.size(str(gameInfo.HP))[0] + 17, 493))
     if info.sandboxMode:
-        leftAlignPrint(font, 'Coins: ∞', (10, 550))
+        txt = INFINITYSTR
+    else:
+        txt = str(gameInfo.HP)
+    leftAlignPrint(font, txt, (10, 500))
+    screen.blit(healthImage if gameInfo.HP <= 250 else goldenHealthImage, (font.size(txt)[0] + 17, 493))
+
+    if info.sandboxMode:
+        leftAlignPrint(font, f'Coins: {INFINITYSTR}', (10, 550))
     else:
         try:
             leftAlignPrint(font, f'Coins: {math.floor(gameInfo.coins)}', (10, 550))
         except OverflowError:
             info.sandboxMode = True
+
     leftAlignPrint(font, f'Wave {max(gameInfo.wave, 1)} of {len(waves)}', (10, 575))
 
     pygame.draw.rect(screen, (200, 200, 200), (810, 460, 50, 50))
@@ -2684,7 +2698,7 @@ def app() -> None:
 
                         leftAlignPrint(font, Map.name.upper(), (20, 74 + n * 40 - scroll))
                         try:
-                            if info.PBs[Map.name] == 300:
+                            if info.PBs[Map.name] >= 300:
                                 centredPrint(font, '[Best: 300]', (900, 74 + n * 40 - scroll), (100, 0, 0))
                             elif info.PBs[Map.name] >= 250:
                                 centredPrint(font, f'[Best: {info.PBs[Map.name]}]', (900, 74 + n * 40 - scroll), (225, 225, 0))
@@ -2795,7 +2809,8 @@ def app() -> None:
                                     if 40 * n + 60 - scroll <= my <= 40 * n + 90 - scroll and 50 <= my <= 500 and list(info.PBs.values())[n] != LOCKED:
                                         gameInfo.Map = Maps[n]
                                         info.status = 'game'
-                                        gameInfo.coins = math.inf if info.sandboxMode else 50
+                                        gameInfo.coins = math.inf if info.sandboxMode else defaults['coins']
+                                        gameInfo.HP = math.inf if info.sandboxMode else defaults['HP']
                                         info.gameReplayData.clear()
 
                                         try:
@@ -2814,7 +2829,8 @@ def app() -> None:
                             if 10 <= mx <= 935 and 40 * len(Maps) + 60 <= my + scroll <= 40 * len(Maps) + 90 and my <= 500:
                                 gameInfo.Map = random.choice([Map for Map in Maps if info.PBs[Map.name] != LOCKED])
                                 info.status = 'game'
-                                gameInfo.coins = math.inf if info.sandboxMode else 50
+                                gameInfo.coins = math.inf if info.sandboxMode else defaults['coins']
+                                gameInfo.HP = math.inf if info.sandboxMode else defaults['HP']
                                 info.gameReplayData.clear()
 
                                 try:
@@ -3140,7 +3156,7 @@ def app() -> None:
                                     except ValueError:
                                         info.mapMakerData['pathColor'] = hexToRGB(info.mapMakerData['pathColor'])
 
-                                    info.mapMakerData['path'] = []
+                                    info.mapMakerData['path'] = [[]]
                                     cont = False
 
                                 elif 225 < mx < 900 and 150 < my < 180:
@@ -3197,6 +3213,7 @@ def app() -> None:
                     pygame.display.update()
                     ticks = (ticks + 1) % 50
                     clock.tick(MaxFPS)
+
             else:
                 while True:
                     mx, my = pygame.mouse.get_pos()
@@ -3227,7 +3244,7 @@ def app() -> None:
                         placable = False
 
                     try:
-                        ncx, ncy = getClosestPoint(mx, my, sx=info.mapMakerData['path'][-1][0], sy=info.mapMakerData['path'][-1][1])
+                        ncx, ncy = getClosestPoint(mx, my, sx=info.mapMakerData['path'][-1][-1][0], sy=info.mapMakerData['path'][-1][-1][1])
                     except IndexError:
                         ncx, ncy = getClosestPoint(mx, my)
 
@@ -3240,13 +3257,21 @@ def app() -> None:
                     if 100 <= cx <= 900 and 125 <= cy <= 575:
                         pygame.draw.circle(screen, (0, 0, 0), (cx, cy), 3)
 
-                    for i in range(len(info.mapMakerData['path']) - 1):
-                        lineWidth = 14 if info.mapMakerData['path'][i][0] != info.mapMakerData['path'][i + 1][0] and info.mapMakerData['path'][i][1] != info.mapMakerData['path'][i + 1][1] else 10
-                        pygame.draw.line(screen, info.mapMakerData['pathColor'], info.mapMakerData['path'][i], info.mapMakerData['path'][i + 1], lineWidth)
-                        pygame.draw.circle(screen, info.mapMakerData['pathColor'], info.mapMakerData['path'][i + 1], lineWidth // 2)
+                    for i in range(len(info.mapMakerData['path'])):
+                        for j in range(len(info.mapMakerData['path'][i]) - 1):
+                            lineWidth = 14 if info.mapMakerData['path'][i][j][0] != info.mapMakerData['path'][i][j + 1][0] and info.mapMakerData['path'][i][j][1] != info.mapMakerData['path'][i][j + 1][1] else 10
+                            pygame.draw.line(screen, info.mapMakerData['pathColor'], info.mapMakerData['path'][i][j], info.mapMakerData['path'][i][j + 1], lineWidth)
+                            pygame.draw.circle(screen, info.mapMakerData['pathColor'], info.mapMakerData['path'][i][j + 1], lineWidth // 2)
 
-                    if info.mapMakerData['path']:
-                        pygame.draw.circle(screen, info.mapMakerData['pathColor'], info.mapMakerData['path'][0], 10)
+                            try:
+                                pygame.draw.circle(screen, info.mapMakerData['pathColor'], info.mapMakerData['path'][i][0], 10)
+                            except IndexError:
+                                pass
+
+                            try:
+                                pygame.draw.circle(screen, info.mapMakerData['pathColor'], info.mapMakerData['path'][i][-1], 10)
+                            except IndexError:
+                                pass
 
                     pygame.draw.rect(screen, (200, 200, 200), (90, 115, 900, 10))
                     pygame.draw.rect(screen, (200, 200, 200), (90, 575, 900, 10))
@@ -3259,26 +3284,34 @@ def app() -> None:
                     down = 18 - up
 
                     pygame.draw.line(screen, (0, 0, 0), (100, 115), (900, 115), 2)
-                    pygame.draw.line(screen, (0, 0, 0), (90, 125), (90, 575), 2)
+                    pygame.draw.line(screen, (0, 0, 0), (910, 125), (910, 575), 2)
 
-                    pygame.draw.line(screen, (0, 0, 0), (85, cy), (95, cy), 2)
                     pygame.draw.line(screen, (0, 0, 0), (cx, 110), (cx, 120), 2)
+                    pygame.draw.line(screen, (0, 0, 0), (905, cy), (915, cy), 2)
 
                     if left > 0:
                         centredPrint(font, str(left), (50 + cx // 2, 90))
                     if right > 0:
                         centredPrint(font, str(right), (450 + cx // 2, 90))
                     if up > 0:
-                        centredPrint(font, str(up), (75, 62 + cy // 2))
+                        centredPrint(font, str(up), (930, 62 + cy // 2))
                     if down > 0:
-                        centredPrint(font, str(down), (75, 287 + cy // 2))
+                        centredPrint(font, str(down), (930, 287 + cy // 2))
 
-                    pygame.draw.rect(screen, (100, 100, 100), (20, 540, 60, 30))
-                    centredPrint(font, 'Clear', (50, 555))
-                    if 20 <= mx <= 80 and 540 <= my <= 570:
-                        pygame.draw.rect(screen, (128, 128, 128), (20, 540, 60, 30), 5)
-                    else:
-                        pygame.draw.rect(screen, (0, 0, 0), (20, 540, 60, 30), 3)
+                    if len(info.mapMakerData['path'][-1]) >= 2:
+                        pygame.draw.rect(screen, (44, 255, 44), (20, 420, 60, 30))
+                        centredPrint(font, 'Done', (50, 435))
+                        if 20 <= mx <= 80 and 420 <= my <= 450:
+                            pygame.draw.rect(screen, (128, 128, 128), (20, 420, 60, 30), 5)
+                        else:
+                            pygame.draw.rect(screen, (0, 0, 0), (20, 420, 60, 30), 3)
+
+                        pygame.draw.rect(screen, (100, 100, 100), (20, 460, 60, 30))
+                        centredPrint(font, 'Add', (50, 475))
+                        if 20 <= mx <= 80 and 460 <= my <= 490:
+                            pygame.draw.rect(screen, (128, 128, 128), (20, 460, 60, 30), 5)
+                        else:
+                            pygame.draw.rect(screen, (0, 0, 0), (20, 460, 60, 30), 3)
 
                     pygame.draw.rect(screen, (100, 100, 100), (20, 500, 60, 30))
                     centredPrint(font, 'Undo', (50, 515))
@@ -3287,14 +3320,12 @@ def app() -> None:
                     else:
                         pygame.draw.rect(screen, (0, 0, 0), (20, 500, 60, 30), 3)
 
-                    if len(info.mapMakerData['path']) >= 2:
-                        pygame.draw.rect(screen, (44, 255, 44), (920, 550, 60, 30))
-                        centredPrint(font, 'Done', (950, 565))
-
-                        if 920 <= mx <= 980 and 550 <= my <= 580:
-                            pygame.draw.rect(screen, (128, 128, 128), (920, 550, 60, 30), 5)
-                        else:
-                            pygame.draw.rect(screen, (0, 0, 0), (920, 550, 60, 30), 3)
+                    pygame.draw.rect(screen, (100, 100, 100), (20, 540, 60, 30))
+                    centredPrint(font, 'Clear', (50, 555))
+                    if 20 <= mx <= 80 and 540 <= my <= 570:
+                        pygame.draw.rect(screen, (128, 128, 128), (20, 540, 60, 30), 5)
+                    else:
+                        pygame.draw.rect(screen, (0, 0, 0), (20, 540, 60, 30), 3)
 
                     pygame.display.update()
 
@@ -3307,24 +3338,32 @@ def app() -> None:
                         elif event.type == pygame.MOUSEBUTTONDOWN:
                             if event.button == 1:
                                 if 100 <= cx <= 900 and 125 <= cy <= 575 and placable:
-                                    info.mapMakerData['path'].append([cx, cy])
+                                    info.mapMakerData['path'][-1].append([cx, cy])
 
-                                if 20 <= mx <= 80 and 550 <= my <= 580:
-                                    info.mapMakerData['path'].clear()
+                                if len(info.mapMakerData['path'][-1]) >= 2:
+                                    if 20 <= mx <= 80 and 420 <= my <= 450:
+                                        mapShiftedPath = []
+                                        for path in info.mapMakerData['path']:
+                                            mapShiftedPath.append([])
+                                            for point in path:
+                                                mapShiftedPath[-1].append([point[0] - 100, point[1] - 125])
+
+                                        print(f'This is the map code for your map!\n\nMap({mapShiftedPath}, \'{info.mapMakerData["name"]}\', {tuple(info.mapMakerData["backgroundColor"])}, {tuple(info.mapMakerData["pathColor"])})')
+                                        info.status = 'mapSelect'
+                                        info.mapMakerData = defaults['mapMakerData'].copy()
+                                        cont = False
+
+                                    if 20 <= mx <= 80 and 460 <= my <= 490:
+                                        info.mapMakerData['path'].append([])
 
                                 if 20 <= mx <= 80 and 500 <= my <= 530:
                                     try:
-                                        info.mapMakerData['path'] = info.mapMakerData['path'][:-1]
+                                        info.mapMakerData['path'][-1] = info.mapMakerData['path'][-1][:-1]
                                     except IndexError:
                                         pass
 
-                                if 920 <= mx <= 980 and 550 <= my <= 580:
-                                    mapShiftedPath = [[point[0] - 100, point[1] - 125] for point in info.mapMakerData['path']]
-
-                                    print(f'This is the map code for your map!\n\nMap({mapShiftedPath}, \'{info.mapMakerData["name"]}\', {tuple(info.mapMakerData["backgroundColor"])}, {tuple(info.mapMakerData["pathColor"])})')
-                                    info.status = 'mapSelect'
-                                    info.mapMakerData = defaults['mapMakerData'].copy()
-                                    cont = False
+                                if 20 <= mx <= 80 and 540 <= my <= 570:
+                                    info.mapMakerData['path'][-1].clear()
 
                     if not cont:
                         break
@@ -3344,12 +3383,13 @@ def app() -> None:
                 pygame.draw.rect(screen, (0, 0, 0), (100, 75, 800, 450), 3)
                 pygame.draw.rect(screen, gameInfo.Map.backgroundColor, (100, 75, 800, 450))
 
-                for i in range(len(gameInfo.Map.path) - 1):
-                    lineWidth = 14 if gameInfo.Map.path[i][0] != gameInfo.Map.path[i + 1][0] and gameInfo.Map.path[i][1] != gameInfo.Map.path[i + 1][1] else 10
-                    x1, y1 = gameInfo.Map.path[i]
-                    x2, y2 = gameInfo.Map.path[i + 1]
-                    pygame.draw.line(screen, gameInfo.Map.pathColor, [x1 + 100, y1 + 75], [x2 + 100, y2 + 75], lineWidth)
-                    pygame.draw.circle(screen, gameInfo.Map.pathColor, [x2 + 100, y2 + 75], lineWidth // 2)
+                for i in range(len(gameInfo.Map.path)):
+                    for j in range(len(gameInfo.Map.path[i]) - 1):
+                        lineWidth = 14 if gameInfo.Map.path[i][j][0] != gameInfo.Map.path[i][j + 1][0] and gameInfo.Map.path[i][j][1] != gameInfo.Map.path[i][j + 1][1] else 10
+                        x1, y1 = gameInfo.Map.path[i][j]
+                        x2, y2 = gameInfo.Map.path[i][j + 1]
+                        pygame.draw.line(screen, gameInfo.Map.pathColor, [x1 + 100, y1 + 75], [x2 + 100, y2 + 75], lineWidth)
+                        pygame.draw.circle(screen, gameInfo.Map.pathColor, [x2 + 100, y2 + 75], lineWidth // 2)
 
                 try:
                     data = info.gameReplayData.copy()[gameInfo.ticks]
@@ -3888,16 +3928,19 @@ def app() -> None:
                 mouseTrail = mouseTrail[:-10]
 
             if gameInfo.spawndelay == 0 and len(gameInfo.spawnleft) > 0:
-                Enemy(gameInfo.spawnleft[1], gameInfo.Map.path[0], 0, camo=gameInfo.spawnleft[0] == '1', regen=gameInfo.spawnleft[0] == '2')
+                Enemy(gameInfo.spawnleft[1], 0, mapPath=gameInfo.spawnPath, camo=gameInfo.spawnleft[0] == '1', regen=gameInfo.spawnleft[0] == '2')
 
                 gameInfo.spawnleft = gameInfo.spawnleft[2:]
-                gameInfo.spawndelay = 20
+                gameInfo.spawndelay = 30
+
+                gameInfo.spawnPath = (gameInfo.spawnPath + 1) % len(gameInfo.Map.path)
+
             else:
                 gameInfo.spawndelay -= 1
 
             if len(gameInfo.enemies) == 0:
                 if len(gameInfo.spawnleft) == 0 and gameInfo.ticksSinceNoEnemies == 0:
-                    gameInfo.coins += 120 + gameInfo.wave * 5
+                    gameInfo.coins += 145 + gameInfo.wave * 5
                     gameInfo.ticksSinceNoEnemies += 1
 
                 if gameInfo.nextWave <= 0:
@@ -4246,12 +4289,14 @@ def app() -> None:
                     elif event.button == 4:
                         if mx > 800 and my < 450:
                             gameInfo.shopScroll = min(0, gameInfo.shopScroll + 10)
+                        pygame.display.update()
 
                     elif event.button == 5:
                         if mx > 800 and my < 450:
                             maxScroll = len([tower for tower in Towers.__subclasses__() if (gameInfo.wave >= tower.req or info.sandboxMode) and not tower is Elemental]) * 80 - 450
                             if maxScroll > 0:
                                 gameInfo.shopScroll = max(-maxScroll, gameInfo.shopScroll - 10)
+                        pygame.display.update()
 
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
