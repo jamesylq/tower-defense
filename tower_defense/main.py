@@ -11,15 +11,54 @@ from typing import *
 from _pickle import UnpicklingError
 
 from tower_defense import __version__
+
+curr_path = os.path.dirname(__file__)
+resource_path = os.path.join(curr_path, 'resources')
+
+screen = pygame.display.set_mode((1000, 600))
+pygame.init()
+pygame.font.init()
+clock = pygame.time.Clock()
+
+fontType = 'Ubuntu Mono'
+tinyFont = pygame.font.SysFont(fontType, 17)
+font = pygame.font.SysFont(fontType, 20)
+mediumFont = pygame.font.SysFont(fontType, 30)
+largeFont = pygame.font.SysFont(fontType, 75)
+
+
+# Printing Functions
+def leftAlignPrint(font: pygame.font.Font, text: str, pos: Tuple[int], color: Tuple[int] = (0, 0, 0)) -> None:
+    textObj = font.render(text, True, color)
+    screen.blit(textObj, textObj.get_rect(center=[pos[0] + font.size(text)[0] / 2, pos[1]]))
+
+
+def centredPrint(font: pygame.font.Font, text: str, pos: Tuple[int], color: Tuple[int] = (0, 0, 0)) -> None:
+    textObj = font.render(text, True, color)
+    screen.blit(textObj, textObj.get_rect(center=pos))
+
+
+def rightAlignPrint(font: pygame.font.Font, text: str, pos: Tuple[int], color: Tuple[int] = (0, 0, 0)) -> None:
+    textObj = font.render(text, True, color)
+    screen.blit(textObj, textObj.get_rect(center=[pos[0] - font.size(text)[0] / 2, pos[1]]))
+
+
+pygame.display.set_caption('Tower Defense')
+pygame.display.set_icon(pygame.image.load(os.path.join(resource_path, 'icon.png')))
+
+screen.fill((200, 200, 200))
+centredPrint(largeFont, f'Tower Defense v{__version__}', (500, 200), (100, 100, 100))
+centredPrint(mediumFont, 'Loading...', (500, 300), (100, 100, 100))
+pygame.display.update()
+
+
 from tower_defense.maps import *
+from tower_defense.skins import *
 from tower_defense.runes import *
 from tower_defense.update import *
 from tower_defense.powerups import *
 from tower_defense.constants import *
 from tower_defense.functions import *
-
-curr_path = os.path.dirname(__file__)
-resource_path = os.path.join(curr_path, 'resources')
 
 
 # Classes
@@ -210,7 +249,7 @@ class Turret(Towers):
 
         self.range = [100, 130, 165, 200][self.upgrades[0]]
         self.cooldown = [60, 35, 20, 10][self.upgrades[1]]
-        self.bossDamage = 25 if self.upgrades[2] == 3 else 1
+        self.bossDamage = 10 if self.upgrades[2] == 3 else 1
         self.explosiveRadius = 30 if self.upgrades[2] >= 1 else 0
 
     def getImageFrame(self) -> int:
@@ -1136,7 +1175,7 @@ class Sniper(Towers):
     ]
     range = 0
     cooldown = 50
-    bossDamage = 5
+    bossDamage = 2
     ceramDamage = 1
     totalAbilityCooldown = 6000
 
@@ -1226,8 +1265,8 @@ class Sniper(Towers):
             self.abilityCooldown += 1
 
         self.cooldown = [50, 25, 10, 5][self.upgrades[0]]
-        self.bossDamage = [5, 12, 25, 50][self.upgrades[1]]
-        self.ceramDamage = 5 if self.upgrades[2] == 3 else 1
+        self.bossDamage = [2, 4, 8, 12][self.upgrades[1]]
+        self.ceramDamage = 20 if self.upgrades[2] == 3 else 1
 
     def draw(self):
         super().draw()
@@ -1476,9 +1515,9 @@ class Enemy:
 
         self.totalMovement = 0
         self.freezeTimer = 0
+        self.bossFreeze = 0
         self.fireTicks = 0
         self.fireIgnitedBy = None
-        self.timer = 0
         self.isBoss = self.tier in bosses
         self.reachedEnd = False
 
@@ -1491,22 +1530,18 @@ class Enemy:
         else:
             self.HP = self.MaxHP = 1
 
+        self.direction = None
+        self.move(1)
+
         gameInfo.enemies.append(self)
 
     def move(self, speed: int):
         self.update()
 
-        if self.timer > 0:
-            self.timer -= 1
-        elif self.tier == 'B':
-            self.timer = 250
-            Enemy(3, self.lineIndex, spawn=[self.x, self.y], mapPath=self.mapPath)
-        elif self.tier == 'D':
-            self.timer = 100
-            Enemy(7, self.lineIndex, spawn=[self.x, self.y], mapPath=self.mapPath)
-
         if self.freezeTimer > 0 and not str(self.tier) in freezeImmune:
             self.freezeTimer -= 1
+        elif self.bossFreeze > 0:
+            self.bossFreeze -= 1
         else:
             for n in range(speed):
                 if len(gameInfo.Map.path[self.mapPath]) - 1 == self.lineIndex:
@@ -1523,43 +1558,65 @@ class Enemy:
                     foundMove = False
                     newLineIndex = self.lineIndex + 1
 
+                    right = current[0] < new[0]
+                    left = current[0] > new[0]
+                    up = current[1] < new[1]
+                    down = current[1] > new[1]
+
                     if current != new:
                         if current[0] == new[0] or current[1] == new[1]:
-                            speed = 1
+                            s = 1
                         else:
-                            speed = RECIPROCALSQRT2
+                            s = RECIPROCALSQRT2
 
-                        if current[0] < new[0]:
-                            self.x += speed
+                        if right:
+                            self.x += s
                             if self.x >= new[0]:
                                 self.lineIndex = newLineIndex
                                 self.x, self.y = gameInfo.Map.path[self.mapPath][newLineIndex]
 
                             foundMove = True
 
-                        if current[0] > new[0]:
-                            self.x -= speed
+                        if left:
+                            self.x -= s
                             if self.x <= new[0]:
                                 self.lineIndex = newLineIndex
                                 self.x, self.y = gameInfo.Map.path[self.mapPath][newLineIndex]
 
                             foundMove = True
 
-                        if current[1] < new[1]:
-                            self.y += speed
+                        if up:
+                            self.y += s
                             if self.y >= new[1]:
                                 self.lineIndex = newLineIndex
                                 self.x, self.y = gameInfo.Map.path[self.mapPath][newLineIndex]
 
                             foundMove = True
 
-                        if current[1] > new[1]:
-                            self.y -= speed
+                        if down:
+                            self.y -= s
                             if self.y <= new[1]:
                                 self.lineIndex = newLineIndex
                                 self.x, self.y = gameInfo.Map.path[self.mapPath][newLineIndex]
 
                             foundMove = True
+
+                    if up and right:
+                        self.direction = 7
+                    elif up and left:
+                        self.direction = 5
+                    elif down and right:
+                        self.direction = 1
+                    elif down and left:
+                        self.direction = 3
+                    elif up:
+                        self.direction = 6
+                    elif down:
+                        self.direction = 2
+                    elif left:
+                        self.direction = 4
+                    elif right:
+                        self.direction = 0
 
                     if foundMove:
                         self.totalMovement += 1
@@ -1570,7 +1627,7 @@ class Enemy:
                 self.update()
 
             try:
-                self.freezeTimer = max(bossFreeze[self.tier], self.freezeTimer)
+                self.bossFreeze = bossFreezes[self.tier]
             except KeyError:
                 pass
 
@@ -1695,11 +1752,21 @@ class Enemy:
             pygame.draw.rect(screen, (0, 0, 0), (self.x - 50 + sx, self.y - 25 + sy, 100, 5), 1)
             centredPrint(font, f'{math.ceil(self.HP / self.MaxHP * 100)}%', (self.x + sx, self.y - 35 + sy))
 
-        pygame.draw.circle(screen, enemyColors[str(self.tier)], (self.x + sx, self.y + sy), 20 if self.isBoss else 10)
-        if self.camo:
-            pygame.draw.circle(screen, (0, 0, 0), (self.x + sx, self.y + sy), 20 if self.isBoss else 10, 2)
-        if self.regen:
-            pygame.draw.circle(screen, (255, 105, 180), (self.x + sx, self.y + sy), 20 if self.isBoss else 10, 2)
+        if skinsEquipped[0] is not None:
+            if ('Enemy', str(self.tier)) in skinsEquipped[0].skins.keys():
+                centredBlit(skinsEquipped[0].skins[('Enemy', str(self.tier))][self.direction], (self.x + sx, self.y + sy))
+            else:
+                pygame.draw.circle(screen, enemyColors[str(self.tier)], (self.x + sx, self.y + sy), 20 if self.isBoss else 10)
+
+        if not self.isBoss:
+            if self.camo and self.regen:
+                pygame.draw.circle(screen, (187, 11, 255), (self.x + sx, self.y + sy), 10, 2)
+
+            elif self.camo:
+                pygame.draw.circle(screen, (0, 0, 0), (self.x + sx, self.y + sy), 10, 2)
+
+            elif self.regen:
+                pygame.draw.circle(screen, (255, 105, 180), (self.x + sx, self.y + sy), 10, 2)
 
     def kill(self, *, spawnNew: bool = True, coinMultiplier: int = 1, ignoreBoss: bool = False, burn: bool = False, bossDamage: int = 1, overrideRuneColor: Tuple[int] = None, ignoreRegularEnemyHealth: bool = False, reduceFireTicks: bool = False, ceramDamage: int = 1) -> list:
         if reduceFireTicks:
@@ -1769,10 +1836,11 @@ class Enemy:
                     newSpawnType = newSpawn[2 * n]
                     newSpawnTier = newSpawn[2 * n + 1]
 
-                    new = Enemy(str(newSpawnTier), self.lineIndex, mapPath=self.mapPath, spawn=[self.x, self.y], camo=newSpawnType == '1', regen=newSpawnType == '2')
+                    new = Enemy(str(newSpawnTier), self.lineIndex, mapPath=self.mapPath, spawn=[self.x, self.y], camo=newSpawnType in ['1', '3'], regen=newSpawnType in ['2', '3'])
                     new.fireTicks = self.fireTicks
                     new.fireIgnitedBy = self.fireIgnitedBy
                     new.totalMovement = self.totalMovement
+                    new.regenTimer = self.regenTimer
                     new.move(n)
 
                     spawned.append(new)
@@ -1949,21 +2017,6 @@ def getSellPrice(tower: Towers, *, pricePercent: SupportsFloat = 80) -> float:
             price += tower.upgradePrices[3]
 
     return price * pricePercent / 100
-
-
-def leftAlignPrint(font: pygame.font.Font, text: str, pos: Tuple[int], color: Tuple[int] = (0, 0, 0)) -> None:
-    textObj = font.render(text, True, color)
-    screen.blit(textObj, textObj.get_rect(center=[pos[0] + font.size(text)[0] / 2, pos[1]]))
-
-
-def centredPrint(font: pygame.font.Font, text: str, pos: Tuple[int], color: Tuple[int] = (0, 0, 0)) -> None:
-    textObj = font.render(text, True, color)
-    screen.blit(textObj, textObj.get_rect(center=pos))
-
-
-def rightAlignPrint(font: pygame.font.Font, text: str, pos: Tuple[int], color: Tuple[int] = (0, 0, 0)) -> None:
-    textObj = font.render(text, True, color)
-    screen.blit(textObj, textObj.get_rect(center=[pos[0] - font.size(text)[0] / 2, pos[1]]))
 
 
 def centredBlit(image: pygame.Surface, pos: Tuple[int]) -> None:
@@ -2171,7 +2224,7 @@ def getNotObtainedRune(ignore: List[str] = None) -> dict:
             notObtainedRunes.append(rune.name)
     shopOfferedRune = random.choice(notObtainedRunes)
 
-    return {'count': 1, 'item': shopOfferedRune, 'price': getRune(shopOfferedRune).shopPrice, 'bought': False}
+    return {'count': 1, 'item': shopOfferedRune, 'price': getRune(shopOfferedRune).shopPrice, 'bought': False, 'type': 'rune'}
 
 
 def getRandomPowerUp() -> dict:
@@ -2196,23 +2249,30 @@ def refreshShop() -> None:
         info.shopData = [None, None, None, None, None, None]
 
     k = 1
-    if len(info.runes) + 1 < len(Runes):
-        info.shopData[0] = getNotObtainedRune()
-        if len(info.runes) + 2 < len(Runes):
-            info.shopData[1] = getNotObtainedRune([info.shopData[0]['item']])
+    notUnlockedSkin = getNotUnlockedSkin(info)
+    if notUnlockedSkin is None:
+        if len(info.runes) + 1 < len(Runes):
+            info.shopData[0] = getNotObtainedRune()
+            if len(info.runes) + 2 < len(Runes):
+                info.shopData[1] = getNotObtainedRune([info.shopData[0]['item']])
+            else:
+                powerUp = getRandomPowerUp()
+                info.shopData[1] = {'count': 5 * k, 'item': powerUp['item'], 'price': powerUp['price'] * 5 * k, 'bought': False, 'type': 'powerUp'}
+                k += 1
+
         else:
-            powerUp = getRandomPowerUp()
-            info.shopData[1] = {'count': 5 * k, 'item': powerUp['item'], 'price': powerUp['price'] * 5 * k, 'bought': False}
-            k += 1
+            for n in range(2):
+                powerUp = getRandomPowerUp()
+                info.shopData[n] = {'count': 5 * k, 'item': powerUp['item'], 'price': powerUp['price'] * 5 * k, 'bought': False, 'type': 'powerUp'}
+                k += 1
+
     else:
-        for n in range(2):
-            powerUp = getRandomPowerUp()
-            info.shopData[n] = {'count': 5 * k, 'item': powerUp['item'], 'price': powerUp['price'] * 5 * k, 'bought': False}
-            k += 1
+        info.shopData[0] = {'count': 1, 'item': notUnlockedSkin.name, 'price': notUnlockedSkin.price, 'bought': False, 'type': 'skin'}
+        info.shopData[1] = getNotObtainedRune()
 
     for n in range(4):
         powerUp = getRandomPowerUp()
-        info.shopData[2 + n] = {'count': 5 * k, 'item': powerUp['item'], 'price': powerUp['price'] * 5 * k, 'bought': False}
+        info.shopData[2 + n] = {'count': 5 * k, 'item': powerUp['item'], 'price': powerUp['price'] * 5 * k, 'bought': False, 'type': 'powerUp'}
         k += 1
 
 
@@ -2629,6 +2689,8 @@ def load() -> None:
 
 # Main
 def app() -> None:
+    global skinsEquipped
+
     load()
 
     if info.status == 'game':
@@ -2670,6 +2732,7 @@ def app() -> None:
                                 cont = True
                             elif 600 < mx < 775:
                                 cont = True
+                                skinsEquipped = [getSkin(s) for s in info.skinsEquipped]
 
             if cont:
                 break
@@ -2812,6 +2875,7 @@ def app() -> None:
                                         gameInfo.coins = math.inf if info.sandboxMode else defaults['coins']
                                         gameInfo.HP = math.inf if info.sandboxMode else defaults['HP']
                                         info.gameReplayData.clear()
+                                        skinsEquipped = [getSkin(s) for s in info.skinsEquipped]
 
                                         try:
                                             PowerUps.objects.clear()
@@ -2832,6 +2896,7 @@ def app() -> None:
                                 gameInfo.coins = math.inf if info.sandboxMode else defaults['coins']
                                 gameInfo.HP = math.inf if info.sandboxMode else defaults['HP']
                                 info.gameReplayData.clear()
+                                skinsEquipped = [getSkin(s) for s in info.skinsEquipped]
 
                                 try:
                                     PowerUps.objects.clear()
@@ -2909,7 +2974,7 @@ def app() -> None:
                 centredPrint(largeFont, 'You Win!', (500, 125), (255, 255, 255))
 
                 if gameInfo.FinalHP == math.inf:
-                    centredPrint(font, f'Your Final Score: {INFINITYSTR}')
+                    centredPrint(font, f'Your Final Score: {INFINITYSTR}', (500, 250))
                 else:
                     centredPrint(font, f'Your Final Score: {gameInfo.FinalHP}', (500, 250), (255, 255, 255))
 
@@ -3545,14 +3610,20 @@ def app() -> None:
                     else:
                         pygame.draw.rect(screen, (0, 0, 0), (x, y, 200, 200), 3)
 
-                    rune = getRune(info.shopData[n]['item'])
-                    if rune is None:
+                    if info.shopData[n]['type'] == 'skin':
+                        centredBlit(getSkin(info.shopData[n]['item']).imageTexture, (x + 100, y + 100))
+
+                    if info.shopData[n]['type'] == 'rune':
+                        centredBlit(getRune(info.shopData[n]['item']).imageTexture, (x + 100, y + 100))
+
+                    if info.shopData[n]['type'] == 'powerUp':
                         centredBlit(powerUps[info.shopData[n]['item']][1], (x + 100, y + 100))
+                        centredPrint(tinyFont, powerUps[info.shopData[n]['item']][2], (x + 100, y + 180))
                     else:
-                        centredBlit(rune.imageTexture, (x + 100, y + 100))
+                        centredPrint(tinyFont, info.shopData[n]['item'], (x + 100, y + 180))
 
                     if info.shopData[n]['count'] > 1:
-                        rightAlignPrint(font, f'x{info.shopData[n]["count"]}', (x + 190, y + 180))
+                        rightAlignPrint(font, f'x{info.shopData[n]["count"]}', (x + 190, y + 20))
 
                     if info.shopData[n]['bought']:
                         leftAlignPrint(font, 'BOUGHT', (x + 10, y + 20))
@@ -3622,11 +3693,13 @@ def app() -> None:
 
                                 if x <= mx <= x + 200 and y <= my <= y + 200 and not info.shopData[n]['bought']:
                                     if info.tokens >= info.shopData[n]['price']:
-                                        rune = getRune(info.shopData[n]['item'])
-                                        if rune is None:
-                                            info.powerUps[info.shopData[n]['item']] += info.shopData[n]['count']
-                                        else:
+                                        if info.shopData[n]['type'] == 'skin':
+                                            info.skins.append(info.shopData[n]['item'])
+                                        if info.shopData[n]['type'] == 'rune':
                                             info.runes.append(info.shopData[n]['item'])
+                                        if info.shopData[n]['type'] == 'powerUp':
+                                            info.powerUps[info.shopData[n]['item']] += info.shopData[n]['count']
+
                                         info.tokens -= info.shopData[n]['price']
                                         info.shopData[n]['bought'] = True
 
@@ -3636,100 +3709,191 @@ def app() -> None:
                 pygame.display.update()
 
         elif info.status == 'cosmetics':
-            while True:
-                mx, my = pygame.mouse.get_pos()
+            if info.cosmeticPage == 'runes':
+                while True:
+                    mx, my = pygame.mouse.get_pos()
 
-                screen.fill((200, 200, 200))
+                    screen.fill((200, 200, 200))
 
-                pygame.draw.rect(screen, (255, 0, 0), (30, 550, 100, 30))
-                centredPrint(font, 'Close', (80, 565))
-                if 30 <= mx <= 130 and 550 <= my <= 580:
-                    pygame.draw.rect(screen, (128, 128, 128), (30, 550, 100, 30), 5)
-                else:
-                    pygame.draw.rect(screen, (0, 0, 0), (30, 550, 100, 30), 3)
+                    pygame.draw.rect(screen, (255, 0, 0), (30, 550, 100, 30))
+                    centredPrint(font, 'Close', (80, 565))
+                    if 30 <= mx <= 130 and 550 <= my <= 580:
+                        pygame.draw.rect(screen, (128, 128, 128), (30, 550, 100, 30), 5)
+                    else:
+                        pygame.draw.rect(screen, (0, 0, 0), (30, 550, 100, 30), 3)
 
-                pygame.draw.rect(screen, (160, 160, 160), (440, 100, 120, 120))
-                centredPrint(font, 'Click on a Rune to equip!' if info.equippedRune is None else 'Equipped Rune:', (500, 75))
+                    pygame.draw.rect(screen, (160, 160, 160), (820, 550, 150, 30))
+                    centredPrint(font, 'Next Page', (895, 565))
+                    if 820 <= mx <= 970 and 550 <= my <= 580:
+                        pygame.draw.rect(screen, (128, 128, 128), (820, 550, 150, 30), 5)
+                    else:
+                        pygame.draw.rect(screen, (0, 0, 0), (820, 550, 150, 30), 3)
 
-                pygame.draw.rect(screen, (160, 160, 160), (50, 250, 900, 225))
-                if len(info.runes) == 0:
-                    centredPrint(font, 'You have no runes!', (500, 362))
-                    centredPrint(tinyFont, 'Win some battles to earn some runes!', (500, 390))
+                    pygame.draw.rect(screen, (160, 160, 160), (440, 100, 120, 120))
+                    centredPrint(mediumFont, 'Runes', (500, 40))
+                    centredPrint(font, 'Click on a Rune to equip!' if info.equippedRune is None else 'Equipped Rune:', (500, 75))
 
-                x = 0
-                y = 0
-                for rune in info.runes:
-                    try:
-                        pygame.draw.rect(screen, (64, 64, 64), (x * 75 + 52, y * 75 + 252, 70, 70))
-                        getRune(rune).draw(screen, x * 75 + 87, y * 75 + 287, 66)
+                    pygame.draw.rect(screen, (160, 160, 160), (50, 250, 900, 225))
+                    if len(info.runes) == 0:
+                        centredPrint(font, 'You have no runes!', (500, 362))
+                        centredPrint(tinyFont, 'Win some battles to earn some runes!', (500, 390))
 
-                        if rune == info.equippedRune:
-                            pygame.draw.rect(screen, (128, 128, 128), (x * 75 + 52, y * 75 + 252, 70, 70), 5)
+                    x = 0
+                    y = 0
+                    for rune in info.runes:
+                        try:
+                            pygame.draw.rect(screen, (64, 64, 64), (x * 75 + 52, y * 75 + 252, 70, 70))
+                            getRune(rune).draw(screen, x * 75 + 87, y * 75 + 287, 66)
 
-                        x += 1
-                        if x == 12:
-                            x = 0
-                            y += 1
+                            if rune == info.equippedRune:
+                                pygame.draw.rect(screen, (128, 128, 128), (x * 75 + 52, y * 75 + 252, 70, 70), 5)
 
-                    except AttributeError:
-                        print('tower-defense.core: There seems to be a removed rune in your inventory and it has been deleted!')
-                        info.runes.remove(rune)
+                            x += 1
+                            if x == 12:
+                                x = 0
+                                y += 1
 
-                if info.equippedRune is not None:
-                    try:
-                        getRune(info.equippedRune).draw(screen, 500, 160)
-                        leftAlignPrint(font, info.equippedRune, (600, 120))
-                        leftAlignPrint(tinyFont, getRune(info.equippedRune).lore, (600, 150))
+                        except AttributeError:
+                            print('tower-defense.core: There seems to be a removed rune in your inventory and it has been deleted!')
+                            info.runes.remove(rune)
 
-                    except AttributeError:
-                        print('tower-defense.core: You seem to have a removed rune equipped and it has been deleted!')
-                        info.equippedRune = None
+                    if info.equippedRune is not None:
+                        try:
+                            getRune(info.equippedRune).draw(screen, 500, 160)
+                            leftAlignPrint(font, info.equippedRune, (600, 120))
+                            leftAlignPrint(tinyFont, getRune(info.equippedRune).lore, (600, 150))
 
-                cont = True
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        save()
-                        quit()
+                        except AttributeError:
+                            print('tower-defense.core: You seem to have a removed rune equipped and it has been deleted!')
+                            info.equippedRune = None
 
-                    elif event.type == pygame.MOUSEBUTTONDOWN:
-                        if event.button == 1:
-                            if 30 <= mx <= 130 and 550 <= my <= 580:
-                                info.status = 'mapSelect'
-                                cont = False
+                    cont = True
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            save()
+                            quit()
 
-                            elif 440 <= mx <= 560 and 100 <= my <= 220:
-                                info.equippedRune = None
+                        elif event.type == pygame.MOUSEBUTTONDOWN:
+                            if event.button == 1:
+                                if 30 <= mx <= 130 and 550 <= my <= 580:
+                                    info.status = 'mapSelect'
+                                    cont = False
 
-                            elif 50 <= mx <= 950 and 250 <= my <= 475:
+                                if 820 <= mx <= 970 and 550 <= my <= 580:
+                                    info.cosmeticPage = 'skins'
+                                    cont = False
+
+                                if 440 <= mx <= 560 and 100 <= my <= 220:
+                                    info.equippedRune = None
+
+                                if 50 <= mx <= 950 and 250 <= my <= 475:
+                                    try:
+                                        info.equippedRune = info.runes[(mx - 50) // 75 + 12 * ((my - 250) // 75)]
+
+                                    except IndexError:
+                                        pass
+
+                        elif event.type == pygame.KEYDOWN:
+                            if info.equippedRune is not None:
+                                if event.key == pygame.K_RETURN:
+                                    info.status = 'mapSelect'
+                                    cont = False
+
                                 try:
-                                    info.equippedRune = info.runes[(mx - 50) // 75 + 12 * ((my - 250) // 75)]
+                                    shifting = pygame.key.get_pressed()[pygame.K_LSHIFT]
 
-                                except IndexError:
-                                    pass
+                                    if event.key == pygame.K_UP:
+                                        info.equippedRune = info.runes[max(info.runes.index(info.equippedRune) - 12, 0)]
+                                    if event.key == pygame.K_DOWN:
+                                        info.equippedRune = info.runes[min(info.runes.index(info.equippedRune) + 12, len(info.runes) - 1)]
+                                    if event.key == pygame.K_LEFT:
+                                        info.equippedRune = info.runes[max(info.runes.index(info.equippedRune) - 1, 0)]
+                                    if event.key == pygame.K_RIGHT:
+                                        if shifting:
+                                            info.cosmeticPage = 'skins'
+                                            cont = False
+                                        else:
+                                            info.equippedRune = info.runes[min(info.runes.index(info.equippedRune) + 1, len(info.runes) - 1)]
 
-                    elif event.type == pygame.KEYDOWN:
-                        if info.equippedRune is not None:
-                            if event.key == pygame.K_RETURN:
-                                info.status = 'mapSelect'
-                                cont = False
+                                except ValueError:
+                                    print('tower-defense.core: Fatal - There seems to be a problem with your equipped rune.')
 
-                            try:
-                                if event.key == pygame.K_UP:
-                                    info.equippedRune = info.runes[max(info.runes.index(info.equippedRune) - 12, 0)]
-                                elif event.key == pygame.K_DOWN:
-                                    info.equippedRune = info.runes[min(info.runes.index(info.equippedRune) + 12, len(info.runes) - 1)]
-                                elif event.key == pygame.K_LEFT:
-                                    info.equippedRune = info.runes[max(info.runes.index(info.equippedRune) - 1, 0)]
-                                elif event.key == pygame.K_RIGHT:
-                                    info.equippedRune = info.runes[min(info.runes.index(info.equippedRune) + 1, len(info.runes) - 1)]
+                    if not cont:
+                        break
 
-                            except ValueError:
-                                print('tower-defense.core: Fatal - There seems to be a problem with your equipped rune.')
+                    pygame.display.update()
 
-                if not cont:
-                    break
+            elif info.cosmeticPage == 'skins':
+                while True:
+                    mx, my = pygame.mouse.get_pos()
 
-                pygame.display.update()
+                    screen.fill((200, 200, 200))
+
+                    centredPrint(mediumFont, 'Skins', (500, 40))
+
+                    pygame.draw.rect(screen, (255, 0, 0), (30, 550, 100, 30))
+                    centredPrint(font, 'Close', (80, 565))
+                    if 30 <= mx <= 130 and 550 <= my <= 580:
+                        pygame.draw.rect(screen, (128, 128, 128), (30, 550, 100, 30), 5)
+                    else:
+                        pygame.draw.rect(screen, (0, 0, 0), (30, 550, 100, 30), 3)
+
+                    pygame.draw.rect(screen, (160, 160, 160), (820, 550, 150, 30))
+                    centredPrint(font, 'Previous Page', (895, 565))
+                    if 820 <= mx <= 970 and 550 <= my <= 580:
+                        pygame.draw.rect(screen, (128, 128, 128), (820, 550, 150, 30), 5)
+                    else:
+                        pygame.draw.rect(screen, (0, 0, 0), (820, 550, 150, 30), 3)
+
+                    centredPrint(tinyFont, 'Boss Skins', (500, 80))
+                    pygame.draw.rect(screen, (160, 160, 160), (50, 100, 900, 100))
+
+                    n = 0
+                    for skin in info.skins:
+                        skinObj = getSkin(skin)
+                        if skinObj is None:
+                            print('tower-defense.core: Fatal - There seems to be a removed skin in your inventory and it has been removed!')
+                            info.skins.remove(skin)
+                            continue
+
+
+                        pygame.draw.rect(screen, (64, 64, 64), (55 + 100 * n, 105, 90, 90))
+                        if skin in info.skinsEquipped:
+                            pygame.draw.rect(screen, (100, 100, 100), (55 + 100 * n, 105, 90, 90), 3)
+
+                        centredBlit(skinObj.smallImageTexture, (100 + 100 * n, 150))
+
+                        n += 1
+
+                    cont = True
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            save()
+                            quit()
+
+                        elif event.type == pygame.MOUSEBUTTONDOWN:
+                            if event.button == 1:
+                                if 30 <= mx <= 130 and 550 <= my <= 580:
+                                    info.status = 'mapSelect'
+                                    cont = False
+
+                                if 820 <= mx <= 970 and 550 <= my <= 580:
+                                    info.cosmeticPage = 'runes'
+                                    cont = False
+
+                                if 105 <= my <= 195:
+                                    index = None
+                                    for n in range(len(info.skins)):
+                                        if 55 + 100 * n <= mx <= 145 + 100 * n:
+                                            index = n
+
+                                    if index is not None:
+                                        info.skinsEquipped[0] = info.skins[index]
+
+                    if not cont:
+                        break
+
+                    pygame.display.update()
 
         elif info.status == 'statistics':
             scroll = 0
@@ -3933,7 +4097,7 @@ def app() -> None:
                 mouseTrail = mouseTrail[:-10]
 
             if gameInfo.spawndelay == 0 and len(gameInfo.spawnleft) > 0:
-                Enemy(gameInfo.spawnleft[1], 0, mapPath=gameInfo.spawnPath, camo=gameInfo.spawnleft[0] == '1', regen=gameInfo.spawnleft[0] == '2')
+                Enemy(gameInfo.spawnleft[1], 0, mapPath=gameInfo.spawnPath, camo=gameInfo.spawnleft[0] in ['1', '3'], regen=gameInfo.spawnleft[0] in ['2', '3'])
 
                 gameInfo.spawnleft = gameInfo.spawnleft[2:]
                 gameInfo.spawndelay = 30
@@ -3945,7 +4109,7 @@ def app() -> None:
 
             if len(gameInfo.enemies) == 0:
                 if len(gameInfo.spawnleft) == 0 and gameInfo.ticksSinceNoEnemies == 0:
-                    gameInfo.coins += 145 + gameInfo.wave * 5
+                    gameInfo.coins += 95 + gameInfo.wave * 5
                     gameInfo.ticksSinceNoEnemies += 1
 
                 if gameInfo.nextWave <= 0:
@@ -4329,33 +4493,13 @@ def app() -> None:
 
             gameInfo.ticks += 1
 
-
-screen = pygame.display.set_mode((1000, 600))
-pygame.init()
-pygame.font.init()
-clock = pygame.time.Clock()
-
-fontType = 'Ubuntu Mono'
-tinyFont = pygame.font.SysFont(fontType, 17)
-font = pygame.font.SysFont(fontType, 20)
-mediumFont = pygame.font.SysFont(fontType, 30)
-largeFont = pygame.font.SysFont(fontType, 75)
-
-pygame.display.set_caption('Tower Defense')
-pygame.display.set_icon(pygame.image.load(os.path.join(resource_path, 'icon.png')))
-
-screen.fill((200, 200, 200))
-centredPrint(largeFont, f'Tower Defense v{__version__}', (500, 200), (100, 100, 100))
-centredPrint(mediumFont, 'Loading...', (500, 300), (100, 100, 100))
-pygame.display.update()
-
 powerUps = {
-    'lightning': [pygame.image.load(os.path.join(resource_path, 'lightning_power_up.png')), pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'lightning_power_up.png')), (60, 60))],
-    'spikes': [pygame.image.load(os.path.join(resource_path, 'spikes_power_up.png')), pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'spikes_power_up.png')), (60, 60))],
-    'antiCamo': [pygame.image.load(os.path.join(resource_path, 'anti_camo_power_up.png')), pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'anti_camo_power_up.png')), (60, 60))],
-    'heal': [pygame.image.load(os.path.join(resource_path, 'heal_power_up.png')), pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'heal_power_up.png')), (60, 60))],
-    'freeze': [pygame.image.load(os.path.join(resource_path, 'freeze_power_up.png')), pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'freeze_power_up.png')), (60, 60))],
-    'reload': [pygame.image.load(os.path.join(resource_path, 'reload_power_up.png')), pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'reload_power_up.png')), (60, 60))]
+    'lightning': [pygame.image.load(os.path.join(resource_path, 'lightning_power_up.png')), pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'lightning_power_up.png')), (60, 60)), 'Lightning Power Up'],
+    'spikes': [pygame.image.load(os.path.join(resource_path, 'spikes_power_up.png')), pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'spikes_power_up.png')), (60, 60)), 'Spikes Power Up'],
+    'antiCamo': [pygame.image.load(os.path.join(resource_path, 'anti_camo_power_up.png')), pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'anti_camo_power_up.png')), (60, 60)), 'Anti-Camo Power Up'],
+    'heal': [pygame.image.load(os.path.join(resource_path, 'heal_power_up.png')), pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'heal_power_up.png')), (60, 60)), 'Heal Power Up'],
+    'freeze': [pygame.image.load(os.path.join(resource_path, 'freeze_power_up.png')), pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'freeze_power_up.png')), (60, 60)), 'Freeze Power Up'],
+    'reload': [pygame.image.load(os.path.join(resource_path, 'reload_power_up.png')), pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'reload_power_up.png')), (60, 60)), 'Reload Power Up']
 }
 
 IceCircle = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'ice_circle.png')), (250, 250)).copy()
@@ -4407,6 +4551,7 @@ tokenImage = pygame.image.load(os.path.join(resource_path, 'token.png'))
 smallTokenImage = pygame.transform.scale(tokenImage, (15, 15))
 
 info = data()
+skinsEquipped = [None]
 gameInfo = gameData()
 PowerUps = PhysicalPowerUp()
 RuneEffects = RuneEffect(info)

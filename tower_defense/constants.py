@@ -8,37 +8,37 @@ waves = [
     '00' * 3,
     '00' * 5 + '01' * 3,
     '01' * 5,
-    '02' * 10,
+    '01' * 6 + '02' * 6,
+    '02' * 5,
+    '02' * 3 + '03' * 5,
     '03' * 10,
     '04' * 10,
+    '24' * 10,
     '05' * 15,
     '06' * 15,
-    '16' * 25,
+    '26' * 25,
+    '27' * 15,
+    '09' * 3,
+    '08' * 2,
+    '09' * 10,
+    '14' * 5,
+    '15' * 15,
+    '08' * 3,
     '0A',
-    '06' * 15,
-    '07' * 30,
-    '08' * 20,
-    '09' * 5,
+    '18' * 5,
+    '18' * 4 + '09' * 4 + '18' * 4,
+    '28' * 10,
+    '38' * 15,
+    '0A' * 2,
+    '0A' * 3,
     '0B',
-    '09' * 20,
-    '10' * 5,
-    '16' * 20,
-    '17' * 20,
-    '18' * 20,
-    '19' * 20,
-    '1A' * 2,
-    '18' * 50,
-    '25' * 10,
-    '19' * 50,
-    '28' * 50,
-    '1A' * 3,
-    '1A' * 5,
-    '1A' * 8,
-    '0C',
-    '0C' * 2,
-    '0C' * 3,
-    '0C' * 5,
-    '0C' * 10,
+    '38' * 50,
+    '0A' * 3 + '0B',
+    '0B' * 2,
+    '0B' * 1 + '1C' * 3,
+    '1C' * 5,
+    '0B' * 3 + '1C' * 2,
+    '1C' * 10,
     '0D'
 ]
 
@@ -68,12 +68,12 @@ damages = {
     '5': 11,
     '6': 23,
     '7': 70,
-    '8': 116,
+    '8': 50,
     '9': 16,
-    'A': 30,
-    'B': 90,
-    'C': 150,
-    'D': 750
+    'A': 200,
+    'B': 420,
+    'C': 200,
+    'D': 2700
 }
 
 speed = {
@@ -87,19 +87,19 @@ speed = {
     '7': 2,
     '8': 2,
     '9': 2,
-    'A': 1,     # True Speed: 1/3
+    'A': 1,     # True Speed: 1/2
     'B': 1,     # True Speed: 1/5
     'C': 1,
-    'D': 1,     # True Speed: 1/2
+    'D': 1,     # True Speed: 1/3
 }
 
 trueHP = {
-    '8': 10,
+    '8': 35,
     '9': 10,
-    'A': 200,
-    'B': 500,
-    'C': 1000,
-    'D': 10000
+    'A': 900,
+    'B': 2500,
+    'C': 2000,
+    'D': 100000
 }
 
 bossCoins = {
@@ -109,11 +109,11 @@ bossCoins = {
     'D': 500
 }
 
-bossFreeze = {
+bossFreezes = {
     'A': 3,
     'B': 5,
     'C': 0,
-    'D': 2
+    'D': 10
 }
 
 enemiesSpawnNew = {
@@ -125,12 +125,11 @@ enemiesSpawnNew = {
     '05': '04' * 2,
     '06': '05' * 2,
     '07': '06' * 3,
-    '08': '06' * 5,
+    '08': '06' * 2,
     '09': '04' * 3,
-    '0A': '00' * 15,
-    '0B': '03' * 20,
-    '0C': '08' + '09' * 2,
-    '0D': '0C' * 5,
+    '0A': '08' * 4,
+    '0B': '0A' * 2,
+    '0D': '0B' * 5 + '1C' * 3,
     '10': None,
     '11': '10',
     '12': '11',
@@ -139,9 +138,9 @@ enemiesSpawnNew = {
     '15': '14' * 2,
     '16': '15' * 2,
     '17': '16' * 3,
-    '18': '16' * 5,
+    '18': '16' * 2,
     '19': '14' * 3,
-    '1A': '10' * 10,
+    '1C': '38' * 4,
     '20': None,
     '21': '20',
     '22': '21',
@@ -150,16 +149,24 @@ enemiesSpawnNew = {
     '25': '24' * 2,
     '26': '25' * 2,
     '27': '26' * 3,
-    '28': '26' * 5,
+    '28': '26' * 2,
+    '30': None,
+    '31': '30',
+    '32': '31',
+    '33': '32',
+    '34': '33',
+    '35': '34' * 2,
+    '36': '35' * 2,
+    '38': '36' * 2
 }
 strengthPath = ['0', '1', '2', '3', '4', '5', '6', '7', '9', '8', 'A', 'B', 'C', 'D']
 regenPath = ['0', '1', '2', '3', '4', '5', '6']
 regenUpdateTimer = 50
 
 # Enemy Property Constants
-onlyExplosiveTiers = ['7', 'D']
+onlyExplosiveTiers = ['7', 'C']
 bosses = ['A', 'B', 'C', 'D']
-freezeImmune = ['6', 'D']
+freezeImmune = ['6'] + bosses
 resistant = ['9']
 
 # Math Constants
@@ -310,7 +317,7 @@ rainbowColors = [[255, 0, 0], [0, 127, 0], [255, 255, 0], [0, 255, 0], [0, 0, 25
 rainbowShift = [[-0.255, 0.127, 0], [0.255, 0.127, 0], [-0.255, 0, 0], [0, -0.255, 0.255], [0.046, 0.043, -0.16], [0.093, -0.043, 0.16], [0.116, 0, -0.255]]
 
 gameAttrs = ['enemies', 'projectiles', 'piercingProjectiles', 'towers', 'HP', 'coins', 'selected', 'placing', 'nextWave', 'wave', 'shopScroll', 'spawnleft', 'spawndelay', 'ticksSinceNoEnemies', 'ticks', 'towersPlaced', 'replayRefresh', 'Map', 'doubleReloadTicks', 'FinalHP', 'spawnPath']
-playerAttrs = ['mapMakerData', 'statistics', 'achievements', 'mapsBeat', 'runes',  'equippedRune', 'newRunes', 'powerUps', 'powerUpData', 'tokens', 'lastOpenShop', 'shopData', 'gameReplayData', 'sandboxMode', 'status', 'PBs', 'claimedAchievementRewards']
+playerAttrs = ['mapMakerData', 'statistics', 'achievements', 'mapsBeat', 'runes',  'equippedRune', 'newRunes', 'powerUps', 'powerUpData', 'tokens', 'lastOpenShop', 'shopData', 'gameReplayData', 'sandboxMode', 'status', 'PBs', 'claimedAchievementRewards', 'cosmeticPage', 'skins', 'skinsEquipped']
 defaults = {
     'enemies': [],
     'projectiles': [],
@@ -386,5 +393,8 @@ defaults = {
     'ticks': 0,
     'towersPlaced': 0,
     'replayRefresh': 0,
-    'spawnPath': 0
+    'spawnPath': 0,
+    'cosmeticPage': 'runes',
+    'skins': [],
+    'skinsEquipped': [None]
 }
