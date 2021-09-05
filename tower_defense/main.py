@@ -1755,8 +1755,9 @@ class Enemy:
         if skinsEquipped[0] is not None:
             if ('Enemy', str(self.tier)) in skinsEquipped[0].skins.keys():
                 centredBlit(skinsEquipped[0].skins[('Enemy', str(self.tier))][self.direction], (self.x + sx, self.y + sy))
-            else:
-                pygame.draw.circle(screen, enemyColors[str(self.tier)], (self.x + sx, self.y + sy), 20 if self.isBoss else 10)
+                return
+
+        pygame.draw.circle(screen, enemyColors[str(self.tier)], (self.x + sx, self.y + sy), 20 if self.isBoss else 10)
 
         if not self.isBoss:
             if self.camo and self.regen:
