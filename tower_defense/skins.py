@@ -50,7 +50,8 @@ def getSkin(skinName: str):
 
 def getNotUnlockedSkin(info):
     notUnlocked = [skin for skin in skins if skin.name not in info.skins]
-    return random.choice(notUnlocked) if notUnlocked else None
+    if notUnlocked:
+        return random.choice(notUnlocked)
 
 
 skins = [

@@ -2293,7 +2293,12 @@ def refreshShop() -> None:
 
     else:
         info.shopData[0] = {'count': 1, 'item': notUnlockedSkin.name, 'price': notUnlockedSkin.price, 'bought': False, 'type': 'skin'}
-        info.shopData[1] = getNotObtainedRune()
+        if len(info.runes) + 1 < len(Runes):
+            info.shopData[1] = getNotObtainedRune()
+        else:
+            powerUp = getRandomPowerUp()
+            info.shopData[1] = {'count': 5 * k, 'item': powerUp['item'], 'price': powerUp['price'] * 5 * k, 'bought': False, 'type': 'powerUp'}
+            k += 1
 
     for n in range(4):
         powerUp = getRandomPowerUp()

@@ -5,7 +5,7 @@ from tower_defense.maps import *
 
 # Enemy General Constants
 waves = [
-    '00' * 3,
+    '0A' * 3,
     '00' * 5 + '01' * 3,
     '01' * 5,
     '01' * 6 + '02' * 6,
