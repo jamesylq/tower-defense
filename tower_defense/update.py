@@ -43,6 +43,9 @@ def update(info, gameInfo, PowerUps):
     if info.powerUpData is not None:        # Update Powerups
         PowerUps = info.powerUpData
 
+    if 'One Line Challenge' not in info.PBs.keys() and 'The End' in info.PBs.keys():        # Update pre-2.10
+        info.PBs['One Line Challenge'] = info.PBs['The End']
+
     info.PBs = updateDict(info.PBs, [Map.name for Map in Maps])     # Update PBs
 
     info.statistics['mapsBeat'] = len([m for m in info.PBs.keys() if type(info.PBs[m]) is int])     # Update Statistic
@@ -57,9 +60,6 @@ def update(info, gameInfo, PowerUps):
 
         elif not foundUnlocked:
             info.PBs[Map.name] = None
-
-        if Map.name == 'One Line Challenge':               # Update v2.10 (Rename of The End)
-            info.PBs['One Line Challenge'] = info.PBs['The End']
 
     Maps.reverse()
 
