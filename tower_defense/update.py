@@ -58,6 +58,9 @@ def update(info, gameInfo, PowerUps):
         elif not foundUnlocked:
             info.PBs[Map.name] = None
 
+        if Map.name == 'One Line Challenge':               # Update v2.10 (Rename of The End)
+            info.PBs['One Line Challenge'] = info.PBs['The End']
+
     Maps.reverse()
 
     foundCompleted = False

@@ -1824,7 +1824,9 @@ class Enemy:
                 gameInfo.coins += coinMultiplier * 0.25
 
         if spawnNew:
-            if self.camo:
+            if self.camo and self.regen:
+                newSpawn = enemiesSpawnNew[f'3{self.tier}']
+            elif self.camo:
                 newSpawn = enemiesSpawnNew[f'1{self.tier}']
             elif self.regen:
                 newSpawn = enemiesSpawnNew[f'2{self.tier}']
@@ -1840,7 +1842,7 @@ class Enemy:
                     newSpawnType = newSpawn[2 * n]
                     newSpawnTier = newSpawn[2 * n + 1]
 
-                    new = Enemy(str(newSpawnTier), self.lineIndex, mapPath=self.mapPath, spawn=[self.x, self.y], camo=newSpawnType in ['1', '3'], regen=newSpawnType in ['2', '3'])
+                    new = Enemy(str(newSpawnTier), self.lineIndex, mapPath=self.mapPath, spawn=[self.x, self.y], camo=newSpawnType in ['1', '3'], regen=newSpawnType in ['1', '3'])
                     new.fireTicks = self.fireTicks
                     new.fireIgnitedBy = self.fireIgnitedBy
                     new.totalMovement = self.totalMovement
@@ -1923,7 +1925,26 @@ def fileSelection(path: str) -> str:
                 else:
                     pygame.draw.rect(screen, (0, 0, 0), (25, 60 + 30 * n - scroll, 950, 25), 3)
 
-                centredPrint(font, pathToFile, (500, 72 + 30 * n - scroll))
+                leftAlignPrint(font, pathToFile, (30, 72 + 30 * n - scroll))
+                if pathToFile in textfiles:
+                    size = os.path.getsize(pathToFile)
+                    byteUnits = ['B', 'KB', 'MB', 'GB', 'TB']
+
+                    m = 0
+                    while True:
+                        size = size / 1000
+                        if size < 1:
+                            size = size * 1000
+                            break
+
+                        if m == len(byteUnits):
+                            m -= 1
+                            size = size * 1000
+                            break
+
+                        m += 1
+
+                    rightAlignPrint(font, f'{round(size, 1)} {byteUnits[m]}', (970, 72 + 30 * n - scroll))
 
                 n += 1
 
@@ -2978,7 +2999,7 @@ def app() -> None:
                 centredPrint(largeFont, 'You Win!', (500, 125), (255, 255, 255))
 
                 if gameInfo.FinalHP == math.inf:
-                    centredPrint(font, f'Your Final Score: {INFINITYSTR}', (500, 250))
+                    centredPrint(font, f'Your Final Score: {INFINITYSTR}', (500, 250), (255, 255, 255))
                 else:
                     centredPrint(font, f'Your Final Score: {gameInfo.FinalHP}', (500, 250), (255, 255, 255))
 
