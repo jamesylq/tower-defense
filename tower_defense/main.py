@@ -249,7 +249,7 @@ class Turret(Towers):
 
         self.range = [100, 130, 165, 200][self.upgrades[0]]
         self.cooldown = [60, 35, 20, 10][self.upgrades[1]]
-        self.bossDamage = 10 if self.upgrades[2] == 3 else 1
+        self.bossDamage = 20 if self.upgrades[2] == 3 else 1
         self.explosiveRadius = 30 if self.upgrades[2] >= 1 else 0
 
     def getImageFrame(self) -> int:
