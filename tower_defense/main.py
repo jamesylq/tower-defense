@@ -1333,7 +1333,7 @@ class Elemental(Towers):
 
                 tx = self.x + 1000 * SINDEGREES[(self.abilityData['rotation'] + 180) % 360]
                 ty = self.y + 1000 * COSDEGREES[(self.abilityData['rotation'] + 180) % 360]
-                Projectile(self, self.x, self.y, tx, ty, bossDamage=50, explosiveRadius=50)
+                Projectile(self, self.x, self.y, tx, ty, bossDamage=100, explosiveRadius=50)
 
                 self.abilityData['rotation'] += 30
                 if self.abilityData['rotation'] == 1800:
@@ -1356,7 +1356,7 @@ class Elemental(Towers):
             closest = getTarget(self, targeting=self.targeting)
             try:
                 Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=50, bossDamage=25, fireTicks=300)
-                twin = Projectile(self, self.x, self.y, closest.x, closest.y, bossDamage=25, freezeDuration=100)
+                twin = Projectile(self, self.x, self.y, closest.x, closest.y, bossDamage=100, freezeDuration=100)
                 twin.move(7)
                 self.timer = 0
             except AttributeError:
@@ -1532,6 +1532,9 @@ class Enemy:
 
         self.direction = None
         self.move(1)
+
+        if self.tier in forceCamo:
+            self.camo = True
 
         gameInfo.enemies.append(self)
 
@@ -2497,7 +2500,7 @@ def draw() -> None:
                 else:
                     centredPrint(font, f'On cooldown for {math.ceil((gameInfo.selected.totalAbilityCooldown - gameInfo.selected.abilityCooldown) / 100)}s', (445, 530))
             else:
-                if 295 <= my <= 595 and 485 <= my <= 605:
+                if 295 <= mx <= 595 and 485 <= my <= 605:
                     pygame.draw.rect(screen, (200, 200, 200), (295, 485, 300, 90))
                 else:
                     pygame.draw.rect(screen, (128, 128, 128), (295, 485, 300, 90))
@@ -4352,7 +4355,7 @@ def app() -> None:
                             if 940 <= mx <= 990 and info.powerUps['antiCamo'] > 0:
                                 found = False
                                 for enemy in gameInfo.enemies:
-                                    if enemy.camo:
+                                    if enemy.camo and enemy.tier not in forceCamo:
                                         enemy.camo = False
                                         found = True
 

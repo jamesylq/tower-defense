@@ -167,7 +167,8 @@ regenUpdateTimer = 50
 onlyExplosiveTiers = ['7', 'C']
 bosses = ['A', 'B', 'C', 'D']
 freezeImmune = ['6'] + bosses
-resistant = ['9']
+resistant = ['9', 'C']
+forceCamo = ['C']
 
 # Math Constants
 SQRT2 = math.sqrt(2)
