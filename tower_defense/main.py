@@ -1842,7 +1842,7 @@ class Enemy:
                     newSpawnType = newSpawn[2 * n]
                     newSpawnTier = newSpawn[2 * n + 1]
 
-                    new = Enemy(str(newSpawnTier), self.lineIndex, mapPath=self.mapPath, spawn=[self.x, self.y], camo=newSpawnType in ['1', '3'], regen=newSpawnType in ['1', '3'])
+                    new = Enemy(str(newSpawnTier), self.lineIndex, mapPath=self.mapPath, spawn=[self.x, self.y], camo=newSpawnType in ['1', '3'], regen=newSpawnType in ['2', '3'])
                     new.fireTicks = self.fireTicks
                     new.fireIgnitedBy = self.fireIgnitedBy
                     new.totalMovement = self.totalMovement
@@ -2414,7 +2414,12 @@ def draw() -> None:
             pygame.draw.line(screen, 0, (800, 80 + 80 * n + gameInfo.shopScroll), (1000, 80 + 80 * n + gameInfo.shopScroll), 3)
             pygame.draw.line(screen, 0, (800, 80 * n + gameInfo.shopScroll), (1000, 80 * n + gameInfo.shopScroll), 3)
 
-            pygame.draw.rect(screen, (200, 200, 200), (810, 40 + 80 * n + gameInfo.shopScroll, 100, 30))
+            if gameInfo.coins >= towerType.price:
+                color = (200, 200, 200)
+            else:
+                color = (255, 100, 100)
+            pygame.draw.rect(screen, color, (810, 40 + 80 * n + gameInfo.shopScroll, 100, 30))
+
             centredPrint(font, 'Buy New', (860, 55 + 80 * n + gameInfo.shopScroll))
             if 810 <= mx <= 910 and 40 + 80 * n + gameInfo.shopScroll <= my <= 70 + 80 * n + gameInfo.shopScroll:
                 pygame.draw.rect(screen, (128, 128, 128), (810, 40 + 80 * n + gameInfo.shopScroll, 100, 30), 5)
@@ -2527,9 +2532,17 @@ def draw() -> None:
                     centredPrint(font, f'On cooldown for {math.ceil((gameInfo.selected.totalAbilityCooldown - gameInfo.selected.abilityCooldown) / 100)}s', (445, 530))
             else:
                 if 295 <= mx <= 595 and 485 <= my <= 605:
-                    pygame.draw.rect(screen, (200, 200, 200), (295, 485, 300, 90))
+                    if gameInfo.coins >= gameInfo.selected.upgradePrices[3]:
+                        color = (200, 200, 200)
+                    else:
+                        color = (255, 180, 180)
                 else:
-                    pygame.draw.rect(screen, (128, 128, 128), (295, 485, 300, 90))
+                    if gameInfo.coins >= gameInfo.selected.upgradePrices[3]:
+                        color = (100, 100, 100)
+                    else:
+                        color = (255, 100, 100)
+
+                pygame.draw.rect(screen, color, (295, 485, 300, 90))
                 pygame.draw.rect(screen, (0, 0, 0), (295, 485, 300, 90), 3)
 
                 if type(gameInfo.selected) is Village:
@@ -2555,15 +2568,23 @@ def draw() -> None:
 
         else:
             for n in range(3):
-                if 295 <= mx <= 595 and 485 + 30 * n <= my <= 515 + 30 * n:
-                    pygame.draw.rect(screen, (200, 200, 200), (295, 485 + 30 * n, 300, 30))
-                else:
-                    pygame.draw.rect(screen, (100, 100, 100), (295, 485 + 30 * n, 300, 30))
-
                 if gameInfo.selected.upgrades[n] == 3:
                     pygame.draw.rect(screen, (255, 255, 191), (295, 485 + 30 * n, 300, 30))
                     centredPrint(font, 'MAX', (445, 500 + 30 * n))
                 else:
+                    if 295 <= mx <= 595 and 485 + 30 * n < my <= 515 + 30 * n:
+                        if gameInfo.selected.upgradePrices[n][gameInfo.selected.upgrades[n]] <= gameInfo.coins:
+                            color = (200, 200, 200)
+                        else:
+                            color = (255, 180, 180)
+                            pygame.draw.rect(screen, (200, 200, 200), (295, 485 + 30 * n, 300, 30))
+                    else:
+                        if gameInfo.selected.upgradePrices[n][gameInfo.selected.upgrades[n]] <= gameInfo.coins:
+                            color = (100, 100, 100)
+                        else:
+                            color = (255, 100, 100)
+
+                    pygame.draw.rect(screen, color, (295, 485 + 30 * n, 300, 30))
                     leftAlignPrint(font, f'{gameInfo.selected.upgradeNames[n][gameInfo.selected.upgrades[n]]} [${gameInfo.selected.upgradePrices[n][gameInfo.selected.upgrades[n]]}]', (300, 500 + n * 30), (32, 32, 32))
 
                 pygame.draw.rect(screen, (0, 0, 0), (295, 485 + 30 * n, 300, 30), 3)
