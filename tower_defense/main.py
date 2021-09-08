@@ -1763,14 +1763,16 @@ class Enemy:
         pygame.draw.circle(screen, enemyColors[str(self.tier)], (self.x + sx, self.y + sy), 20 if self.isBoss else 10)
 
         if not self.isBoss:
+            color = None
             if self.camo and self.regen:
-                pygame.draw.circle(screen, (187, 11, 255), (self.x + sx, self.y + sy), 10, 2)
-
+                color = (187, 11, 255)
             elif self.camo:
-                pygame.draw.circle(screen, (0, 0, 0), (self.x + sx, self.y + sy), 10, 2)
-
+                color = (0, 0, 0)
             elif self.regen:
-                pygame.draw.circle(screen, (255, 105, 180), (self.x + sx, self.y + sy), 10, 2)
+                color = (255, 105, 180)
+
+            if color is not None:
+                pygame.draw.circle(screen, color, (self.x + sx, self.y + sy), 10, 2)
 
     def kill(self, *, spawnNew: bool = True, coinMultiplier: int = 1, ignoreBoss: bool = False, burn: bool = False, bossDamage: int = 1, overrideRuneColor: Tuple[int] = None, ignoreRegularEnemyHealth: bool = False, reduceFireTicks: bool = False, ceramDamage: int = 1) -> list:
         if reduceFireTicks:
@@ -2411,8 +2413,8 @@ def draw() -> None:
             else:
                 pygame.draw.circle(screen, towerType.color, (966, 51 + 80 * n + gameInfo.shopScroll), 15)
 
-            pygame.draw.line(screen, 0, (800, 80 + 80 * n + gameInfo.shopScroll), (1000, 80 + 80 * n + gameInfo.shopScroll), 3)
-            pygame.draw.line(screen, 0, (800, 80 * n + gameInfo.shopScroll), (1000, 80 * n + gameInfo.shopScroll), 3)
+            pygame.draw.line(screen, (0, 0, 0), (800, 80 + 80 * n + gameInfo.shopScroll), (1000, 80 + 80 * n + gameInfo.shopScroll), 3)
+            pygame.draw.line(screen, (0, 0, 0), (800, 80 * n + gameInfo.shopScroll), (1000, 80 * n + gameInfo.shopScroll), 3)
 
             if gameInfo.coins >= towerType.price:
                 color = (200, 200, 200)

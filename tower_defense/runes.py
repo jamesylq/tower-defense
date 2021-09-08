@@ -96,10 +96,16 @@ class RuneEffect:
 
         def draw(self, screen):
             pygame.draw.circle(screen, self.color, (self.x, self.y), self.radius * self.visibleTicks // 50)
-            if self.camo:
-                pygame.draw.circle(screen, (0, 0, 0), (self.x, self.y), self.radius * self.visibleTicks // 50, 2)
-            if self.regen:
-                pygame.draw.circle(screen, (255, 105, 180), (self.x, self.y), self.radius * self.visibleTicks // 50, 2)
+            color = None
+            if self.camo and self.regen:
+                color = (187, 11, 255)
+            elif self.camo:
+                color = (0, 0, 0)
+            elif self.regen:
+                color = (255, 105, 180)
+
+            if color is not None:
+                pygame.draw.circle(screen, color, (self.x, self.y), self.radius * self.visibleTicks // 50, 2)
 
     class LeapRuneEffect:
         def __init__(self, x: int, y: int, radius: int, color: Tuple[int], camo: bool, regen: bool):
@@ -113,10 +119,16 @@ class RuneEffect:
 
         def draw(self, screen):
             pygame.draw.circle(screen, self.color, (self.x, self.y - 600 + 12 * self.visibleTicks), self.radius)
-            if self.camo:
-                pygame.draw.circle(screen, (0, 0, 0), (self.x, self.y - 600 + 12 * self.visibleTicks), self.radius, 2)
-            if self.regen:
-                pygame.draw.circle(screen, (255, 105, 180), (self.x, self.y - 600 + 12 * self.visibleTicks), self.radius, 2)
+            color = None
+            if self.camo and self.regen:
+                color = (187, 11, 255)
+            elif self.camo:
+                color = (0, 0, 0)
+            elif self.regen:
+                color = (255, 105, 180)
+
+            if color is not None:
+                pygame.draw.circle(screen, color, (self.x, self.y - 600 + 12 * self.visibleTicks), self.radius, 2)
 
     def __init__(self, info):
         self.rune = info.equippedRune
