@@ -4506,7 +4506,10 @@ def app() -> None:
 
                             if type(gameInfo.selected) not in [Bowler, InfernoTower]:
                                 if 620 <= mx <= 770 and 515 <= my <= 540:
-                                    gameInfo.selected.targeting = targetingCycle[(targetingCycle.index(gameInfo.selected.targeting) + 1) % len(targetingCycle)]
+                                    if pygame.key.get_pressed()[pygame.K_LSHIFT]:
+                                        gameInfo.selected.targeting = targetingCycle[(targetingCycle.index(gameInfo.selected.targeting) - 1) % len(targetingCycle)]
+                                    else:
+                                        gameInfo.selected.targeting = targetingCycle[(targetingCycle.index(gameInfo.selected.targeting) + 1) % len(targetingCycle)]
 
                     elif event.button == 4:
                         if mx > 800 and my < 450:
