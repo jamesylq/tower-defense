@@ -20,11 +20,10 @@ pygame.init()
 pygame.font.init()
 clock = pygame.time.Clock()
 
-fontType = 'Ubuntu Mono'
-tinyFont = pygame.font.SysFont(fontType, 17)
-font = pygame.font.SysFont(fontType, 20)
-mediumFont = pygame.font.SysFont(fontType, 30)
-largeFont = pygame.font.SysFont(fontType, 75)
+tinyFont = pygame.font.Font(os.path.join(resource_path, 'UbuntuMono-Regular.ttf'), 17)
+font = pygame.font.Font(os.path.join(resource_path, 'UbuntuMono-Regular.ttf'), 20)
+mediumFont = pygame.font.Font(os.path.join(resource_path, 'UbuntuMono-Regular.ttf'), 30)
+largeFont = pygame.font.Font(os.path.join(resource_path, 'UbuntuMono-Regular.ttf'), 75)
 
 
 # Printing Functions
