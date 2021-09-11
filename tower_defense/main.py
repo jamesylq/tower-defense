@@ -2884,6 +2884,11 @@ def app() -> None:
                 else:
                     pygame.draw.rect(screen, (0, 0, 0), (825, 510, 150, 30), 3)
 
+                if info.newRunes > 0:
+                    pygame.draw.circle(screen, (255, 0, 0), (975, 510), 10)
+                    pygame.draw.circle(screen, (0, 0, 0), (975, 510), 10, 2)
+                    centredPrint(font, str(info.newRunes), (975, 508), (255, 255, 255))
+
                 pygame.draw.rect(screen, (200, 200, 200), (675, 550, 125, 30))
                 centredPrint(font, 'Stats', (737, 565))
                 if 675 <= mx <= 800 and 550 <= my <= 580:
@@ -2898,10 +2903,20 @@ def app() -> None:
                 else:
                     pygame.draw.rect(screen, (0, 0, 0), (825, 550, 150, 30), 3)
 
-                if info.newRunes > 0:
-                    pygame.draw.circle(screen, (255, 0, 0), (975, 510), 10)
-                    pygame.draw.circle(screen, (0, 0, 0), (975, 510), 10, 2)
-                    centredPrint(font, str(info.newRunes), (975, 508), (255, 255, 255))
+                tiersNotClaimed = 0
+                for achievement, requirement in achievementRequirements.items():
+                    stat = info.statistics[requirement['attr']]
+                    highest = 0
+                    for tier in requirement['tiers']:
+                        if stat >= tier:
+                            highest += 1
+
+                    tiersNotClaimed += highest - info.claimedAchievementRewards[achievement]
+
+                if tiersNotClaimed > 0:
+                    pygame.draw.circle(screen, (255, 0, 0), (975, 550), 10)
+                    pygame.draw.circle(screen, (0, 0, 0), (975, 550), 10, 2)
+                    centredPrint(font, str(tiersNotClaimed), (975, 548), (255, 255, 255))
 
                 pressed = pygame.key.get_pressed()
                 if pressed[pygame.K_UP]:

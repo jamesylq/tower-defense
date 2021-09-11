@@ -10,6 +10,8 @@ from tower_defense.constants import *
 curr_path = os.path.dirname(__file__)
 resource_path = os.path.join(curr_path, 'resources')
 
+explosionImages = [pygame.image.load(os.path.join(resource_path, f'explosion-{p}.png')) for p in range(3)]
+
 
 class Rune:
     def __init__(self, name: str, dropChance: float, lore: str, shopPrice: int = 0, imageName: str = 'rune.png'):
@@ -130,6 +132,16 @@ class RuneEffect:
             if color is not None:
                 pygame.draw.circle(screen, color, (self.x, self.y - 600 + 12 * self.visibleTicks), self.radius, 2)
 
+    class ExplosionRuneEffect:
+        def __init__(self, x: int, y: int):
+            self.x = x
+            self.y = y
+            self.visibleTicks = 15
+
+        def draw(self, screen):
+            frame = explosionImages[(15 - self.visibleTicks) // 5]
+            screen.blit(frame, frame.get_rect(center=[self.x, self.y]))
+
     def __init__(self, info):
         self.rune = info.equippedRune
         self.effects = []
@@ -156,6 +168,9 @@ class RuneEffect:
         elif self.rune == 'Leap Rune':
             self.effects.append(self.LeapRuneEffect(target.x, target.y, 20 if target.isBoss else 10, enemyColors[str(target.tier)] if color is None else color, target.camo, target.regen))
 
+        elif self.rune == 'Explosion Rune':
+            self.effects.append(self.ExplosionRuneEffect(target.x, target.y))
+
     def draw(self, screen):
         for effect in self.effects:
             effect.draw(screen)
@@ -175,6 +190,7 @@ Runes = [
     Rune('Gold Rune', 8, 'The rune of the wealthy - Classy!', 100, 'gold_rune.png'),
     Rune('Leap Rune', 8, 'Jump!', 150, 'leap_rune.png'),
     Rune('Lightning Rune', 5, 'Legends say it was created by Zeus himself.', 150, 'lightning_rune.png'),
+    Rune('Explosion Rune', 5, 'BOOM!', 150, 'explosion_rune.png'),
     Rune('Shrink Rune', 3, 'This magical rune compresses its foes!', 175, 'shrink_rune.png'),
     Rune('Rainbow Rune', 2, 'A rainbow tail forms behind your cursor!', 200, 'rainbow_rune.png')
 ]
