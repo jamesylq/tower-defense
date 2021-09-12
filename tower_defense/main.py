@@ -2412,8 +2412,8 @@ def draw() -> None:
             else:
                 pygame.draw.circle(screen, towerType.color, (966, 51 + 80 * n + gameInfo.shopScroll), 15)
 
-            pygame.draw.line(screen, (0, 0, 0), (800, 80 + 80 * n + gameInfo.shopScroll), (1000, 80 + 80 * n + gameInfo.shopScroll), 3)
             pygame.draw.line(screen, (0, 0, 0), (800, 80 * n + gameInfo.shopScroll), (1000, 80 * n + gameInfo.shopScroll), 3)
+            pygame.draw.line(screen, (0, 0, 0), (800, 80 + 80 * n + gameInfo.shopScroll), (1000, 80 + 80 * n + gameInfo.shopScroll), 3)
 
             if gameInfo.coins >= towerType.price:
                 color = (200, 200, 200)
@@ -2792,7 +2792,413 @@ def app() -> None:
     while True:
         global mouseTrail
 
-        if info.status == 'mapSelect':
+        if info.status == 'tutorial':
+            if info.tutorialPhase == 0:
+                while True:
+                    screen.fill((200, 200, 200))
+                    centredPrint(mediumFont, f'Hi! Welcome to Tower Defense Version {__version__}!', (500, 150))
+
+                    rightAlignPrint(tinyFont, 'Press [ESC] to skip tutorial!', (990, 20))
+                    centredPrint(font, 'Press [SPACE] to continue!', (500, 400))
+
+                    cont = True
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            save()
+                            quit()
+
+                        elif event.type == pygame.KEYDOWN:
+                            if event.key == pygame.K_ESCAPE:
+                                info.status = 'mapSelect'
+                                cont = False
+
+                            elif event.key == pygame.K_SPACE:
+                                info.tutorialPhase = 1
+                                cont = False
+
+                                gameInfo.reset()
+
+                    if not cont:
+                        break
+
+                    pygame.display.update()
+
+            elif info.tutorialPhase == 1:
+                while True:
+                    mx, my = pygame.mouse.get_pos()
+
+                    if len(gameInfo.enemies) == 0:
+                        Enemy('0', 0)
+
+                    gameInfo.Map = Maps[5]
+
+                    screen.fill(gameInfo.Map.backgroundColor)
+                    for i in range(len(gameInfo.Map.path)):
+                        for j in range(len(gameInfo.Map.path[i]) - 1):
+                            lineWidth = 14 if gameInfo.Map.path[i][j][0] != gameInfo.Map.path[i][j + 1][0] and gameInfo.Map.path[i][j][1] != gameInfo.Map.path[i][j + 1][1] else 10
+                            pygame.draw.line(screen, gameInfo.Map.pathColor, gameInfo.Map.path[i][j], gameInfo.Map.path[i][j + 1], lineWidth)
+                            pygame.draw.circle(screen, gameInfo.Map.pathColor, gameInfo.Map.path[i][j + 1], lineWidth // 2)
+                        pygame.draw.circle(screen, gameInfo.Map.pathColor, gameInfo.Map.path[i][0], 10)
+                        pygame.draw.circle(screen, gameInfo.Map.pathColor, gameInfo.Map.path[i][-1], 10)
+
+                    if gameInfo.enemies[0].totalMovement > 500:
+                        centredPrint(font, 'Oh no! An enemy is approaching! You should place down a turret.', (500, 500))
+
+                        pygame.draw.rect(screen, (221, 221, 221), (800, 0, 200, 80))
+                        pygame.draw.rect(screen, (187, 187, 187), (945, 30, 42, 42))
+
+                        leftAlignPrint(font, f'{Turret.name} (FREE)', (810, 20))
+
+                        if towerImages[Turret.name] is not None:
+                            try:
+                                screen.blit(towerImages[Turret.name], (951, 36))
+                            except TypeError:
+                                screen.blit(towerImages[Turret.name][0], (951, 36))
+                        else:
+                            pygame.draw.circle(screen, Turret.color, (966, 51), 15)
+
+                        pygame.draw.rect(screen, (200, 200, 200), (810, 40, 100, 30))
+
+                        centredPrint(font, 'Buy New', (860, 55))
+                        if 810 <= mx <= 910 and 40 <= my <= 70:
+                            pygame.draw.rect(screen, (128, 128, 128), (810, 40, 100, 30), 5)
+                        else:
+                            pygame.draw.rect(screen, (0, 0, 0), (810, 40, 100, 30), 3)
+
+                    else:
+                        for enemy in gameInfo.enemies:
+                            enemy.move(speed[enemy.tier])
+
+                    for enemy in gameInfo.enemies:
+                        enemy.draw()
+
+                    cont = True
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            save()
+                            quit()
+
+                        elif event.type == pygame.KEYDOWN:
+                            if event.key == pygame.K_ESCAPE:
+                                info.status = 'mapSelect'
+                                cont = False
+
+                        elif event.type == pygame.MOUSEBUTTONDOWN:
+                            if event.button == 1:
+                                if 810 <= mx <= 910 and 40 <= my <= 70:
+                                    info.tutorialPhase = 2
+                                    cont = False
+
+                    if not cont:
+                        break
+
+                    pygame.display.update()
+                    clock.tick(MaxFPS)
+
+            elif info.tutorialPhase == 2:
+                while True:
+                    mx, my = pygame.mouse.get_pos()
+
+                    if len(gameInfo.enemies) == 0:
+                        Enemy('0', 0)
+
+                    gameInfo.Map = Maps[5]
+
+                    screen.fill(gameInfo.Map.backgroundColor)
+                    for i in range(len(gameInfo.Map.path)):
+                        for j in range(len(gameInfo.Map.path[i]) - 1):
+                            lineWidth = 14 if gameInfo.Map.path[i][j][0] != gameInfo.Map.path[i][j + 1][0] and gameInfo.Map.path[i][j][1] != gameInfo.Map.path[i][j + 1][1] else 10
+                            pygame.draw.line(screen, gameInfo.Map.pathColor, gameInfo.Map.path[i][j], gameInfo.Map.path[i][j + 1], lineWidth)
+                            pygame.draw.circle(screen, gameInfo.Map.pathColor, gameInfo.Map.path[i][j + 1], lineWidth // 2)
+                        pygame.draw.circle(screen, gameInfo.Map.pathColor, gameInfo.Map.path[i][0], 10)
+                        pygame.draw.circle(screen, gameInfo.Map.pathColor, gameInfo.Map.path[i][-1], 10)
+
+                    centredPrint(font, 'Place the Turret near the enemy!', (500, 400))
+
+                    pygame.draw.rect(screen, (221, 221, 221), (800, 0, 200, 80))
+                    pygame.draw.rect(screen, (187, 187, 187), (945, 30, 42, 42))
+
+                    leftAlignPrint(font, f'{Turret.name} (FREE)', (810, 20))
+
+                    if towerImages[Turret.name] is not None:
+                        try:
+                            screen.blit(towerImages[Turret.name], (951, 36))
+                        except TypeError:
+                            screen.blit(towerImages[Turret.name][0], (951, 36))
+                    else:
+                        pygame.draw.circle(screen, Turret.color, (966, 51), 15)
+
+                    pygame.draw.rect(screen, (200, 200, 200), (810, 40, 100, 30))
+
+                    centredPrint(font, 'Buy New', (860, 55))
+                    pygame.draw.rect(screen, (0, 0, 0), (810, 40, 100, 30), 3)
+
+                    for enemy in gameInfo.enemies:
+                        enemy.draw()
+                        centredBlit(rangeImages[possibleRanges.index(30)], (enemy.x, enemy.y))
+
+                    cont = True
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            save()
+                            quit()
+
+                        elif event.type == pygame.KEYDOWN:
+                            if event.key == pygame.K_ESCAPE:
+                                info.status = 'mapSelect'
+                                cont = False
+
+                        elif event.type == pygame.MOUSEBUTTONDOWN:
+                            if event.button == 1:
+                                print(abs(gameInfo.enemies[0].x - mx) ** 2 + abs(gameInfo.enemies[0].y - my) ** 2)
+                                if abs(gameInfo.enemies[0].x - mx) ** 2 + abs(gameInfo.enemies[0].y - my) ** 2 <= 900:
+                                    Turret(mx, my)
+                                    info.tutorialPhase = 3
+                                    cont = False
+
+                    if not cont:
+                        break
+
+                    pygame.display.update()
+
+            elif info.tutorialPhase == 3:
+                while True:
+                    gameInfo.Map = Maps[5]
+
+                    screen.fill(gameInfo.Map.backgroundColor)
+                    for i in range(len(gameInfo.Map.path)):
+                        for j in range(len(gameInfo.Map.path[i]) - 1):
+                            lineWidth = 14 if gameInfo.Map.path[i][j][0] != gameInfo.Map.path[i][j + 1][0] and gameInfo.Map.path[i][j][1] != gameInfo.Map.path[i][j + 1][1] else 10
+                            pygame.draw.line(screen, gameInfo.Map.pathColor, gameInfo.Map.path[i][j], gameInfo.Map.path[i][j + 1], lineWidth)
+                            pygame.draw.circle(screen, gameInfo.Map.pathColor, gameInfo.Map.path[i][j + 1], lineWidth // 2)
+                        pygame.draw.circle(screen, gameInfo.Map.pathColor, gameInfo.Map.path[i][0], 10)
+                        pygame.draw.circle(screen, gameInfo.Map.pathColor, gameInfo.Map.path[i][-1], 10)
+
+                    cont = True
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            save()
+                            quit()
+
+                        elif event.type == pygame.KEYDOWN:
+                            if event.key == pygame.K_ESCAPE:
+                                info.status = 'mapSelect'
+                                cont = False
+
+                    if not cont:
+                        break
+
+                    if len(gameInfo.enemies) == 0:
+                        info.tutorialPhase = 4
+                        break
+
+                    move()
+
+                    for obj in gameInfo.projectiles + gameInfo.towers + gameInfo.enemies:
+                        obj.draw()
+
+                    pygame.display.update()
+                    clock.tick(MaxFPS)
+
+            elif info.tutorialPhase == 4:
+                n = 0
+                while True:
+                    mx, my = pygame.mouse.get_pos()
+
+                    if len(gameInfo.enemies) == 0:
+                        Enemy('0', 0, regen=True)
+
+                    gameInfo.Map = Maps[5]
+
+                    screen.fill(gameInfo.Map.backgroundColor)
+                    for i in range(len(gameInfo.Map.path)):
+                        for j in range(len(gameInfo.Map.path[i]) - 1):
+                            lineWidth = 14 if gameInfo.Map.path[i][j][0] != gameInfo.Map.path[i][j + 1][0] and gameInfo.Map.path[i][j][1] != gameInfo.Map.path[i][j + 1][1] else 10
+                            pygame.draw.line(screen, gameInfo.Map.pathColor, gameInfo.Map.path[i][j], gameInfo.Map.path[i][j + 1], lineWidth)
+                            pygame.draw.circle(screen, gameInfo.Map.pathColor, gameInfo.Map.path[i][j + 1], lineWidth // 2)
+                        pygame.draw.circle(screen, gameInfo.Map.pathColor, gameInfo.Map.path[i][0], 10)
+                        pygame.draw.circle(screen, gameInfo.Map.pathColor, gameInfo.Map.path[i][-1], 10)
+
+                    cont = True
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            save()
+                            quit()
+
+                        elif event.type == pygame.KEYDOWN:
+                            if event.key == pygame.K_ESCAPE:
+                                info.status = 'mapSelect'
+                                cont = False
+
+                        elif event.type == pygame.MOUSEBUTTONDOWN:
+                            if event.button == 1:
+                                if 295 <= mx <= 595 and 515 < my <= 545:
+                                    gameInfo.towers[0].upgrades[1] = min(gameInfo.towers[0].upgrades[1] + 1, 3)
+
+                    if not cont:
+                        break
+
+                    if gameInfo.enemies[0].totalMovement > 250 and gameInfo.towers[0].upgrades[1] < 3:
+                        centredPrint(font, 'Is that a regen balloon? Look, it\'s regenerating its layers!', (500, 375))
+                        centredPrint(font, 'Quick, upgrade your turret!', (500, 400))
+
+                        for n in range(3):
+                            if gameInfo.towers[0].upgrades[n] == 3:
+                                pygame.draw.rect(screen, (255, 255, 191), (295, 485 + 30 * n, 300, 30))
+                                centredPrint(font, 'MAX', (445, 500 + 30 * n))
+                            else:
+                                if 295 <= mx <= 595 and 485 + 30 * n < my <= 515 + 30 * n:
+                                    if n == 1:
+                                        color = (200, 200, 200)
+                                    else:
+                                        color = (255, 180, 180)
+
+                                else:
+                                    if n == 1:
+                                        color = (100, 100, 100)
+                                    else:
+                                        color = (255, 100, 100)
+
+                                pygame.draw.rect(screen, color, (295, 485 + 30 * n, 300, 30))
+                                if n == 1:
+                                    leftAlignPrint(font, f'{gameInfo.towers[0].upgradeNames[1][gameInfo.towers[0].upgrades[1]]} [FREE]', (300, 500 + n * 30), (32, 32, 32))
+                                else:
+                                    leftAlignPrint(font, f'{gameInfo.towers[0].upgradeNames[n][gameInfo.towers[0].upgrades[n]]} [${gameInfo.towers[0].upgradePrices[n][gameInfo.towers[0].upgrades[n]]}]', (300, 500 + n * 30), (32, 32, 32))
+
+                            pygame.draw.rect(screen, (0, 0, 0), (295, 485 + 30 * n, 300, 30), 3)
+
+                            for m in range(3):
+                                if gameInfo.towers[0].upgrades[n] > m:
+                                    pygame.draw.circle(screen, (0, 255, 0), (560 + 12 * m, 497 + 30 * n), 5)
+                                pygame.draw.circle(screen, (0, 0, 0), (560 + 12 * m, 497 + 30 * n), 5, 2)
+
+                    else:
+                        move()
+
+                        if n == 0:
+                            for enemy in gameInfo.enemies:
+                                enemy.updateRegen()
+                            n = 1
+                        else:
+                            n = 0
+
+                    if len(gameInfo.enemies) == 0:
+                        info.tutorialPhase = 5
+                        break
+
+                    for obj in gameInfo.projectiles + gameInfo.towers + gameInfo.enemies:
+                        obj.draw()
+
+                    pygame.display.update()
+                    clock.tick(MaxFPS)
+
+            elif info.tutorialPhase == 5:
+                while True:
+                    mx, my = pygame.mouse.get_pos()
+
+                    if len(gameInfo.enemies) == 0:
+                        Enemy('0', 0, camo=True)
+
+                    gameInfo.Map = Maps[5]
+
+                    screen.fill(gameInfo.Map.backgroundColor)
+                    for i in range(len(gameInfo.Map.path)):
+                        for j in range(len(gameInfo.Map.path[i]) - 1):
+                            lineWidth = 14 if gameInfo.Map.path[i][j][0] != gameInfo.Map.path[i][j + 1][0] and gameInfo.Map.path[i][j][1] != gameInfo.Map.path[i][j + 1][1] else 10
+                            pygame.draw.line(screen, gameInfo.Map.pathColor, gameInfo.Map.path[i][j], gameInfo.Map.path[i][j + 1], lineWidth)
+                            pygame.draw.circle(screen, gameInfo.Map.pathColor, gameInfo.Map.path[i][j + 1], lineWidth // 2)
+                        pygame.draw.circle(screen, gameInfo.Map.pathColor, gameInfo.Map.path[i][0], 10)
+                        pygame.draw.circle(screen, gameInfo.Map.pathColor, gameInfo.Map.path[i][-1], 10)
+
+                    cont = True
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            save()
+                            quit()
+
+                        elif event.type == pygame.KEYDOWN:
+                            if event.key == pygame.K_ESCAPE:
+                                info.status = 'mapSelect'
+                                cont = False
+
+                        elif event.type == pygame.MOUSEBUTTONDOWN:
+                            if event.button == 1:
+                                if 295 <= mx <= 595 and 545 < my <= 575:
+                                    gameInfo.towers[0].upgrades[2] = min(gameInfo.towers[0].upgrades[2] + 1, 3)
+
+                    if not cont:
+                        break
+
+                    if gameInfo.enemies[0].totalMovement > 250 and gameInfo.towers[0].upgrades[2] < 3:
+                        centredPrint(font, 'Oh no... Now a Camo balloon? Upgrade your turret again...', (500, 375))
+
+                        for n in range(3):
+                            if gameInfo.towers[0].upgrades[n] == 3:
+                                pygame.draw.rect(screen, (255, 255, 191), (295, 485 + 30 * n, 300, 30))
+                                centredPrint(font, 'MAX', (445, 500 + 30 * n))
+                            else:
+                                if 295 <= mx <= 595 and 485 + 30 * n < my <= 515 + 30 * n:
+                                    if n == 2:
+                                        color = (200, 200, 200)
+                                    else:
+                                        color = (255, 180, 180)
+
+                                else:
+                                    if n == 2:
+                                        color = (100, 100, 100)
+                                    else:
+                                        color = (255, 100, 100)
+
+                                pygame.draw.rect(screen, color, (295, 485 + 30 * n, 300, 30))
+                                if n == 2:
+                                    leftAlignPrint(font, f'{gameInfo.towers[0].upgradeNames[2][gameInfo.towers[0].upgrades[2]]} [FREE]', (300, 500 + n * 30), (32, 32, 32))
+                                else:
+                                    leftAlignPrint(font, f'{gameInfo.towers[0].upgradeNames[n][gameInfo.towers[0].upgrades[n]]} [${gameInfo.towers[0].upgradePrices[n][gameInfo.towers[0].upgrades[n]]}]', (300, 500 + n * 30), (32, 32, 32))
+
+                            pygame.draw.rect(screen, (0, 0, 0), (295, 485 + 30 * n, 300, 30), 3)
+
+                            for m in range(3):
+                                if gameInfo.towers[0].upgrades[n] > m:
+                                    pygame.draw.circle(screen, (0, 255, 0), (560 + 12 * m, 497 + 30 * n), 5)
+                                pygame.draw.circle(screen, (0, 0, 0), (560 + 12 * m, 497 + 30 * n), 5, 2)
+
+                    else:
+                        move()
+
+                    if len(gameInfo.enemies) == 0:
+                        info.tutorialPhase = 6
+                        break
+
+                    for obj in gameInfo.projectiles + gameInfo.towers + gameInfo.enemies:
+                        obj.draw()
+
+                    pygame.display.update()
+                    clock.tick(MaxFPS)
+
+            elif info.tutorialPhase == 6:
+                while True:
+                    screen.fill((200, 200, 200))
+
+                    centredPrint(mediumFont, 'Find out more as you continue playing the game!', (500, 150))
+                    centredPrint(font, 'Press [SPACE] to continue!', (500, 400))
+
+                    cont = True
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            save()
+                            quit()
+
+                        elif event.type == pygame.KEYDOWN:
+                            if event.key in [pygame.K_ESCAPE, pygame.K_SPACE]:
+                                info.status = 'mapSelect'
+                                cont = False
+
+                    if not cont:
+                        break
+
+                    pygame.display.update()
+
+        elif info.status == 'mapSelect':
             scroll = 0
 
             while True:
@@ -4575,7 +4981,7 @@ powerUps = {
 IceCircle = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'ice_circle.png')), (250, 250)).copy()
 IceCircle.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
 
-possibleRanges = [0, 50, 100, 125, 130, 150, 160, 165, 175, 180, 200, 250, 400]
+possibleRanges = [0, 30, 50, 100, 125, 130, 150, 160, 165, 175, 180, 200, 250, 400]
 rangeImages = []
 explosionImages = []
 for possibleRange in possibleRanges:

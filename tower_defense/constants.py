@@ -318,7 +318,7 @@ rainbowColors = [[255, 0, 0], [0, 127, 0], [255, 255, 0], [0, 255, 0], [0, 0, 25
 rainbowShift = [[-0.255, 0.127, 0], [0.255, 0.127, 0], [-0.255, 0, 0], [0, -0.255, 0.255], [0.046, 0.043, -0.16], [0.093, -0.043, 0.16], [0.116, 0, -0.255]]
 
 gameAttrs = ['enemies', 'projectiles', 'piercingProjectiles', 'towers', 'HP', 'coins', 'selected', 'placing', 'nextWave', 'wave', 'shopScroll', 'spawnleft', 'spawndelay', 'ticksSinceNoEnemies', 'ticks', 'towersPlaced', 'replayRefresh', 'Map', 'doubleReloadTicks', 'FinalHP', 'spawnPath']
-playerAttrs = ['mapMakerData', 'statistics', 'achievements', 'mapsBeat', 'runes',  'equippedRune', 'newRunes', 'powerUps', 'powerUpData', 'tokens', 'lastOpenShop', 'shopData', 'gameReplayData', 'sandboxMode', 'status', 'PBs', 'claimedAchievementRewards', 'cosmeticPage', 'skins', 'skinsEquipped']
+playerAttrs = ['mapMakerData', 'statistics', 'achievements', 'mapsBeat', 'runes',  'equippedRune', 'newRunes', 'powerUps', 'powerUpData', 'tokens', 'lastOpenShop', 'shopData', 'gameReplayData', 'sandboxMode', 'status', 'PBs', 'claimedAchievementRewards', 'cosmeticPage', 'skins', 'skinsEquipped', 'tutorialPhase']
 defaults = {
     'enemies': [],
     'projectiles': [],
@@ -335,7 +335,7 @@ defaults = {
     'spawnleft': '',
     'spawndelay': 9,
     'Map': None,
-    'status': 'mapSelect',
+    'status': 'tutorial',
     'PBs': {m.name: (None if Maps.index(m) == 0 else LOCKED) for m in Maps},
     'mapMakerData': {
         'name': '',
@@ -397,5 +397,6 @@ defaults = {
     'spawnPath': 0,
     'cosmeticPage': 'runes',
     'skins': [],
-    'skinsEquipped': [None]
+    'skinsEquipped': [None],
+    'tutorialPhase': 0
 }
