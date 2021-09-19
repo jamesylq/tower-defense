@@ -397,6 +397,6 @@ defaults = {
     'spawnPath': 0,
     'cosmeticPage': 'runes',
     'skins': [],
-    'skinsEquipped': [None],
+    'skinsEquipped': [None, None],
     'tutorialPhase': 0
 }

@@ -40,11 +40,15 @@ def update(info, gameInfo, PowerUps):
         if not hasattr(tower, 'targeting'):
             setattr(tower, 'targeting', targetingCycle[0])
 
-    if info.powerUpData is not None:        # Update Powerups
-        PowerUps = info.powerUpData
+    if len(info.skinsEquipped) < 2:          # Update pre-3.4
+        while len(info.skinsEquipped) < 2:
+            info.skinsEquipped.append(None)
 
     if 'One Line Challenge' not in info.PBs.keys() and 'The End' in info.PBs.keys():        # Update pre-2.10
         info.PBs['One Line Challenge'] = info.PBs['The End']
+
+    if info.powerUpData is not None:        # Update Powerups
+        PowerUps = info.powerUpData
 
     info.PBs = updateDict(info.PBs, [Map.name for Map in Maps])     # Update PBs
 

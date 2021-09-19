@@ -2,6 +2,7 @@
 import os
 import glob
 import math
+import pytz
 import time
 import pickle
 import pygame
@@ -87,7 +88,12 @@ class data:
 
 class gameData:
     def __init__(self):
-        self.reset()
+        for attr in gameAttrs:
+            default = defaults[attr]
+            if type(default) in [dict, list]:
+                setattr(self, attr, default.copy())
+            else:
+                setattr(self, attr, default)
 
     def reset(self):
         for attr in gameAttrs:
@@ -95,7 +101,6 @@ class gameData:
                 continue
 
             default = defaults[attr]
-
             if type(default) in [dict, list]:
                 setattr(self, attr, default.copy())
             else:
@@ -1351,7 +1356,7 @@ class Elemental(Towers):
             self.stun -= 1
             return
 
-        if self.timer >= getActualCooldown(self.x, self.y, 3):
+        if self.timer >= getActualCooldown(self.x, self.y, 2):
             closest = getTarget(self, targeting=self.targeting)
             try:
                 Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=50, bossDamage=25, fireTicks=300)
@@ -1548,7 +1553,7 @@ class Enemy:
             for n in range(speed):
                 if len(gameInfo.Map.path[self.mapPath]) - 1 == self.lineIndex:
                     if not self.reachedEnd:
-                        self.kill(spawnNew=False, ignoreBoss=True, ignoreRegularEnemyHealth=True)
+                        self.kill(coinMultiplier=0, spawnNew=False, ignoreBoss=True, ignoreRegularEnemyHealth=True)
                         info.statistics['enemiesMissed'] += 1
                         gameInfo.HP -= damages[str(self.tier)]
                         self.reachedEnd = True
@@ -1623,7 +1628,7 @@ class Enemy:
                     if foundMove:
                         self.totalMovement += 1
                     else:
-                        self.kill(spawnNew=False, ignoreBoss=True, ignoreRegularEnemyHealth=True)
+                        self.kill(coinMultiplier=0, spawnNew=False, ignoreBoss=True, ignoreRegularEnemyHealth=True)
                         info.statistics['enemiesMissed'] += 1
 
                 self.update()
@@ -1634,6 +1639,10 @@ class Enemy:
                 pass
 
     def update(self):
+        if self.reachedEnd:
+            self.kill(coinMultiplier=0, spawnNew=False, ignoreBoss=True, ignoreRegularEnemyHealth=True)
+            info.statistics['enemiesMissed'] += 1
+
         if self.fireTicks > 0:
             if self.fireTicks % 100 == 0:
                 new = self.kill(burn=True, reduceFireTicks=True)
@@ -2698,7 +2707,7 @@ def save() -> None:
 
 
 def load() -> None:
-    global info, gameInfo, PowerUps
+    global info, gameInfo, PowerUps, towerImages
 
     try:
         info = pickle.load(open('save.txt', 'rb'))
@@ -2719,6 +2728,9 @@ def load() -> None:
         gameInfo.update()
 
         info, gameInfo, PowerUps = update(info, gameInfo, PowerUps)
+        skinLoaded = loadSkin(info.skinsEquipped[1], Towers.__subclasses__())
+        if skinLoaded is not None:
+            towerImages = skinLoaded
 
     except FileNotFoundError:
         open('save.txt', 'w')
@@ -2790,7 +2802,7 @@ def app() -> None:
                 break
 
     while True:
-        global mouseTrail
+        global mouseTrail, towerImages
 
         if info.status == 'tutorial':
             if info.tutorialPhase == 0:
@@ -2823,14 +2835,14 @@ def app() -> None:
 
                     pygame.display.update()
 
+                    gameInfo.Map = Maps[5]
+
             elif info.tutorialPhase == 1:
                 while True:
                     mx, my = pygame.mouse.get_pos()
 
                     if len(gameInfo.enemies) == 0:
                         Enemy('0', 0)
-
-                    gameInfo.Map = Maps[5]
 
                     screen.fill(gameInfo.Map.backgroundColor)
                     for i in range(len(gameInfo.Map.path)):
@@ -3190,6 +3202,7 @@ def app() -> None:
 
                         elif event.type == pygame.KEYDOWN:
                             if event.key in [pygame.K_ESCAPE, pygame.K_SPACE]:
+                                gameInfo.reset()
                                 info.status = 'mapSelect'
                                 cont = False
 
@@ -3349,6 +3362,9 @@ def app() -> None:
                                         gameInfo.HP = math.inf if info.sandboxMode else defaults['HP']
                                         info.gameReplayData.clear()
                                         skinsEquipped = [getSkin(s) for s in info.skinsEquipped]
+                                        skinLoaded = loadSkin(info.skinsEquipped[1], Towers.__subclasses__())
+                                        if skinLoaded is not None:
+                                            towerImages = skinLoaded
 
                                         try:
                                             PowerUps.objects.clear()
@@ -3370,6 +3386,9 @@ def app() -> None:
                                 gameInfo.HP = math.inf if info.sandboxMode else defaults['HP']
                                 info.gameReplayData.clear()
                                 skinsEquipped = [getSkin(s) for s in info.skinsEquipped]
+                                skinLoaded = loadSkin(info.skinsEquipped[1], Towers.__subclasses__())
+                                if skinLoaded is not None:
+                                    towerImages = skinLoaded
 
                                 try:
                                     PowerUps.objects.clear()
@@ -3404,10 +3423,11 @@ def app() -> None:
                                         print(f'Error loading Replay File \"{path}\"! See details: {e}')
 
                             if 675 <= mx <= 800 and 510 <= my <= 540:
+                                now = datetime.datetime.now(tz=pytz.timezone('Singapore'))
                                 info.status = 'shop'
-                                if (time.time() - 28800) // 86400 > (info.lastOpenShop - 28800) // 86400:
+                                if [now.year, now.month, now.day] != info.lastOpenShop:
                                     refreshShop()
-                                    info.lastOpenShop = time.time()
+                                    info.lastOpenShop = [now.year, now.month, now.day]
                                 cont = False
 
                             if 825 <= mx <= 975 and 510 <= my <= 540:
@@ -4103,10 +4123,13 @@ def app() -> None:
                     else:
                         centredBlit(tokenImage, (x + 20, y + 20))
                         price = info.shopData[n]['price']
-                        if info.tokens >= price:
-                            leftAlignPrint(font, str(price), (x + 38, y + 20))
+                        if price == 0:
+                            leftAlignPrint(font, 'FREE', (x + 38, y + 20), (225, 225, 0))
                         else:
-                            leftAlignPrint(font, str(price), (x + 38, y + 20), (255, 0, 0))
+                            if info.tokens >= price:
+                                leftAlignPrint(font, str(price), (x + 38, y + 20))
+                            else:
+                                leftAlignPrint(font, str(price), (x + 38, y + 20), (255, 0, 0))
 
                 centredBlit(tokenImage, (830, 30))
                 pygame.draw.rect(screen, (128, 128, 128), (850, 15, 100, 30))
@@ -4318,10 +4341,13 @@ def app() -> None:
                     else:
                         pygame.draw.rect(screen, (0, 0, 0), (820, 550, 150, 30), 3)
 
-                    centredPrint(tinyFont, 'Boss Skins', (500, 80))
+                    centredPrint(tinyFont, 'Enemy Skins', (500, 80))
                     pygame.draw.rect(screen, (160, 160, 160), (50, 100, 900, 100))
 
-                    n = 0
+                    centredPrint(tinyFont, 'Tower Skins', (500, 225))
+                    pygame.draw.rect(screen, (160, 160, 160), (50, 245, 900, 100))
+
+                    deltaX = [-1, -1]
                     for skin in info.skins:
                         skinObj = getSkin(skin)
                         if skinObj is None:
@@ -4329,14 +4355,20 @@ def app() -> None:
                             info.skins.remove(skin)
                             continue
 
+                        if skinObj.skinType == 'Enemy':
+                            i = 0
+                            y = 105
+                        else:
+                            i = 1
+                            y = 250
 
-                        pygame.draw.rect(screen, (64, 64, 64), (55 + 100 * n, 105, 90, 90))
+                        deltaX[i] += 1
+
+                        pygame.draw.rect(screen, (64, 64, 64), (55 + 100 * deltaX[i], y, 90, 90))
                         if skin in info.skinsEquipped:
-                            pygame.draw.rect(screen, (100, 100, 100), (55 + 100 * n, 105, 90, 90), 3)
+                            pygame.draw.rect(screen, (100, 100, 100), (55 + 100 * deltaX[i], y, 90, 90), 3)
 
-                        centredBlit(skinObj.smallImageTexture, (100 + 100 * n, 150))
-
-                        n += 1
+                        centredBlit(skinObj.smallImageTexture, (100 + 100 * deltaX[i], y + 45))
 
                     cont = True
                     for event in pygame.event.get():
@@ -4356,12 +4388,23 @@ def app() -> None:
 
                                 if 105 <= my <= 195:
                                     index = None
-                                    for n in range(len(info.skins)):
+                                    enemySkins = [s for s in info.skins if getSkin(s).skinType == 'Enemy']
+                                    for n in range(len(enemySkins)):
                                         if 55 + 100 * n <= mx <= 145 + 100 * n:
                                             index = n
 
                                     if index is not None:
-                                        info.skinsEquipped[0] = info.skins[index]
+                                        info.skinsEquipped[0] = enemySkins[index]
+
+                                if 245 <= my <= 335:
+                                    index = None
+                                    towerSkins = [s for s in info.skins if getSkin(s).skinType == 'Tower']
+                                    for n in range(len(towerSkins)):
+                                        if 55 + 100 * n <= mx <= 145 + 100 * n:
+                                            index = n
+
+                                    if index is not None:
+                                        info.skinsEquipped[1] = towerSkins[index]
 
                     if not cont:
                         break
@@ -5027,10 +5070,10 @@ tokenImage = pygame.image.load(os.path.join(resource_path, 'token.png'))
 smallTokenImage = pygame.transform.scale(tokenImage, (15, 15))
 
 info = data()
-skinsEquipped = [None]
 gameInfo = gameData()
 PowerUps = PhysicalPowerUp()
 RuneEffects = RuneEffect(info)
+skinsEquipped = [None, None]
 
 mouseTrail = []
 rainbowShiftCount = random.randint(0, 999)
