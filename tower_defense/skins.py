@@ -121,5 +121,19 @@ skins = [
         ('Tower', 'Village'): 'christmas_village.png',
         ('Tower', 'Sniper'): ['christmas_sniper.png', 'christmas_sniper_45.png'],
         ('Tower', 'Elemental'): 'christmas_elemental.png'
-    }, 0, 'Tower', iconSize=(75, 75))
+    }, 0, 'Tower', iconSize=(75, 75)),
+
+    Skin('Golden Towers Skin', 'golden_skin_icon.png', {
+        ('Tower', 'Turret'): ['golden_turret.png', 'golden_turret_45.png'],
+        ('Tower', 'Ice Tower'): 'golden_ice_tower.png',
+        ('Tower', 'Spike Tower'): 'golden_spike_tower.png',
+        ('Tower', 'Bomb Tower'): 'golden_bomb_tower.png',
+        ('Tower', 'Banana Farm'): 'golden_banana_farm.png',
+        ('Tower', 'Bowler'): 'golden_bowler.png',
+        ('Tower', 'Wizard'): 'golden_wizard.png',
+        ('Tower', 'Inferno'): ['golden_inferno.png', 'golden_inactive_inferno.png'],
+        ('Tower', 'Village'): 'golden_village.png',
+        ('Tower', 'Sniper'): ['golden_sniper.png', 'golden_sniper_45.png'],
+        ('Tower', 'Elemental'): 'golden_elemental.png'
+    }, 1499, 'Tower', iconSize=(75, 75))
 ]

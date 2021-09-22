@@ -36,25 +36,25 @@ def update(info, gameInfo, PowerUps):
         if not hasattr(tower, 'ID'):
             setattr(tower, 'ID', gameInfo.towers.index(tower))
 
-    for tower in gameInfo.towers:
+    for tower in gameInfo.towers:       # Update pre-2.8
         if not hasattr(tower, 'targeting'):
             setattr(tower, 'targeting', targetingCycle[0])
+
+    if 'One Line Challenge' not in info.PBs.keys() and 'The End' in info.PBs.keys():        # Update pre-2.10
+        info.PBs['One Line Challenge'] = info.PBs['The End']
 
     if len(info.skinsEquipped) < 2:          # Update pre-3.4
         while len(info.skinsEquipped) < 2:
             info.skinsEquipped.append(None)
-
-    if 'One Line Challenge' not in info.PBs.keys() and 'The End' in info.PBs.keys():        # Update pre-2.10
-        info.PBs['One Line Challenge'] = info.PBs['The End']
 
     if info.powerUpData is not None:        # Update Powerups
         PowerUps = info.powerUpData
 
     info.PBs = updateDict(info.PBs, [Map.name for Map in Maps])     # Update PBs
 
-    info.statistics['mapsBeat'] = len([m for m in info.PBs.keys() if type(info.PBs[m]) is int])     # Update Statistic
+    info.statistics['mapsBeat'] = len([m for m in info.PBs.keys() if type(info.PBs[m]) is int])     # Update Statistics
 
-    foundUnlocked = False           # Update for new Map
+    foundUnlocked = False           # Update Maps
     for Map in Maps:
         if Map.name not in info.PBs.keys():
             info.PBs[Map.name] = LOCKED

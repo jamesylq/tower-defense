@@ -1530,7 +1530,7 @@ class Enemy:
         self.regenTimer = 0
 
         if str(self.tier) in trueHP.keys():
-            self.HP = self.MaxHP = trueHP[str(self.tier)] + 1
+            self.HP = self.MaxHP = trueHP[str(self.tier)]
         else:
             self.HP = self.MaxHP = 1
 
