@@ -43,6 +43,7 @@ def rightAlignPrint(font: pygame.font.Font, text: str, pos: Tuple[int], color: T
     screen.blit(textObj, textObj.get_rect(center=[pos[0] - font.size(text)[0] / 2, pos[1]]))
 
 
+# Loading Screen
 pygame.display.set_caption('Tower Defense')
 pygame.display.set_icon(pygame.image.load(os.path.join(resource_path, 'icon.png')))
 
@@ -52,6 +53,7 @@ centredPrint(mediumFont, 'Loading...', (500, 300), (100, 100, 100))
 pygame.display.update()
 
 
+# Sub-imports
 from tower_defense.maps import *
 from tower_defense.skins import *
 from tower_defense.runes import *
