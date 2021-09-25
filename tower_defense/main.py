@@ -1293,7 +1293,7 @@ class Elemental(Towers):
     req = math.inf
     range = 250
     totalAbilityCooldown = 7500
-    price = 25000
+    price = 10000
     upgradeNames = [None, None, None, 'ELEMENTS ASSEMBLE']
 
     def __init__(self, x: int, y: int):
@@ -2567,7 +2567,7 @@ def draw() -> None:
                         if abs(tower.x - gameInfo.selected.x) ** 2 + abs(tower.y - gameInfo.selected.y) ** 2 <= gameInfo.selected.range ** 2:
                             price += getSellPrice(tower, pricePercent=100)
 
-                    if price >= 25000:
+                    if price >= 10000:
                         leftAlignPrint(font, f'{gameInfo.selected.upgradeNames[3]} [${gameInfo.selected.upgradePrices[3]}]', (300, 500))
                     else:
                         centredPrint(font, 'The Elemental demands', (445, 515))
@@ -4625,7 +4625,7 @@ def app() -> None:
 
             if len(gameInfo.enemies) == 0:
                 if len(gameInfo.spawnleft) == 0 and gameInfo.ticksSinceNoEnemies == 0:
-                    gameInfo.coins += 95 + gameInfo.wave * 5
+                    gameInfo.coins += 145 + gameInfo.wave * 5
                     gameInfo.ticksSinceNoEnemies += 1
 
                 if gameInfo.nextWave <= 0:
@@ -4919,10 +4919,10 @@ def app() -> None:
                                                 price += getSellPrice(tower, pricePercent=100)
                                                 sacrifice.append(tower)
 
-                                            if price >= 25000:
+                                            if price >= 10000:
                                                 break
 
-                                        if price >= 25000:
+                                        if price >= 10000:
                                             cost = Village.upgradePrices[3]
                                             if gameInfo.coins >= cost:
                                                 gameInfo.coins -= cost
