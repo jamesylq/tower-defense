@@ -1,3 +1,5 @@
+import math
+
 from typing import *
 
 
@@ -8,7 +10,8 @@ class Map:
         self.backgroundColor = backgroundColor
         self.pathColor = pathColor
         self.displayColor = self.backgroundColor if displayColor is None else displayColor
-        # print(self.name, sum([abs(self.path[n][0] - self.path[n+1][0]) + abs(self.path[n][1] - self.path[n+1][1]) for n in range(len(self.path) - 1)]))
+
+        self.pathLengths = [sum([round(math.sqrt(abs(self.path[n][m][0] - self.path[n][m+1][0]) ** 2 + abs(self.path[n][m][1] - self.path[n][m+1][1]) ** 2)) for m in range(len(self.path[n]) - 1)]) for n in range(len(self.path))]
 
     def __str__(self):
         return self.name
@@ -26,5 +29,6 @@ Maps = [
     Map([[[0, 25], [750, 25], [750, 200], [25, 200], [25, 375], [800, 375]]], 'Desert', (170, 108, 35), (178, 151, 5)),
     Map([[[125, 0], [125, 500], [400, 500], [400, -50], [675, -50], [675, 500]]], 'Disconnected', (64, 64, 64), (100, 100, 100), (100, 0, 0)),
     Map([[[0, 225], [800, 225]]], 'One Line Challenge', (100, 100, 100), (200, 200, 200)),
-    Map([[[0, 225], [800, 225]], [[0, 225], [75, 225], [225, 75], [575, 75], [725, 225], [800, 225]], [[0, 225], [75, 225], [225, 375], [575, 375], [725, 225], [800, 225]]], 'Split', (255, 222, 0), (255, 127, 0))
+    Map([[[0, 225], [800, 225]], [[0, 225], [75, 225], [225, 75], [575, 75], [725, 225], [800, 225]], [[0, 225], [75, 225], [225, 375], [575, 375], [725, 225], [800, 225]]], 'Split', (255, 222, 0), (255, 127, 0)),
+    # Map([[[0, 0], [450, 450], [800, 100], [700, 0], [250, 450], [0, 200], [200, 0], [650, 450], [800, 300], [500, 0], [50, 450], [0, 400], [400, 0], [800, 400], [750, 450], [300, 0], [0, 300], [150, 450], [600, 0], [800, 200], [550, 450], [100, 0], [0, 100], [350, 450], [800, 0]]], 'Shortcut', (75, 75, 75), (200, 200, 60))
 ]

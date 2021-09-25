@@ -1514,12 +1514,13 @@ class Enemy:
 
         self.lineIndex = lineIndex
         self.mapPath = mapPath
+        self.totalMovement = 0
+        self.totalPathLength = gameInfo.Map.pathLengths[self.mapPath]
         if spawn is None:
             self.x, self.y = gameInfo.Map.path[self.mapPath][0]
         else:
             self.x, self.y = spawn
 
-        self.totalMovement = 0
         self.freezeTimer = 0
         self.bossFreeze = 0
         self.fireTicks = 0
@@ -2183,11 +2184,11 @@ def getTarget(tower: Towers, *, targeting: str = FIRST, ignore: [Enemy] = None, 
                 if (enemy.camo and canSeeCamo(tower)) or (not enemy.camo):
                     try:
                         if enemy.totalMovement < minDistance:
-                            minDistance = enemy.totalMovement
+                            minDistance = enemy.totalMovement / enemy.totalPathLength
                             target = enemy
 
                     except TypeError:
-                        minDistance = enemy.totalMovement
+                        minDistance = enemy.totalMovement / enemy.totalPathLength
                         target = enemy
 
     if targeting == FIRST:
@@ -2207,11 +2208,11 @@ def getTarget(tower: Towers, *, targeting: str = FIRST, ignore: [Enemy] = None, 
                 if (enemy.camo and canSeeCamo(tower)) or (not enemy.camo):
                     try:
                         if enemy.totalMovement > maxDistance:
-                            maxDistance = enemy.totalMovement
+                            maxDistance = enemy.totalMovement / enemy.totalPathLength
                             target = enemy
 
                     except TypeError:
-                        maxDistance = enemy.totalMovement
+                        maxDistance = enemy.totalMovement / enemy.totalPathLength
                         target = enemy
 
     return target
@@ -2445,7 +2446,7 @@ def draw() -> None:
     fps = clock.get_fps()
     if fps < 1:
         try:
-            leftAlignPrint(font, f'SPF: {1 / round(fps, 1)}', (10, 525))
+            leftAlignPrint(font, f'SPF: {round(1 / fps, 1)}', (10, 525))
         except ZeroDivisionError:
             pass
     else:
@@ -3928,7 +3929,10 @@ def app() -> None:
                                         pass
 
                                 if 20 <= mx <= 80 and 540 <= my <= 570:
-                                    info.mapMakerData['path'][-1].clear()
+                                    if info.mapMakerData['path'][-1]:
+                                        info.mapMakerData['path'][-1].clear()
+                                    else:
+                                        info.mapMakerData['path'] = [[]]
 
                     if not cont:
                         break
