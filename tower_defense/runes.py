@@ -163,10 +163,10 @@ class RuneEffect:
             self.effects.append(self.LightningRuneEffect(target.x, target.y))
 
         elif self.rune == 'Shrink Rune':
-            self.effects.append(self.ShrinkRuneEffect(target.x, target.y, 20 if target.isBoss else 10, enemyColors[str(target.tier)] if color is None else color, target.camo, target.regen))
+            self.effects.append(self.ShrinkRuneEffect(target.x, target.y, 25 if target.isBoss else 12, enemyColors[str(target.tier)] if color is None else color, target.camo, target.regen))
 
         elif self.rune == 'Leap Rune':
-            self.effects.append(self.LeapRuneEffect(target.x, target.y, 20 if target.isBoss else 10, enemyColors[str(target.tier)] if color is None else color, target.camo, target.regen))
+            self.effects.append(self.LeapRuneEffect(target.x, target.y, 25 if target.isBoss else 12, enemyColors[str(target.tier)] if color is None else color, target.camo, target.regen))
 
         elif self.rune == 'Explosion Rune':
             self.effects.append(self.ExplosionRuneEffect(target.x, target.y))

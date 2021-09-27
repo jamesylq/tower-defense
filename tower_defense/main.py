@@ -399,7 +399,7 @@ class SpikeTower(Towers):
                 if enemy.tier in onlyExplosiveTiers and self.parent.upgrades[2] < 2:
                     continue
 
-                if abs(enemy.x - self.x) ** 2 + abs(enemy.y - self.y) ** 2 < (484 if enemy.isBoss else 144):
+                if abs(enemy.x - self.x) ** 2 + abs(enemy.y - self.y) ** 2 < (729 if enemy.isBoss else 196):
                     self.pierce -= 1
                     if self.pierce <= 0:
                         self.visible = False
@@ -1662,7 +1662,7 @@ class Enemy:
                 self.fireTicks -= 1
 
         for projectile in gameInfo.projectiles:
-            if abs(self.x - projectile.x) ** 2 + abs(self.y - projectile.y) ** 2 < (625 if self.isBoss else 100):
+            if abs(self.x - projectile.x) ** 2 + abs(self.y - projectile.y) ** 2 < (784 if self.isBoss else 289):
                 if projectile.freezeDuration > 0:
                     gameInfo.projectiles.remove(projectile)
                     self.freezeTimer = max(self.freezeTimer, projectile.freezeDuration // (5 if self.isBoss else 1))
@@ -1708,7 +1708,7 @@ class Enemy:
 
         if not(self.tier in onlyExplosiveTiers or self.tier in resistant):
             for projectile in gameInfo.piercingProjectiles:
-                if abs(self.x - projectile.x) ** 2 + abs(self.y - projectile.y) ** 2 < (400 if self.isBoss else 100):
+                if abs(self.x - projectile.x) ** 2 + abs(self.y - projectile.y) ** 2 < (900 if self.isBoss else 289):
                     if (self not in projectile.ignore) and (canSeeCamo(projectile.parent) or not self.camo):
                         color = enemyColors[str(self.tier)]
                         damage = 1
@@ -1771,7 +1771,7 @@ class Enemy:
                 centredBlit(skinsEquipped[0].skins[('Enemy', str(self.tier))][self.direction], (self.x + sx, self.y + sy))
                 return
 
-        pygame.draw.circle(screen, enemyColors[str(self.tier)], (self.x + sx, self.y + sy), 20 if self.isBoss else 10)
+        pygame.draw.circle(screen, enemyColors[str(self.tier)], (self.x + sx, self.y + sy), 25 if self.isBoss else 12)
 
         if not self.isBoss:
             color = None
@@ -1783,7 +1783,7 @@ class Enemy:
                 color = (255, 105, 180)
 
             if color is not None:
-                pygame.draw.circle(screen, color, (self.x + sx, self.y + sy), 10, 2)
+                pygame.draw.circle(screen, color, (self.x + sx, self.y + sy), 12, 2)
 
     def kill(self, *, spawnNew: bool = True, coinMultiplier: int = 1, ignoreBoss: bool = False, burn: bool = False, bossDamage: int = 1, overrideRuneColor: Tuple[int] = None, ignoreRegularEnemyHealth: bool = False, reduceFireTicks: bool = False, ceramDamage: int = 1) -> list:
         if reduceFireTicks:
