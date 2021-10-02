@@ -1,15 +1,6 @@
 from tower_defense.constants import *
 
 
-def hasAllUnlocked(info) -> bool:
-    """Returns True if all maps in info.PBs are unlocked. Returns False otherwise."""
-    for score in info.PBs.values():
-        if score is None or score == LOCKED:
-            return False
-
-    return True
-
-
 def updateDict(d: dict, l: list) -> dict:
     """Re-order the items in d based on the items in l and deletes redundant items."""
 
@@ -27,3 +18,11 @@ def updateDict(d: dict, l: list) -> dict:
             continue
 
     return newDict
+
+
+def removeCharset(s, charset) -> str:
+    """Remove all charaters in charset from s and returns the result."""
+    for char in charset:
+        s = s.replace(char, '')
+
+    return s

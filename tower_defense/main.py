@@ -203,7 +203,7 @@ class Turret(Towers):
                 for n in range(2):
                     tx = self.x + 1000 * SINDEGREES[(self.abilityData['rotation'] + n * 180) % 360]
                     ty = self.y + 1000 * COSDEGREES[(self.abilityData['rotation'] + n * 180) % 360]
-                    Projectile(self, self.x, self.y, tx, ty, bossDamage=self.bossDamage, explosiveRadius=self.explosiveRadius)
+                    Projectile(self, self.x, self.y, tx, ty, bossDamage=self.bossDamage, explosiveRadius=self.explosiveRadius, removeRegen=canRemoveRegen(self))
 
                 self.abilityData['rotation'] += 30
                 if self.abilityData['rotation'] == 1800:
@@ -217,7 +217,7 @@ class Turret(Towers):
         if self.timer >= getActualCooldown(self.x, self.y, self.cooldown):
             try:
                 closest = getTarget(self, targeting=self.targeting)
-                proj = Projectile(self, self.x, self.y, closest.x, closest.y, bossDamage=self.bossDamage, explosiveRadius=self.explosiveRadius)
+                proj = Projectile(self, self.x, self.y, closest.x, closest.y, bossDamage=self.bossDamage, explosiveRadius=self.explosiveRadius, removeRegen=canRemoveRegen(self))
                 proj.move(0)
 
                 try:
@@ -339,7 +339,7 @@ class IceTower(Towers):
 
             try:
                 closest = getTarget(self, targeting=self.targeting)
-                Projectile(self, self.x, self.y, closest.x, closest.y, freezeDuration=self.freezeDuration)
+                Projectile(self, self.x, self.y, closest.x, closest.y, freezeDuration=self.freezeDuration, removeRegen=canRemoveRegen(self))
                 self.timer = 0
 
             except AttributeError:
@@ -550,13 +550,13 @@ class BombTower(Towers):
     upgradePrices = [
         [30, 50, 75],
         [20, 35, 50],
-        [75, 100, 125],
+        [75, 425, 50],
         1000
     ]
     upgradeNames = [
         ['Longer Range', 'Extra Range', 'Ultra Range'],
         ['More Bombs', 'Heavy Fire', 'Twin-Fire'],
-        ['Larger Explosions', 'Burning Bombs', '2x Impact Damage'],
+        ['Larger Explosions', 'Anti-Regen Grenade', '2x Impact Damage'],
         'Enemy Incineration'
     ]
     range = 50
@@ -604,9 +604,9 @@ class BombTower(Towers):
             try:
                 closest = getTarget(self, targeting=self.targeting)
 
-                Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=self.explosionRadius, impactDamage=self.impactDamage, fireTicks=self.fireTicks)
+                Projectile(self, self.x, self.y, closest.x, closest.y, removeRegen=self.removeRegen, impactDamage=self.impactDamage, explosiveRadius=self.explosionRadius)
                 if self.upgrades[1] == 3:
-                    twin = Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=self.explosionRadius, impactDamage=self.impactDamage, fireTicks=self.fireTicks)
+                    twin = Projectile(self, self.x, self.y, closest.x, closest.y, removeRegen=self.removeRegen, impactDamage=self.impactDamage, explosiveRadius=self.explosionRadius)
                     for n in range(5):
                         twin.move()
 
@@ -623,9 +623,9 @@ class BombTower(Towers):
 
         self.range = [50, 100, 150, 200][self.upgrades[0]]
         self.cooldown = [100, 50, 25, 25][self.upgrades[1]]
-        self.explosionRadius = 60 if self.upgrades[2] >= 1 else 30
-        self.fireTicks = 200 if self.upgrades[2] >= 2 else 0
+        self.explosionRadius = [30, 60, 75, 75][self.upgrades[2]]
         self.impactDamage = 2 if self.upgrades[2] == 3 else 1
+        self.removeRegen = self.upgrades[2] >= 2 or canRemoveRegen(self)
 
     def draw(self):
         super().draw()
@@ -671,7 +671,7 @@ class BananaFarm(Towers):
             if self.timer >= getActualCooldown(self.x, self.y, self.cooldown):
                 try:
                     closest = getTarget(self, targeting=self.targeting)
-                    Projectile(self, self.x, self.y, closest.x, closest.y)
+                    Projectile(self, self.x, self.y, closest.x, closest.y, removeRegen=canRemoveRegen(self))
                     self.timer = 0
 
                 except AttributeError:
@@ -882,7 +882,7 @@ class Wizard(Towers):
         if self.timer >= getActualCooldown(self.x, self.y, self.cooldown):
             try:
                 closest = getTarget(self, targeting=self.targeting)
-                Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=60 if self.upgrades[2] else 30)
+                Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=60 if self.upgrades[2] else 30, removeRegen=canRemoveRegen(self))
                 self.timer = 0
             except AttributeError:
                 pass
@@ -1040,7 +1040,7 @@ class Village(Towers):
                 else:
                     explosiveRadius = 30 if self.parent.upgrades[0] >= 2 else 0
 
-                Projectile(self.parent, self.x, self.y, closest.x, closest.y, explosiveRadius=explosiveRadius)
+                Projectile(self.parent, self.x, self.y, closest.x, closest.y, explosiveRadius=explosiveRadius, removeRegen=canRemoveRegen(self.parent))
 
         def draw(self):
             pygame.draw.circle(screen, (184, 134, 69), (self.x, self.y), 10)
@@ -1102,13 +1102,13 @@ class Village(Towers):
     price = 400
     upgradePrices = [
         [120, 150, 200],
-        [100, 125, 175],
+        [100, 125, 775],
         [50, 75, 100],
         5000
     ]
     upgradeNames = [
         ['Anti-Camo', 'Bomber Villagers', 'Turret Villagers'],
-        ['Longer Range', 'Extreme Range', 'Ultra Range'],
+        ['Longer Range', 'Extreme Range', 'Anti-Regen'],
         ['Two Villagers', 'Three Villagers', 'Four Villagers'],
         'Elemental'
     ]
@@ -1151,7 +1151,7 @@ class Village(Towers):
                 self.abilityData['active'] = False
 
         self.cooldown = [50, 50, 50, 20][self.upgrades[0]]
-        self.range = [100, 125, 150, 175][self.upgrades[1]]
+        self.range = [100, 125, 150, 150][self.upgrades[1]]
         self.targets = [villager.target for villager in self.villagers]
 
         for villager in self.villagers:
@@ -1335,11 +1335,11 @@ class Elemental(Towers):
 
                 tx = self.x + 1000 * SINDEGREES[self.abilityData['rotation'] % 360]
                 ty = self.y + 1000 * COSDEGREES[self.abilityData['rotation'] % 360]
-                Projectile(self, self.x, self.y, tx, ty, freezeDuration=100)
+                Projectile(self, self.x, self.y, tx, ty, freezeDuration=100, removeRegen=canRemoveRegen(self))
 
                 tx = self.x + 1000 * SINDEGREES[(self.abilityData['rotation'] + 180) % 360]
                 ty = self.y + 1000 * COSDEGREES[(self.abilityData['rotation'] + 180) % 360]
-                Projectile(self, self.x, self.y, tx, ty, bossDamage=100, explosiveRadius=50)
+                Projectile(self, self.x, self.y, tx, ty, bossDamage=100, explosiveRadius=50, removeRegen=canRemoveRegen(self))
 
                 self.abilityData['rotation'] += 30
                 if self.abilityData['rotation'] == 1800:
@@ -1361,8 +1361,8 @@ class Elemental(Towers):
         if self.timer >= getActualCooldown(self.x, self.y, 2):
             closest = getTarget(self, targeting=self.targeting)
             try:
-                Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=50, bossDamage=25, fireTicks=300)
-                twin = Projectile(self, self.x, self.y, closest.x, closest.y, bossDamage=100, freezeDuration=100)
+                Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=50, bossDamage=25, fireTicks=300, removeRegen=canRemoveRegen(self))
+                twin = Projectile(self, self.x, self.y, closest.x, closest.y, bossDamage=100, freezeDuration=100, removeRegen=canRemoveRegen(self))
                 twin.move(7)
                 self.timer = 0
             except AttributeError:
@@ -1401,7 +1401,7 @@ class Elemental(Towers):
 
 
 class Projectile:
-    def __init__(self, parent: Towers, x: int, y: int, tx: int, ty: int, *, explosiveRadius: int = 0, freezeDuration: int = 0, bossDamage: int = 1, impactDamage: int = 1, fireTicks: int = 0, overrideAddToProjectiles: bool = False):
+    def __init__(self, parent: Towers, x: int, y: int, tx: int, ty: int, *, explosiveRadius: int = 0, freezeDuration: int = 0, bossDamage: int = 1, impactDamage: int = 1, fireTicks: int = 0, overrideAddToProjectiles: bool = False, removeRegen: bool = False):
         self.parent = parent
         self.x = x
         self.y = y
@@ -1415,6 +1415,7 @@ class Projectile:
         self.bossDamage = bossDamage
         self.impactDamage = impactDamage
         self.fireTicks = fireTicks
+        self.removeRegen = removeRegen
 
         if not overrideAddToProjectiles:
             gameInfo.projectiles.append(self)
@@ -1462,6 +1463,9 @@ class Projectile:
                 if self.fireTicks > 0:
                     enemy.fireTicks = self.fireTicks
                     enemy.fireIgnitedBy = self.parent
+
+                if self.removeRegen:
+                    enemy.regen = False
 
                 enemy.kill(coinMultiplier=getCoinMultiplier(self.parent))
                 self.parent.hits += 1
@@ -1678,6 +1682,9 @@ class Enemy:
                                 newToDamage = []
 
                                 for e in toDamage:
+                                    if projectile.removeRegen:
+                                        e.regen = False
+
                                     newToDamage += e.kill(coinMultiplier=projectile.coinMultiplier, bossDamage=projectile.bossDamage, overrideRuneColor=color)
 
                                     projectile.parent.hits += 1
@@ -1915,6 +1922,14 @@ def reset() -> None:
         print('tower-defense.core: Save file cleared!')
 
 
+def hasAllUnlocked(info) -> bool:
+    for score in info.PBs.values():
+        if score is None or score == LOCKED:
+            return False
+
+    return True
+
+
 def fileSelection(path: str) -> str:
     textfiles = glob.glob(os.path.join(path, '*.txt'))
     subdirectories = glob.glob(os.path.join(path, '*', ''))
@@ -2036,11 +2051,12 @@ def fileSelection(path: str) -> str:
         pygame.display.update()
 
 
-def removeCharset(s, charset) -> str:
-    for char in charset:
-        s = s.replace(char, '')
+def hasAllUnlocked(info) -> bool:
+    for score in info.PBs.values():
+        if score is None or score == LOCKED:
+            return False
 
-    return s
+    return True
 
 
 def getSellPrice(tower: Towers, *, pricePercent: SupportsFloat = 80) -> float:
@@ -2101,6 +2117,17 @@ def canSeeCamo(Tower: Towers) -> bool:
 
     camoTowers = [tower for tower in gameInfo.towers if (type(tower) is Village or type(tower) is Elemental) and tower.upgrades[0] >= 1]
     for tower in camoTowers:
+        if abs(Tower.x - tower.x) ** 2 + abs(Tower.y - tower.y) ** 2 < tower.range ** 2:
+            return True
+    return False
+
+
+def canRemoveRegen(Tower: Towers) -> bool:
+    if type(Tower) is Village and Tower.upgrades[1] == 3:
+        return True
+
+    regenDetectVillages = [tower for tower in gameInfo.towers if type(tower) is Village and tower.upgrades[1] == 3]
+    for tower in regenDetectVillages:
         if abs(Tower.x - tower.x) ** 2 + abs(Tower.y - tower.y) ** 2 < tower.range ** 2:
             return True
     return False
