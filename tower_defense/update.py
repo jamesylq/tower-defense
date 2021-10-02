@@ -1,5 +1,3 @@
-from tower_defense.main import hasAllUnlocked
-
 from tower_defense.maps import *
 from tower_defense.constants import *
 from tower_defense.functions import *
@@ -79,8 +77,5 @@ def update(info, gameInfo, PowerUps):
             foundCompleted = True
 
     Maps.reverse()
-
-    if not hasAllUnlocked(info):        # Update Sandboxmode
-        gameInfo.sandboxMode = False
 
     return [info, gameInfo, PowerUps]

@@ -1922,14 +1922,6 @@ def reset() -> None:
         print('tower-defense.core: Save file cleared!')
 
 
-def hasAllUnlocked(info) -> bool:
-    for score in info.PBs.values():
-        if score is None or score == LOCKED:
-            return False
-
-    return True
-
-
 def fileSelection(path: str) -> str:
     textfiles = glob.glob(os.path.join(path, '*.txt'))
     subdirectories = glob.glob(os.path.join(path, '*', ''))
@@ -2049,14 +2041,6 @@ def fileSelection(path: str) -> str:
 
         clock.tick(MaxFPS)
         pygame.display.update()
-
-
-def hasAllUnlocked(info) -> bool:
-    for score in info.PBs.values():
-        if score is None or score == LOCKED:
-            return False
-
-    return True
 
 
 def getSellPrice(tower: Towers, *, pricePercent: SupportsFloat = 80) -> float:
@@ -2758,6 +2742,7 @@ def load() -> None:
         gameInfo.update()
 
         info, gameInfo, PowerUps = update(info, gameInfo, PowerUps)
+
         skinLoaded = loadSkin(info.skinsEquipped[1], Towers.__subclasses__())
         if skinLoaded is not None:
             towerImages = skinLoaded
@@ -3253,7 +3238,13 @@ def app() -> None:
 
                 n = 0
                 for Map in Maps:
-                    if info.PBs[Map.name] != LOCKED:
+                    if info.PBs[Map.name] == None and info.sandboxMode:
+                        pygame.draw.rect(screen, (32, 32, 32), (10, 40 * n + 60 - scroll, 825, 30))
+                        pygame.draw.rect(screen, (0, 0, 0), (10, 40 * n + 60 - scroll, 825, 30), 3)
+                        leftAlignPrint(font, Map.name.upper(), (20, 74 + n * 40 - scroll))
+                        centredPrint(font, LOCKED, (900, 74 + n * 40 - scroll))
+
+                    elif info.PBs[Map.name] != LOCKED:
                         pygame.draw.rect(screen, Map.displayColor, (10, 40 * n + 60 - scroll, 825, 30))
                         if 10 <= mx <= 835 and 40 * n + 60 - scroll <= my <= 40 * n + 90 - scroll and 50 <= my <= 500:
                             pygame.draw.rect(screen, (128, 128, 128), (10, 40 * n + 60 - scroll, 825, 30), 5)
@@ -3304,13 +3295,12 @@ def app() -> None:
                 else:
                     pygame.draw.rect(screen, (0, 0, 0), (25, 550, 125, 30), 3)
 
-                if hasAllUnlocked(info):
-                    pygame.draw.rect(screen, (0, 225, 0) if info.sandboxMode else (255, 0, 0), (200, 550, 200, 30))
-                    centredPrint(font, 'Sandbox Mode: ' + ('ON' if info.sandboxMode else 'OFF'), (300, 565))
-                    if 200 <= mx <= 400 and 550 <= my <= 580:
-                        pygame.draw.rect(screen, (128, 128, 128), (200, 550, 200, 30), 5)
-                    else:
-                        pygame.draw.rect(screen, (0, 0, 0), (200, 550, 200, 30), 3)
+                pygame.draw.rect(screen, (0, 225, 0) if info.sandboxMode else (255, 0, 0), (200, 550, 200, 30))
+                centredPrint(font, 'Sandbox Mode: ' + ('ON' if info.sandboxMode else 'OFF'), (300, 565))
+                if 200 <= mx <= 400 and 550 <= my <= 580:
+                    pygame.draw.rect(screen, (128, 128, 128), (200, 550, 200, 30), 5)
+                else:
+                    pygame.draw.rect(screen, (0, 0, 0), (200, 550, 200, 30), 3)
 
                 pygame.draw.rect(screen, (200, 200, 200), (525, 510, 125, 30))
                 centredPrint(font, 'Replay', (587, 525))
@@ -3385,7 +3375,7 @@ def app() -> None:
                         if event.button == 1:
                             if 10 <= mx <= 835:
                                 for n in range(len(Maps)):
-                                    if 40 * n + 60 - scroll <= my <= 40 * n + 90 - scroll and 50 <= my <= 500 and list(info.PBs.values())[n] != LOCKED:
+                                    if 40 * n + 60 - scroll <= my <= 40 * n + 90 - scroll and 50 <= my <= 500 and list(info.PBs.values())[n] != LOCKED and (list(info.PBs.values())[n] is not None or not info.sandboxMode):
                                         gameInfo.Map = Maps[n]
                                         info.status = 'game'
                                         gameInfo.coins = math.inf if info.sandboxMode else defaults['coins']
@@ -3475,8 +3465,7 @@ def app() -> None:
                                 cont = False
 
                             if 200 <= mx <= 400 and 550 <= my <= 580:
-                                if hasAllUnlocked(info):
-                                    info.sandboxMode = not info.sandboxMode
+                                info.sandboxMode = not info.sandboxMode
 
                         elif event.button == 4:
                             scroll = max(scroll - 5, 0)
