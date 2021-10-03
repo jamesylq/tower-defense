@@ -27,7 +27,7 @@ mediumFont = pygame.font.Font(os.path.join(resource_path, 'UbuntuMono-Regular.tt
 largeFont = pygame.font.Font(os.path.join(resource_path, 'UbuntuMono-Regular.ttf'), 75)
 
 
-# Printing Functions
+# Screen Printing Functions
 def leftAlignPrint(font: pygame.font.Font, text: str, pos: Tuple[int], color: Tuple[int] = (0, 0, 0)) -> None:
     textObj = font.render(text, True, color)
     screen.blit(textObj, textObj.get_rect(center=[pos[0] + font.size(text)[0] / 2, pos[1]]))
