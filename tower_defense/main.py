@@ -1721,9 +1721,9 @@ class Enemy:
                         damage = 1
                         if type(projectile.parent) is Bowler:
                             if projectile.parent.upgrades[0] == 2:
-                                damage = 2 * projectile.damageMultiplier
+                                damage = round(2 * projectile.damageMultiplier)
                             elif projectile.parent.upgrades[0] == 3:
-                                damage = 2 * (projectile.movement // 100 + 1) * projectile.damageMultiplier
+                                damage = round(2 * (projectile.movement / 50 + 1) * projectile.damageMultiplier)
 
                         toDamage = [self]
 
@@ -1778,7 +1778,7 @@ class Enemy:
                 centredBlit(skinsEquipped[0].skins[('Enemy', str(self.tier))][self.direction], (self.x + sx, self.y + sy))
                 return
 
-        pygame.draw.circle(screen, enemyColors[str(self.tier)], (self.x + sx, self.y + sy), 25 if self.isBoss else 12)
+        pygame.draw.circle(screen, enemyColors[str(self.tier)], (self.x + sx, self.y + sy), 20 if self.isBoss else 12)
 
         if not self.isBoss:
             color = None
@@ -4647,7 +4647,7 @@ def app() -> None:
 
             if len(gameInfo.enemies) == 0:
                 if len(gameInfo.spawnleft) == 0 and gameInfo.ticksSinceNoEnemies == 0:
-                    gameInfo.coins += 145 + gameInfo.wave * 5
+                    gameInfo.coins += 110 + 40 * math.sqrt(gameInfo.wave)
                     gameInfo.ticksSinceNoEnemies += 1
 
                 if gameInfo.nextWave <= 0:
