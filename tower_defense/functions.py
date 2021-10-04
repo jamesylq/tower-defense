@@ -1,3 +1,7 @@
+import pygame
+
+from typing import overload
+
 from tower_defense.constants import *
 
 
@@ -19,6 +23,11 @@ def updateDict(d: dict, l: list) -> dict:
 
     return newDict
 
+
+@overload
+def removeCharset(s: str, charset: List[str]) -> str: ...
+@overload
+def removeCharset(s: str, charset: str) -> str: ...
 
 def removeCharset(s, charset) -> str:
     """Remove all charaters in charset from s and returns the result."""

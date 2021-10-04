@@ -1894,12 +1894,6 @@ class Enemy:
             self.regenTimer += 1
 
 # Functions
-@overload
-def removeCharset(s: str, charset: List[str]) -> str: ...
-@overload
-def removeCharset(s: str, charset: str) -> str: ...
-
-
 def reset() -> None:
     try:
         open('save.txt', 'r').close()
@@ -1945,7 +1939,12 @@ def fileSelection(path: str) -> str:
                 else:
                     pygame.draw.rect(screen, (0, 0, 0), (25, 60 + 30 * n - scroll, 950, 25), 3)
 
-                leftAlignPrint(font, pathToFile, (30, 72 + 30 * n - scroll))
+                if len(pathToFile) > 85:
+                    pathToFileText = '...' + pathToFile[-82:]
+                else:
+                    pathToFileText = pathToFile
+                leftAlignPrint(font, pathToFileText, (30, 72 + 30 * n - scroll))
+
                 if pathToFile in textfiles:
                     size = os.path.getsize(pathToFile)
                     byteUnits = ['B', 'KB', 'MB', 'GB', 'TB']
@@ -1987,7 +1986,11 @@ def fileSelection(path: str) -> str:
         else:
             pygame.draw.rect(screen, (0, 0, 0), (150, 560, 200, 30), 3)
 
-        rightAlignPrint(tinyFont, path, (1000, 590))
+        if len(path) > 60:
+            pathText = '...' + path[-57:]
+        else:
+            pathText = path
+        rightAlignPrint(tinyFont, pathText, (1000, 590))
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -2737,6 +2740,7 @@ def load() -> None:
                     setattr(gameInfo, attr, resetTo)
 
             pickle.dump(gameInfo, open('game.txt', 'wb'))
+            print('Created file game.txt')
 
         info.update()
         gameInfo.update()
@@ -2749,6 +2753,7 @@ def load() -> None:
 
     except FileNotFoundError:
         open('save.txt', 'w')
+        print('Created file save.txt')
 
     except AttributeError as e:
         print(f'tower-defense.core: Fatal - There seems to be something wrong with your save-file.\n\nSee details: {e}')
@@ -2761,9 +2766,14 @@ def load() -> None:
 
     finally:
         try:
-            os.makedirs('replay-files/')
+            os.mkdir('replay-files/')
+            print('Created folder replay-files/')
+
         except FileExistsError:
             pass
+
+        except OSError as e:
+            print(f'Something happened when trying to create replay-files/ folder. See details: {e}')
 
 
 # Main
