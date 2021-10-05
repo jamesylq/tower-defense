@@ -3532,10 +3532,16 @@ def app() -> None:
                             if not saved:
                                 if 800 <= mx <= 975 and 550 <= my <= 580:
                                     filename = f'replay-{int(time.time())}.txt'
-                                    with open(os.path.join(curr_path, 'replay-files', filename), 'wb') as file:
-                                        pickle.dump([info.gameReplayData, gameInfo.Map], file)
-                                    saved = True
-                                    info.gameReplayData.clear()
+                                    open(os.path.join(curr_path, 'replay-files', filename), 'w')
+
+                                    try:
+                                        with open(os.path.join(curr_path, 'replay-files', filename), 'wb') as file:
+                                            pickle.dump([info.gameReplayData, gameInfo.Map], file)
+                                        saved = True
+                                        info.gameReplayData.clear()
+
+                                    except FileNotFoundError as e:
+                                        print(f'An error occured while saving {filename} to {os.path.join(curr_path, "replay-files")}. See details: {e}')
 
                     elif event.type == pygame.QUIT:
                         save()
