@@ -42,7 +42,10 @@ def update(info, gameInfo, PowerUps):
 
     if 'One Line Challenge' not in info.PBs.keys() and 'The End' in info.PBs.keys():        # Update pre-2.10
         info.PBs['One Line Challenge'] = info.PBs['The End']
-        info.statistics['wins']['One Line Challenge'] = info.statistics['wins']['The End']
+        try:
+            info.statistics['wins']['One Line Challenge'] = info.statistics['wins']['The End']
+        except KeyError:
+            pass
 
     if len(info.skinsEquipped) < 2:          # Update pre-3.4
         while len(info.skinsEquipped) < 2:

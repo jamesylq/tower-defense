@@ -3542,6 +3542,7 @@ def app() -> None:
 
                                     except FileNotFoundError as e:
                                         print(f'An error occured while saving {filename} to {os.path.join(curr_path, "replay-files")}. See details: {e}')
+                                        saved = False
 
                     elif event.type == pygame.QUIT:
                         save()
@@ -3975,6 +3976,8 @@ def app() -> None:
             screen.fill((200, 200, 200))
             pygame.draw.rect(screen, (0, 0, 0), (100, 75, 800, 450), 3)
             pygame.display.update()
+
+            replayLength = len(info.gameReplayData)
 
             while True:
                 mx, my = pygame.mouse.get_pos()
