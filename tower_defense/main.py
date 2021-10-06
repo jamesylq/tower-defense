@@ -1896,22 +1896,22 @@ class Enemy:
 # Functions
 def reset() -> None:
     try:
-        open('../save.txt', 'r').close()
+        open(os.path.join(curr_path, os.pardir, 'save.txt'), 'r')
 
     except FileNotFoundError:
         print('tower-defense.core: No save file detected')
 
     else:
         try:
-            open('../game.txt', 'r').close()
+            open(os.path.join(curr_path, os.pardir, 'game.txt'), 'r')
 
         except FileNotFoundError:
             pass
 
     finally:
-        with open('../save.txt', 'w') as saveFile:
+        with open(os.path.join(curr_path, os.pardir, 'save.txt'), 'w') as saveFile:
             saveFile.write('')
-        with open('../game.txt', 'w') as gameFile:
+        with open(os.path.join(curr_path, os.pardir, 'game.txt'), 'w') as gameFile:
             gameFile.write('')
         print('tower-defense.core: Save file cleared!')
 
@@ -2719,17 +2719,17 @@ def getActualCooldown(x: int, y: int, originalCooldown: int) -> int:
 
 def save() -> None:
     info.powerUpData = PowerUps
-    pickle.dump(info, open(os.path.join(curr_path, '..', 'save.txt'), 'wb'))
-    pickle.dump(gameInfo, open(os.path.join(curr_path, '..', 'game.txt'), 'wb'))
+    pickle.dump(info, open(os.path.join(curr_path, os.pardir, 'save.txt'), 'wb'))
+    pickle.dump(gameInfo, open(os.path.join(curr_path, os.pardir, 'game.txt'), 'wb'))
 
 
 def load() -> None:
     global info, gameInfo, PowerUps, towerImages
 
     try:
-        info = pickle.load(open(os.path.join(curr_path, '..', 'save.txt'), 'rb'))
+        info = pickle.load(open(os.path.join(curr_path, os.pardir, 'save.txt'), 'rb'))
         try:
-            gameInfo = pickle.load(open(os.path.join(curr_path, '..', 'game.txt'), 'rb'))
+            gameInfo = pickle.load(open(os.path.join(curr_path, os.pardir, 'game.txt'), 'rb'))
 
         except FileNotFoundError:   # Update pre-2.6 (Relocate gamefile)
             for attr in playerAttrs:
@@ -2739,8 +2739,8 @@ def load() -> None:
                 else:
                     setattr(gameInfo, attr, resetTo)
 
-            pickle.dump(gameInfo, open(os.path.join(curr_path, '..', 'game.txt'), 'wb'))
-            print('Created file game.txt')
+            pickle.dump(gameInfo, open(os.path.join(curr_path, os.pardir, 'game.txt'), 'wb'))
+            print(f'Created file {os.path.join(curr_path, os.pardir, "game.txt")}')
 
         info.update()
         gameInfo.update()
@@ -2753,8 +2753,8 @@ def load() -> None:
             towerImages = skinLoaded
 
     except FileNotFoundError as e:
-        open(os.path.join(curr_path, '..', 'save.txt'), 'w')
-        print('Created file save.txt')
+        open(os.path.join(curr_path, os.pardir, 'save.txt'), 'w')
+        print(f'Created file {os.path.join(curr_path, os.pardir, "save.txt")}')
 
     except AttributeError as e:
         print(f'tower-defense.core: Fatal - There seems to be something wrong with your save-file.\n\nSee details: {e}')
@@ -2767,8 +2767,8 @@ def load() -> None:
 
     finally:
         try:
-            os.mkdir(os.path.join(curr_path, '..', 'replay-files'))
-            print('Created folder replay-files/')
+            os.mkdir(os.path.join(curr_path, os.pardir, 'replay-files'))
+            print(f'Created folder {os.path.join(curr_path, os.pardir, "replay-files")}')
 
         except FileExistsError:
             pass
@@ -3439,13 +3439,19 @@ def app() -> None:
                                 cont = False
 
                             if 525 <= mx <= 650 and 510 <= my <= 540:
-                                path = fileSelection(os.path.join(curr_path, 'replay-files'))
+                                path = fileSelection(os.path.join(os.path.dirname(curr_path), 'replay-files'))
                                 if type(path) is str and removeCharset(path, ' ') != '':
                                     try:
+                                        screen.fill((200, 200, 200))
+                                        centredPrint(largeFont, f'Tower Defense v{__version__}', (500, 200), (100, 100, 100))
+                                        centredPrint(mediumFont, 'Loading...', (500, 300), (100, 100, 100))
+                                        pygame.display.update()
+
                                         info.gameReplayData, gameInfo.Map = pickle.load(open(path, 'rb'))
+                                        gameInfo.ticks = 0
                                         info.status = 'replay'
                                         cont = False
-                                        print(f'Replaying {path}!')
+                                        print(f'Replaying replay file {path}!')
 
                                     except FileNotFoundError:
                                         print(f'File \"{path}\" not found!')
@@ -3979,6 +3985,7 @@ def app() -> None:
             pygame.display.update()
 
             replayLength = len(info.gameReplayData)
+            replayLengthStr = durationToString(replayLength / ReplayFPS)
 
             while True:
                 mx, my = pygame.mouse.get_pos()
@@ -3999,9 +4006,7 @@ def app() -> None:
                 try:
                     data = info.gameReplayData.copy()[gameInfo.ticks]
                 except IndexError:
-                    info.status = 'mapSelect'
-                    gameInfo.ticks = 0
-                    break
+                    data = info.gameReplayData.copy()[-1]
 
                 try:
                     for tower in data['towers']:
@@ -4098,6 +4103,15 @@ def app() -> None:
 
                 centredPrint(mediumFont, 'Replay', (500, 35))
 
+                pygame.draw.rect(screen, (0, 255, 0), (160, 560, 680 * gameInfo.ticks / replayLength, 10))
+                pygame.draw.rect(screen, (100, 100, 100), (160, 560, 680, 10), 2)
+
+                centredPrint(tinyFont, f'{durationToString((gameInfo.ticks + 1) / ReplayFPS)}/{replayLengthStr}', (920, 565))
+
+                if 160 <= mx <= 840 and 560 <= my <= 570:
+                    pygame.draw.polygon(screen, (100, 100, 100), ((mx - 5, 545), (mx - 5, 555), (mx, 560), (mx + 5, 555), (mx + 5, 545)))
+                    centredPrint(tinyFont, durationToString(replayLength * (mx - 160) / 680 / ReplayFPS), (mx, 535))
+
                 pygame.draw.rect(screen, (255, 0, 0), (30, 550, 100, 30))
                 centredPrint(font, 'Close', (80, 565))
                 if 30 <= mx <= 130 and 550 <= my <= 580:
@@ -4108,8 +4122,6 @@ def app() -> None:
                 cont = True
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
-                        gameInfo.ticks = 0
-                        gameInfo.reset()
                         save()
                         quit()
 
@@ -4122,10 +4134,15 @@ def app() -> None:
                 if not cont:
                     break
 
+                if pygame.mouse.get_pressed(3)[0]:
+                    if 160 <= mx <= 840 and 560 <= my <= 570:
+                        gameInfo.ticks = round(replayLength * (mx - 160) / 680)
+
                 clock.tick(ReplayFPS)
                 pygame.display.update()
 
-                gameInfo.ticks += 1
+                if gameInfo.ticks < replayLength - 1:
+                    gameInfo.ticks += 1
 
         elif info.status == 'shop':
             while True:
@@ -4182,29 +4199,10 @@ def app() -> None:
                 if t < 0:
                     t += 86400
 
-                h = math.floor(t // 3600)
-                m = math.floor((t - h * 3600) // 60)
-                s = math.floor(t - h * 3600 - m * 60)
-
                 if t <= 0:
                     refreshShop()
 
-                if h == 0:
-                    if m == 0:
-                        txt = f'{s}s'
-                    elif s == 0:
-                        txt = f'{m}min'
-                    else:
-                        txt = f'{m}min {s}s'
-                elif s == 0:
-                    if m == 0:
-                        txt = f'{h}h'
-                    else:
-                        txt = f'{h}h {m}min'
-                else:
-                    txt = f'{h}h {m}min {s}s'
-
-                leftAlignPrint(tinyFont, f'Time until refresh: {txt}', (20, 20))
+                leftAlignPrint(tinyFont, f'Time until refresh: {durationToString(t)}', (20, 20))
 
                 pygame.draw.rect(screen, (255, 0, 0), (30, 550, 100, 30))
                 centredPrint(font, 'Close', (80, 565))
