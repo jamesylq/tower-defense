@@ -1896,22 +1896,22 @@ class Enemy:
 # Functions
 def reset() -> None:
     try:
-        open('save.txt', 'r').close()
+        open('../save.txt', 'r').close()
 
     except FileNotFoundError:
         print('tower-defense.core: No save file detected')
 
     else:
         try:
-            open('game.txt', 'r').close()
+            open('../game.txt', 'r').close()
 
         except FileNotFoundError:
             pass
 
     finally:
-        with open('save.txt', 'w') as saveFile:
+        with open('../save.txt', 'w') as saveFile:
             saveFile.write('')
-        with open('game.txt', 'w') as gameFile:
+        with open('../game.txt', 'w') as gameFile:
             gameFile.write('')
         print('tower-defense.core: Save file cleared!')
 
@@ -2719,17 +2719,17 @@ def getActualCooldown(x: int, y: int, originalCooldown: int) -> int:
 
 def save() -> None:
     info.powerUpData = PowerUps
-    pickle.dump(info, open('save.txt', 'wb'))
-    pickle.dump(gameInfo, open('game.txt', 'wb'))
+    pickle.dump(info, open(os.path.join(curr_path, '..', 'save.txt'), 'wb'))
+    pickle.dump(gameInfo, open(os.path.join(curr_path, '..', 'game.txt'), 'wb'))
 
 
 def load() -> None:
     global info, gameInfo, PowerUps, towerImages
 
     try:
-        info = pickle.load(open('save.txt', 'rb'))
+        info = pickle.load(open(os.path.join(curr_path, '..', 'save.txt'), 'rb'))
         try:
-            gameInfo = pickle.load(open('game.txt', 'rb'))
+            gameInfo = pickle.load(open(os.path.join(curr_path, '..', 'game.txt'), 'rb'))
 
         except FileNotFoundError:   # Update pre-2.6 (Relocate gamefile)
             for attr in playerAttrs:
@@ -2739,20 +2739,21 @@ def load() -> None:
                 else:
                     setattr(gameInfo, attr, resetTo)
 
-            pickle.dump(gameInfo, open('game.txt', 'wb'))
+            pickle.dump(gameInfo, open(os.path.join(curr_path, '..', 'game.txt'), 'wb'))
             print('Created file game.txt')
 
         info.update()
         gameInfo.update()
 
         info, gameInfo, PowerUps = update(info, gameInfo, PowerUps)
+        info.skins, info.runes = [s.name for s in Skins], [r.name for r in Runes]
 
         skinLoaded = loadSkin(info.skinsEquipped[1], Towers.__subclasses__())
         if skinLoaded is not None:
             towerImages = skinLoaded
 
-    except FileNotFoundError:
-        open('save.txt', 'w')
+    except FileNotFoundError as e:
+        open(os.path.join(curr_path, '..', 'save.txt'), 'w')
         print('Created file save.txt')
 
     except AttributeError as e:
@@ -2766,7 +2767,7 @@ def load() -> None:
 
     finally:
         try:
-            os.mkdir('replay-files/')
+            os.mkdir(os.path.join(curr_path, '..', 'replay-files'))
             print('Created folder replay-files/')
 
         except FileExistsError:

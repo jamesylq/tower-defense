@@ -1,11 +1,11 @@
 [tool.poetry]
 name = "tower-defense"
-version = "3.6.5"
+version = "3.7.0"
 description = ""
 authors = ["Ying Liqian <jamesylq@gmail.com>"]
 
 [tool.poetry.dependencies]
-pytz = "^2021.1"
+pytz = "^2021.3"
 python = "^3.6"
 pygame = "^2.0.1"
 

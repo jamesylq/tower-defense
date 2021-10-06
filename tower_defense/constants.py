@@ -1,5 +1,6 @@
 # Imports
 import math
+import random
 
 from tower_defense.maps import *
 

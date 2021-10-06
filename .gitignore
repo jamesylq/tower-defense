@@ -124,7 +124,7 @@ venv.bak/
 .dmypy.json
 dmypy.json
 
-# Additional
-/tower_defense/game.txt
-/tower_defense/save.txt
-/tower_defense/replay-files/
+# tower-defense
+/game.txt
+/save.txt
+/replay-files/

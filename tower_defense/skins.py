@@ -60,7 +60,7 @@ class Skin:
 
 
 def getSkin(skinName: str):
-    for skin in skins:
+    for skin in Skins:
         if skin.name == skinName:
             return skin
 
@@ -68,7 +68,7 @@ def getSkin(skinName: str):
 def getNotUnlockedSkin(info):
     now = datetime.datetime.now(tz=pytz.timezone('Singapore'))
     notUnlocked = []
-    for skin in skins:
+    for skin in Skins:
         if skin.name not in info.skins:
             if skin.name == 'Christmas Towers Skin':
                 if now.month == 12 and 24 <= now.day <= 25:
@@ -101,7 +101,7 @@ def loadSkin(skinName: str, towers: list) -> dict:
     return towerImages
 
 
-skins = [
+Skins = [
     Skin('BTD6 MOAB Class Skin', 'MOAB.png', {
         ('Enemy', 'A'): ['MOAB.png', (89, 57)],
         ('Enemy', 'B'): ['BFB.png', (140, 99)],
