@@ -2753,8 +2753,72 @@ def load() -> None:
             towerImages = skinLoaded
 
     except FileNotFoundError as e:
-        open(os.path.join(curr_path, os.pardir, 'save.txt'), 'w')
-        print(f'Created file {os.path.join(curr_path, os.pardir, "save.txt")}')
+        if os.path.exists(os.path.join(curr_path, 'save.txt')):         # Update 3.7 (Relocate Data to Local Storage)
+            print('Detected save.txt from version pre-3.7.2: Attempting to relocate save.txt...')
+
+            open(os.path.join(curr_path, '..', 'save.txt'), 'w')
+
+            saveFileData = pickle.load(open(os.path.join(curr_path, 'save.txt'), 'rb'))
+            pickle.dump(saveFileData, open(os.path.join(curr_path, '..', 'save.txt'), 'wb'))
+
+            os.remove(os.path.join(curr_path, 'save.txt'))
+
+            print(f'Relocated save.txt to {os.path.join(os.path.dirname(curr_path), "save.txt")}\n')
+
+            if os.path.exists(os.path.join(curr_path, 'game.txt')):
+                print('Detected game.txt from version pre-3.7.2: Attempting to relocate game.txt...')
+
+                open(os.path.join(curr_path, '..', 'game.txt'), 'w')
+
+                gameFileData = pickle.load(open(os.path.join(curr_path, 'game.txt'), 'rb'))
+                pickle.dump(gameFileData, open(os.path.join(curr_path, '..', 'game.txt'), 'wb'))
+
+                os.remove(os.path.join(curr_path, 'game.txt'))
+
+                print(f'Relocated game.txt to {os.path.join(os.path.dirname(curr_path), "game.txt")}\n')
+
+                if os.path.exists(os.path.join(curr_path, 'replay-files')):
+                    print('Detected replay-files/ from version pre-3.7.2: Attempting to relocate replay-files/...')
+
+                    try:
+                        os.mkdir(os.path.join(curr_path, '..', 'replay-files'))
+
+                    except FileExistsError:
+                        print(f'Detected replay-files/ in {os.path.dirname(curr_path)}: Attempting to merge replay-files/...')
+
+                        replayFiles = [p for p in os.listdir(os.path.join(curr_path, 'replay-files')) if p.endswith('.txt')]
+
+                        for replayFile in replayFiles:
+                            replayFileData = pickle.load(open(os.path.join(curr_path, 'replay-files', replayFile), 'rb'))
+
+                            open(os.path.join(curr_path, '..', 'replay-files', replayFile), 'w')
+                            pickle.dump(replayFileData, open(os.path.join(curr_path, '..', 'replay-files', replayFile), 'wb'))
+
+                        print(f'Merged {os.path.join(os.path.dirname(curr_path), "replay-files")} with {os.path.join(curr_path, "replay-files")} successfully!\n')
+
+                    else:
+                        replayFiles = [p for p in os.listdir(os.path.join(curr_path, 'replay-files')) if p.endswith('.txt')]
+
+                        for replayFile in replayFiles:
+                            replayFileData = pickle.load(open(os.path.join(curr_path, 'replay-files', replayFile), 'rb'))
+
+                            open(os.path.join(curr_path, '..', 'replay-files', replayFile), 'w')
+                            pickle.dump(replayFileData, open(os.path.join(curr_path, '..', 'replay-files', replayFile), 'wb'))
+
+                            os.remove(os.path.join(curr_path, 'replay-files', replayFile))
+
+                    finally:
+                        os.rmdir(os.path.join(curr_path, 'replay-files'))
+                        print(f'Relocated your replay files to {os.path.join(os.path.dirname(curr_path), "replay-files", "")}\n')
+
+            info = pickle.load(open(os.path.join(curr_path, os.pardir, 'save.txt'), 'rb'))
+            gameInfo = pickle.load(open(os.path.join(curr_path, os.pardir, 'game.txt'), 'rb'))
+
+            print(f'Loaded save.txt and game.txt from {os.path.join(os.path.dirname(curr_path), "")}')
+
+        else:
+            open(os.path.join(curr_path, os.pardir, 'save.txt'), 'w')
+            print(f'Created file {os.path.join(curr_path, os.pardir, "save.txt")}')
 
     except AttributeError as e:
         print(f'tower-defense.core: Fatal - There seems to be something wrong with your save-file.\n\nSee details: {e}')
@@ -2765,10 +2829,13 @@ def load() -> None:
     except (EOFError, ValueError):
         pass
 
+    else:
+        print(f'Loaded save.txt and game.txt from {os.path.join(os.path.dirname(curr_path), "")}')
+
     finally:
         try:
             os.mkdir(os.path.join(curr_path, os.pardir, 'replay-files'))
-            print(f'Created folder {os.path.join(curr_path, os.pardir, "replay-files")}')
+            print(f'Created folder {os.path.join(os.path.dirname(curr_path), "replay-files")}')
 
         except FileExistsError:
             pass
@@ -2850,6 +2917,8 @@ def app() -> None:
                                 info.status = 'mapSelect'
                                 cont = False
 
+                                gameInfo.reset()
+
                             elif event.key == pygame.K_SPACE:
                                 info.tutorialPhase = 1
                                 cont = False
@@ -2921,6 +2990,8 @@ def app() -> None:
                                 info.status = 'mapSelect'
                                 cont = False
 
+                                gameInfo.reset()
+
                         elif event.type == pygame.MOUSEBUTTONDOWN:
                             if event.button == 1:
                                 if 810 <= mx <= 910 and 40 <= my <= 70:
@@ -2986,6 +3057,8 @@ def app() -> None:
                                 info.status = 'mapSelect'
                                 cont = False
 
+                                gameInfo.reset()
+
                         elif event.type == pygame.MOUSEBUTTONDOWN:
                             if event.button == 1:
                                 print(abs(gameInfo.enemies[0].x - mx) ** 2 + abs(gameInfo.enemies[0].y - my) ** 2)
@@ -3022,6 +3095,8 @@ def app() -> None:
                             if event.key == pygame.K_ESCAPE:
                                 info.status = 'mapSelect'
                                 cont = False
+
+                                gameInfo.reset()
 
                     if not cont:
                         break
@@ -3067,6 +3142,8 @@ def app() -> None:
                             if event.key == pygame.K_ESCAPE:
                                 info.status = 'mapSelect'
                                 cont = False
+
+                                gameInfo.reset()
 
                         elif event.type == pygame.MOUSEBUTTONDOWN:
                             if event.button == 1:
@@ -3159,6 +3236,8 @@ def app() -> None:
                                 info.status = 'mapSelect'
                                 cont = False
 
+                                gameInfo.reset()
+
                         elif event.type == pygame.MOUSEBUTTONDOWN:
                             if event.button == 1:
                                 if 295 <= mx <= 595 and 545 < my <= 575:
@@ -3228,9 +3307,10 @@ def app() -> None:
 
                         elif event.type == pygame.KEYDOWN:
                             if event.key in [pygame.K_ESCAPE, pygame.K_SPACE]:
-                                gameInfo.reset()
                                 info.status = 'mapSelect'
                                 cont = False
+
+                                gameInfo.reset()
 
                     if not cont:
                         break
