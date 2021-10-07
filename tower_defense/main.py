@@ -2726,122 +2726,128 @@ def save() -> None:
 def load() -> None:
     global info, gameInfo, PowerUps, towerImages
 
-    try:
-        info = pickle.load(open(os.path.join(curr_path, os.pardir, 'save.txt'), 'rb'))
-        try:
-            gameInfo = pickle.load(open(os.path.join(curr_path, os.pardir, 'game.txt'), 'rb'))
+    if os.path.exists(os.path.join(curr_path, 'save.txt')):         # Update 3.7 (Relocate Data to Local Storage)
+        print('Detected save.txt from version pre-3.7.2: Attempting to relocate save.txt...')
 
-        except FileNotFoundError:   # Update pre-2.6 (Relocate gamefile)
-            for attr in playerAttrs:
-                resetTo = getattr(info, attr)
-                if type(resetTo) in [dict, list]:
-                    setattr(gameInfo, attr, resetTo.copy())
+        open(os.path.join(curr_path, '..', 'save.txt'), 'w')
+
+        saveFileData = pickle.load(open(os.path.join(curr_path, 'save.txt'), 'rb'))
+        pickle.dump(saveFileData, open(os.path.join(curr_path, '..', 'save.txt'), 'wb'))
+
+        os.remove(os.path.join(curr_path, 'save.txt'))
+
+        print(f'Relocated save.txt to {os.path.join(os.path.dirname(curr_path), "save.txt")}\n')
+
+        if os.path.exists(os.path.join(curr_path, 'game.txt')):
+            print('Detected game.txt from version pre-3.7.2: Attempting to relocate game.txt...')
+
+            open(os.path.join(curr_path, '..', 'game.txt'), 'w')
+
+            gameFileData = pickle.load(open(os.path.join(curr_path, 'game.txt'), 'rb'))
+            pickle.dump(gameFileData, open(os.path.join(curr_path, '..', 'game.txt'), 'wb'))
+
+            os.remove(os.path.join(curr_path, 'game.txt'))
+
+            print(f'Relocated game.txt to {os.path.join(os.path.dirname(curr_path), "game.txt")}\n')
+
+            if os.path.exists(os.path.join(curr_path, 'replay-files')):
+                print('Detected replay-files/ from version pre-3.7.2: Attempting to relocate replay-files/...')
+
+                try:
+                    os.mkdir(os.path.join(curr_path, '..', 'replay-files'))
+
+                except FileExistsError:
+                    print(f'Detected replay-files/ in {os.path.dirname(curr_path)}: Attempting to merge replay-files/...')
+
+                    replayFiles = [p for p in os.listdir(os.path.join(curr_path, 'replay-files')) if p.endswith('.txt')]
+
+                    for replayFile in replayFiles:
+                        replayFileData = pickle.load(open(os.path.join(curr_path, 'replay-files', replayFile), 'rb'))
+
+                        open(os.path.join(curr_path, '..', 'replay-files', replayFile), 'w')
+                        pickle.dump(replayFileData, open(os.path.join(curr_path, '..', 'replay-files', replayFile), 'wb'))
+
+                    print(f'Merged {os.path.join(os.path.dirname(curr_path), "replay-files")} with {os.path.join(curr_path, "replay-files")} successfully!\n')
+
                 else:
-                    setattr(gameInfo, attr, resetTo)
+                    replayFiles = [p for p in os.listdir(os.path.join(curr_path, 'replay-files')) if p.endswith('.txt')]
 
-            pickle.dump(gameInfo, open(os.path.join(curr_path, os.pardir, 'game.txt'), 'wb'))
-            print(f'Created file {os.path.join(curr_path, os.pardir, "game.txt")}')
+                    for replayFile in replayFiles:
+                        replayFileData = pickle.load(open(os.path.join(curr_path, 'replay-files', replayFile), 'rb'))
 
-        info.update()
-        gameInfo.update()
+                        open(os.path.join(curr_path, '..', 'replay-files', replayFile), 'w')
+                        pickle.dump(replayFileData, open(os.path.join(curr_path, '..', 'replay-files', replayFile), 'wb'))
+
+                        os.remove(os.path.join(curr_path, 'replay-files', replayFile))
+
+                finally:
+                    os.rmdir(os.path.join(curr_path, 'replay-files'))
+                    print(f'Relocated your replay files to {os.path.join(os.path.dirname(curr_path), "replay-files", "")}\n')
+
+        info = pickle.load(open(os.path.join(curr_path, os.pardir, 'save.txt'), 'rb'))
+        gameInfo = pickle.load(open(os.path.join(curr_path, os.pardir, 'game.txt'), 'rb'))
 
         info, gameInfo, PowerUps = update(info, gameInfo, PowerUps)
-        info.skins, info.runes = [s.name for s in Skins], [r.name for r in Runes]
 
         skinLoaded = loadSkin(info.skinsEquipped[1], Towers.__subclasses__())
         if skinLoaded is not None:
             towerImages = skinLoaded
 
-    except FileNotFoundError as e:
-        if os.path.exists(os.path.join(curr_path, 'save.txt')):         # Update 3.7 (Relocate Data to Local Storage)
-            print('Detected save.txt from version pre-3.7.2: Attempting to relocate save.txt...')
+        print(f'Loaded save.txt and game.txt from {os.path.join(os.path.dirname(curr_path), "")}')
 
-            open(os.path.join(curr_path, '..', 'save.txt'), 'w')
-
-            saveFileData = pickle.load(open(os.path.join(curr_path, 'save.txt'), 'rb'))
-            pickle.dump(saveFileData, open(os.path.join(curr_path, '..', 'save.txt'), 'wb'))
-
-            os.remove(os.path.join(curr_path, 'save.txt'))
-
-            print(f'Relocated save.txt to {os.path.join(os.path.dirname(curr_path), "save.txt")}\n')
-
-            if os.path.exists(os.path.join(curr_path, 'game.txt')):
-                print('Detected game.txt from version pre-3.7.2: Attempting to relocate game.txt...')
-
-                open(os.path.join(curr_path, '..', 'game.txt'), 'w')
-
-                gameFileData = pickle.load(open(os.path.join(curr_path, 'game.txt'), 'rb'))
-                pickle.dump(gameFileData, open(os.path.join(curr_path, '..', 'game.txt'), 'wb'))
-
-                os.remove(os.path.join(curr_path, 'game.txt'))
-
-                print(f'Relocated game.txt to {os.path.join(os.path.dirname(curr_path), "game.txt")}\n')
-
-                if os.path.exists(os.path.join(curr_path, 'replay-files')):
-                    print('Detected replay-files/ from version pre-3.7.2: Attempting to relocate replay-files/...')
-
-                    try:
-                        os.mkdir(os.path.join(curr_path, '..', 'replay-files'))
-
-                    except FileExistsError:
-                        print(f'Detected replay-files/ in {os.path.dirname(curr_path)}: Attempting to merge replay-files/...')
-
-                        replayFiles = [p for p in os.listdir(os.path.join(curr_path, 'replay-files')) if p.endswith('.txt')]
-
-                        for replayFile in replayFiles:
-                            replayFileData = pickle.load(open(os.path.join(curr_path, 'replay-files', replayFile), 'rb'))
-
-                            open(os.path.join(curr_path, '..', 'replay-files', replayFile), 'w')
-                            pickle.dump(replayFileData, open(os.path.join(curr_path, '..', 'replay-files', replayFile), 'wb'))
-
-                        print(f'Merged {os.path.join(os.path.dirname(curr_path), "replay-files")} with {os.path.join(curr_path, "replay-files")} successfully!\n')
-
-                    else:
-                        replayFiles = [p for p in os.listdir(os.path.join(curr_path, 'replay-files')) if p.endswith('.txt')]
-
-                        for replayFile in replayFiles:
-                            replayFileData = pickle.load(open(os.path.join(curr_path, 'replay-files', replayFile), 'rb'))
-
-                            open(os.path.join(curr_path, '..', 'replay-files', replayFile), 'w')
-                            pickle.dump(replayFileData, open(os.path.join(curr_path, '..', 'replay-files', replayFile), 'wb'))
-
-                            os.remove(os.path.join(curr_path, 'replay-files', replayFile))
-
-                    finally:
-                        os.rmdir(os.path.join(curr_path, 'replay-files'))
-                        print(f'Relocated your replay files to {os.path.join(os.path.dirname(curr_path), "replay-files", "")}\n')
-
+    else:
+        try:
+            open(os.path.join(curr_path, os.pardir, 'save.txt'), 'r')
             info = pickle.load(open(os.path.join(curr_path, os.pardir, 'save.txt'), 'rb'))
-            gameInfo = pickle.load(open(os.path.join(curr_path, os.pardir, 'game.txt'), 'rb'))
+            try:
+                gameInfo = pickle.load(open(os.path.join(curr_path, os.pardir, 'game.txt'), 'rb'))
 
-            print(f'Loaded save.txt and game.txt from {os.path.join(os.path.dirname(curr_path), "")}')
+            except FileNotFoundError:   # Update pre-2.6 (Relocate gamefile)
+                for attr in playerAttrs:
+                    resetTo = getattr(info, attr)
+                    if type(resetTo) in [dict, list]:
+                        setattr(gameInfo, attr, resetTo.copy())
+                    else:
+                        setattr(gameInfo, attr, resetTo)
 
-        else:
+                pickle.dump(gameInfo, open(os.path.join(curr_path, os.pardir, 'game.txt'), 'wb'))
+                print(f'Created file {os.path.join(curr_path, os.pardir, "game.txt")}')
+
+            info.update()
+            gameInfo.update()
+
+            info, gameInfo, PowerUps = update(info, gameInfo, PowerUps)
+
+            skinLoaded = loadSkin(info.skinsEquipped[1], Towers.__subclasses__())
+            if skinLoaded is not None:
+                towerImages = skinLoaded
+
+        except FileNotFoundError as e:
             open(os.path.join(curr_path, os.pardir, 'save.txt'), 'w')
             print(f'Created file {os.path.join(curr_path, os.pardir, "save.txt")}')
 
-    except AttributeError as e:
-        print(f'tower-defense.core: Fatal - There seems to be something wrong with your save-file.\n\nSee details: {e}')
+        except AttributeError as e:
+            print(f'tower-defense.core: Fatal - There seems to be something wrong with your save-file.\n\nSee details: {e}')
 
-    except UnpicklingError as e:
-        print(f'tower-defense.core: Fatal - Your save-file seems to be corrupt and it has been reset!\n\nSee details: {e}')
+        except UnpicklingError as e:
+            print(f'tower-defense.core: Fatal - Your save-file seems to be corrupt and it has been reset!\n\nSee details: {e}')
 
-    except (EOFError, ValueError):
-        pass
-
-    else:
-        print(f'Loaded save.txt and game.txt from {os.path.join(os.path.dirname(curr_path), "")}')
-
-    finally:
-        try:
-            os.mkdir(os.path.join(curr_path, os.pardir, 'replay-files'))
-            print(f'Created folder {os.path.join(os.path.dirname(curr_path), "replay-files")}')
-
-        except FileExistsError:
+        except (EOFError, ValueError):
             pass
 
-        except OSError as e:
-            print(f'Something happened when trying to create replay-files/ folder. See details: {e}')
+        else:
+            print(f'Loaded save.txt and game.txt from {os.path.join(os.path.dirname(curr_path), "")}')
+
+        finally:
+            try:
+                os.mkdir(os.path.join(curr_path, os.pardir, 'replay-files'))
+                print(f'Created folder {os.path.join(os.path.dirname(curr_path), "replay-files")}')
+
+            except FileExistsError:
+                pass
+
+            except OSError as e:
+                print(f'Something happened when trying to create replay-files/ folder. See details: {e}')
 
 
 # Main
