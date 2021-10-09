@@ -21,10 +21,10 @@ pygame.init()
 pygame.font.init()
 clock = pygame.time.Clock()
 
-tinyFont = pygame.font.Font(os.path.join(resource_path, 'UbuntuMono-Regular.ttf'), 17)
-font = pygame.font.Font(os.path.join(resource_path, 'UbuntuMono-Regular.ttf'), 20)
-mediumFont = pygame.font.Font(os.path.join(resource_path, 'UbuntuMono-Regular.ttf'), 30)
-largeFont = pygame.font.Font(os.path.join(resource_path, 'UbuntuMono-Regular.ttf'), 75)
+tinyFont = pygame.font.Font(os.path.join(resource_path, 'fonts', 'UbuntuMono-Regular.ttf'), 17)
+font = pygame.font.Font(os.path.join(resource_path, 'fonts', 'UbuntuMono-Regular.ttf'), 20)
+mediumFont = pygame.font.Font(os.path.join(resource_path, 'fonts', 'UbuntuMono-Regular.ttf'), 30)
+largeFont = pygame.font.Font(os.path.join(resource_path, 'fonts', 'UbuntuMono-Regular.ttf'), 75)
 
 
 # Screen Printing Functions
