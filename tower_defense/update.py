@@ -58,6 +58,10 @@ def update(info, gameInfo, PowerUps):
         while len(info.skinsEquipped) < 2:
             info.skinsEquipped.append(None)
 
+    for enemy in gameInfo.enemies:          # Update pre-3.8
+        if not hasattr(enemy, 'maxRegenTier'):
+            setattr(enemy, 'maxRegenTier', enemy.tier)
+
     if info.powerUpData is not None:        # Update Powerups
         PowerUps = info.powerUpData
 

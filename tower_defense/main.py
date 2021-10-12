@@ -1302,7 +1302,6 @@ class Elemental(Towers):
         super().__init__(x, y)
         self.inferno = InfernoTower.Inferno(self)
         self.lightning = Wizard.LightningBolt(self)
-        self.villagers = []
         self.abilityCooldown = 7500
         self.abilityData = {
             'tick': 0,
@@ -1312,15 +1311,9 @@ class Elemental(Towers):
         self.infernoTimer = 0
         self.lightningTimer = 0
 
-        self.targets = []
-        for n in range(10):
-            self.villagers.append(Village.Villager(self))
-
         self.upgrades = [3, 3, 3, True]
 
     def draw(self):
-        for villager in self.villagers:
-            villager.draw()
         self.inferno.draw()
         self.lightning.draw()
 
@@ -1346,19 +1339,11 @@ class Elemental(Towers):
                     self.abilityData['rotation'] = 0
                     self.abilityData['active'] = False
 
-        for villager in self.villagers:
-            villager.move()
-            if villager.timer >= 10:
-                villager.attack(30)
-                villager.timer = 0
-            else:
-                villager.timer += 1
-
         if self.stun > 0:
             self.stun -= 1
             return
 
-        if self.timer >= getActualCooldown(self.x, self.y, 2):
+        if self.timer >= getActualCooldown(self.x, self.y, 1):
             closest = getTarget(self, targeting=self.targeting)
             try:
                 Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=50, bossDamage=25, fireTicks=300, removeRegen=canRemoveRegen(self))
@@ -1394,8 +1379,6 @@ class Elemental(Towers):
             self.infernoTimer += 1
 
     def update(self):
-        self.targets = [villager.target for villager in self.villagers]
-
         if self.abilityCooldown < self.totalAbilityCooldown:
             self.abilityCooldown += 1
 
@@ -1513,10 +1496,11 @@ class PiercingProjectile:
 
 
 class Enemy:
-    def __init__(self, tier: str or int, lineIndex: int, *, spawn: List[int] = None, mapPath: int = 0, camo: bool = False, regen: bool = False):
+    def __init__(self, tier: str or int, lineIndex: int, maxRegenTier: str or int, *, spawn: List[int] = None, mapPath: int = 0, camo: bool = False, regen: bool = False, fortified: bool = False):
         self.tier = tier
 
         self.lineIndex = lineIndex
+
         self.mapPath = mapPath
         self.totalMovement = 0
         self.totalPathLength = gameInfo.Map.pathLengths[self.mapPath]
@@ -1524,6 +1508,8 @@ class Enemy:
             self.x, self.y = gameInfo.Map.path[self.mapPath][0]
         else:
             self.x, self.y = spawn
+
+        self.maxRegenTier = str(maxRegenTier)
 
         self.freezeTimer = 0
         self.bossFreeze = 0
@@ -1535,11 +1521,16 @@ class Enemy:
         self.camo = camo
         self.regen = regen
         self.regenTimer = 0
+        self.fortified = fortified
 
         if str(self.tier) in trueHP.keys():
             self.HP = self.MaxHP = trueHP[str(self.tier)]
         else:
             self.HP = self.MaxHP = 1
+
+        if self.fortified:
+            self.HP = 3 * self.HP
+            self.MaxHP = 3 * self.MaxHP
 
         self.direction = None
         self.move(1)
@@ -1667,6 +1658,9 @@ class Enemy:
 
         for projectile in gameInfo.projectiles:
             if abs(self.x - projectile.x) ** 2 + abs(self.y - projectile.y) ** 2 < (784 if self.isBoss else 289):
+                if projectile.removeRegen:
+                    self.regen = False
+
                 if projectile.freezeDuration > 0:
                     gameInfo.projectiles.remove(projectile)
                     self.freezeTimer = max(self.freezeTimer, projectile.freezeDuration // (5 if self.isBoss else 1))
@@ -1781,13 +1775,23 @@ class Enemy:
         pygame.draw.circle(screen, enemyColors[str(self.tier)], (self.x + sx, self.y + sy), 20 if self.isBoss else 12)
 
         if not self.isBoss:
-            color = None
-            if self.camo and self.regen:
-                color = (187, 11, 255)
-            elif self.camo:
-                color = (0, 0, 0)
-            elif self.regen:
-                color = (255, 105, 180)
+            propertiesID = 0
+            if self.camo:
+                propertiesID += 1
+            if self.regen:
+                propertiesID += 2
+            if self.fortified:
+                propertiesID += 4
+
+            color = {
+                '0': None,
+                '1': (0, 0, 0),
+                '2': (255, 105, 180),
+                '3': (187, 11, 255),
+                '4': (152, 118, 84),
+                '5': (165, 42, 42),
+                '7': (200, 200, 0)
+            }[str(propertiesID)]
 
             if color is not None:
                 pygame.draw.circle(screen, color, (self.x + sx, self.y + sy), 12, 2)
@@ -1844,17 +1848,21 @@ class Enemy:
                 gameInfo.coins += coinMultiplier * 0.25
 
         if spawnNew:
-            if self.camo and self.regen:
-                newSpawn = enemiesSpawnNew[f'3{self.tier}']
-            elif self.camo:
-                newSpawn = enemiesSpawnNew[f'1{self.tier}']
-            elif self.regen:
-                newSpawn = enemiesSpawnNew[f'2{self.tier}']
-            else:
-                newSpawn = enemiesSpawnNew[f'0{self.tier}']
+            propertiesID = 0
+            if self.camo:
+                propertiesID += 1
+            if self.regen:
+                propertiesID += 2
+            if self.fortified:
+                propertiesID += 4
+
+            newSpawn = enemiesSpawnNew[f'{propertiesID}{self.tier}']
 
             if self.tier in bossCoins.keys():
-                gameInfo.coins += bossCoins[self.tier] * max(1, coinMultiplier / 4)
+                if self.fortified:
+                    gameInfo.coins += bossCoins[self.tier] * max(1, coinMultiplier / 4) * 2.5
+                else:
+                    gameInfo.coins += bossCoins[self.tier] * max(1, coinMultiplier / 4)
 
             if newSpawn is not None:
                 spawned = []
@@ -1862,7 +1870,7 @@ class Enemy:
                     newSpawnType = newSpawn[2 * n]
                     newSpawnTier = newSpawn[2 * n + 1]
 
-                    new = Enemy(str(newSpawnTier), self.lineIndex, mapPath=self.mapPath, spawn=[self.x, self.y], camo=newSpawnType in ['1', '3'], regen=newSpawnType in ['2', '3'])
+                    new = Enemy(str(newSpawnTier), self.lineIndex, self.maxRegenTier, mapPath=self.mapPath, spawn=[self.x, self.y], camo=newSpawnType in ['1', '3', '5', '7'], regen=newSpawnType in ['2', '3', '6', '7'], fortified=newSpawnType in ['4', '5', '6', '7'])
                     new.fireTicks = self.fireTicks
                     new.fireIgnitedBy = self.fireIgnitedBy
                     new.totalMovement = self.totalMovement
@@ -1880,13 +1888,14 @@ class Enemy:
             return
 
         if self.regenTimer >= regenUpdateTimer:
-            if self.isBoss:
-                self.HP = min(self.MaxHP, self.HP + 50)
-            elif self.tier in regenPath:
-                try:
-                    self.tier = regenPath[regenPath.index(self.tier) + 1]
-                except IndexError:
-                    pass
+            if self.tier != self.maxRegenTier:
+                if self.isBoss:
+                    self.HP = min(self.MaxHP, self.HP + 50)
+                elif self.tier in regenPath:
+                    try:
+                        self.tier = regenPath[regenPath.index(self.tier) + 1]
+                    except IndexError:
+                        pass
 
             self.regenTimer = 0
 
@@ -2943,7 +2952,7 @@ def app() -> None:
                     mx, my = pygame.mouse.get_pos()
 
                     if len(gameInfo.enemies) == 0:
-                        Enemy('0', 0)
+                        Enemy('0', 0, '0')
 
                     screen.fill(gameInfo.Map.backgroundColor)
                     for i in range(len(gameInfo.Map.path)):
@@ -3015,7 +3024,7 @@ def app() -> None:
                     mx, my = pygame.mouse.get_pos()
 
                     if len(gameInfo.enemies) == 0:
-                        Enemy('0', 0)
+                        Enemy('0', 0, '0')
 
                     gameInfo.Map = Maps[5]
 
@@ -3125,7 +3134,7 @@ def app() -> None:
                     mx, my = pygame.mouse.get_pos()
 
                     if len(gameInfo.enemies) == 0:
-                        Enemy('0', 0, regen=True)
+                        Enemy('0', 0, '0', regen=True)
 
                     gameInfo.Map = Maps[5]
 
@@ -3218,7 +3227,7 @@ def app() -> None:
                     mx, my = pygame.mouse.get_pos()
 
                     if len(gameInfo.enemies) == 0:
-                        Enemy('0', 0, camo=True)
+                        Enemy('0', 0, '0', camo=True)
 
                     gameInfo.Map = Maps[5]
 
@@ -4739,7 +4748,7 @@ def app() -> None:
                 mouseTrail = mouseTrail[:-10]
 
             if gameInfo.spawndelay == 0 and len(gameInfo.spawnleft) > 0:
-                Enemy(gameInfo.spawnleft[1], 0, mapPath=gameInfo.spawnPath, camo=gameInfo.spawnleft[0] in ['1', '3'], regen=gameInfo.spawnleft[0] in ['2', '3'])
+                Enemy(gameInfo.spawnleft[1], 0, gameInfo.spawnleft[1], mapPath=gameInfo.spawnPath, camo=gameInfo.spawnleft[0] in ['1', '3', '5', '7'], regen=gameInfo.spawnleft[0] in ['2', '3', '6', '7'], fortified=gameInfo.spawnleft[0] in ['4', '5', '6', '7'])
 
                 gameInfo.spawnleft = gameInfo.spawnleft[2:]
                 gameInfo.spawndelay = 30

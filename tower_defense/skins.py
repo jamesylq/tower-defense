@@ -106,7 +106,8 @@ Skins = [
         ('Enemy', 'A'): ['MOAB.png', (89, 57)],
         ('Enemy', 'B'): ['BFB.png', (140, 99)],
         ('Enemy', 'C'): ['DDT.png', (109, 75)],
-        ('Enemy', 'D'): ['BAD.png', (175, 127)]
+        ('Enemy', 'D'): ['ZOMG.png', (174, 112)],
+        ('Enemy', 'E'): ['BAD.png', (175, 127)]
     }, 2499, 'Enemy', iconSize=(115, 75)),
 
     Skin('Christmas Towers Skin', 'christmas_skin_icon.png', {
