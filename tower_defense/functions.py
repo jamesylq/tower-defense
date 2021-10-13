@@ -59,3 +59,31 @@ def durationToString(duration: SupportsFloat) -> str:
 def durationToStr(duration: SupportsFloat) -> str:
     """Alias for durationToString(duration)."""
     return durationToString(duration)
+
+
+def hexToRGB(hexString: str) -> Tuple[int, int, int]:
+    """Converts a hexadecimal color value to RGB."""
+
+    hexString = removeCharset(hexString, ['0x', '#'])
+
+    if len(hexString) > 6:
+        raise ValueError('RGB input error')
+
+    if len(hexString) == 6:
+        r, g, b = hexString[:2], hexString[2:4], hexString[4:]
+
+    elif len(hexString) == 5:
+        r, g, b = hexString[0], hexString[1:3], hexString[3:]
+
+    else:
+        r = '0'
+        if len(hexString) == 4:
+            g, b = hexString[:2], hexString[2:]
+
+        elif len(hexString) == 3:
+            g, b = hexString[0], hexString[1:]
+
+        else:
+            g, b = '0', hexString
+
+    return int(r, 16), int(g, 16), int(b, 16)
