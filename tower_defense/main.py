@@ -1888,14 +1888,18 @@ class Enemy:
             return
 
         if self.regenTimer >= regenUpdateTimer:
-            if self.tier != self.maxRegenTier:
-                if self.isBoss:
-                    self.HP = min(self.MaxHP, self.HP + 50)
-                elif self.tier in regenPath:
-                    try:
-                        self.tier = regenPath[regenPath.index(self.tier) + 1]
-                    except IndexError:
-                        pass
+            oldTier = self.tier
+
+            if self.isBoss:
+                self.HP = min(self.MaxHP, self.HP + 50)
+            elif self.tier in regenPath:
+                try:
+                    self.tier = regenPath[regenPath.index(self.tier) + 1]
+                except IndexError:
+                    pass
+
+            if strengthPath.index(self.maxRegenTier) < strengthPath.index(self.tier):
+                self.tier = oldTier
 
             self.regenTimer = 0
 
@@ -2344,9 +2348,6 @@ def draw() -> None:
 
         if type(gameInfo.selected) in [Village, BananaFarm]:
             for tower in gameInfo.towers:
-                if tower == gameInfo.selected:
-                    continue
-
                 if abs(tower.x - gameInfo.selected.x) ** 2 + abs(tower.y - gameInfo.selected.y) ** 2 < gameInfo.selected.range ** 2:
                     pygame.draw.circle(screen, gameInfo.selected.color, (tower.x, tower.y), 17, 5)
 
@@ -3608,10 +3609,10 @@ def app() -> None:
                             if not saved:
                                 if 800 <= mx <= 975 and 550 <= my <= 580:
                                     filename = f'replay-{int(time.time())}.txt'
-                                    open(os.path.join(curr_path, 'replay-files', filename), 'w')
+                                    open(os.path.join(curr_path, os.pardir, 'replay-files', filename), 'w')
 
                                     try:
-                                        with open(os.path.join(curr_path, 'replay-files', filename), 'wb') as file:
+                                        with open(os.path.join(curr_path, os.pardir, 'replay-files', filename), 'wb') as file:
                                             pickle.dump([info.gameReplayData, gameInfo.Map], file)
                                         saved = True
                                         info.gameReplayData.clear()
