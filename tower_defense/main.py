@@ -4732,7 +4732,7 @@ def app() -> None:
                 Enemy(gameInfo.spawnleft[1], 0, gameInfo.spawnleft[1], mapPath=gameInfo.spawnPath, camo=gameInfo.spawnleft[0] in ['1', '3', '5', '7'], regen=gameInfo.spawnleft[0] in ['2', '3', '6', '7'], fortified=gameInfo.spawnleft[0] in ['4', '5', '6', '7'])
 
                 gameInfo.spawnleft = gameInfo.spawnleft[2:]
-                gameInfo.spawndelay = 0
+                gameInfo.spawndelay = 30
 
                 gameInfo.spawnPath = (gameInfo.spawnPath + 1) % len(gameInfo.Map.path)
 
