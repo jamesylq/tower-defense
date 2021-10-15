@@ -383,6 +383,7 @@ class SpikeTower(Towers):
             self.ignore = []
             self.pierce = pierce
             self.maxPierce = pierce
+            self.canRemoveRegen = canRemoveRegen(self.parent)
 
         def move(self):
             if not self.visible or (getTarget(self.parent) is None and [self.x, self.y] == [self.parent.x, self.parent.y]):
@@ -478,9 +479,9 @@ class SpikeTower(Towers):
     price = 125
     upgradePrices = [
         [50, 150, 250],
-        [100, 500, 2500],
+        [100, 350, 750],
         [100, 125, 200],
-        5000
+        500
     ]
     upgradeNames = [
         ['Fast Spikes', 'Hyperspeed Spikes', 'Bullet-like Speed'],
@@ -492,7 +493,7 @@ class SpikeTower(Towers):
     projectileSpeed = 1
     cooldown = 100
     pierce = 1
-    totalAbilityCooldown = 3000
+    totalAbilityCooldown = 1000
 
     def __init__(self, x: int, y: int):
         super().__init__(x, y)
@@ -540,7 +541,7 @@ class SpikeTower(Towers):
                 self.pierce = 1
 
         self.projectileSpeed = [1, 1.5, 2.2, 3][self.upgrades[0]]
-        self.cooldown = [100, 35, 10, 5][self.upgrades[1]]
+        self.cooldown = [100, 50, 30, 15][self.upgrades[1]]
 
 
 class BombTower(Towers):
@@ -4731,7 +4732,7 @@ def app() -> None:
                 Enemy(gameInfo.spawnleft[1], 0, gameInfo.spawnleft[1], mapPath=gameInfo.spawnPath, camo=gameInfo.spawnleft[0] in ['1', '3', '5', '7'], regen=gameInfo.spawnleft[0] in ['2', '3', '6', '7'], fortified=gameInfo.spawnleft[0] in ['4', '5', '6', '7'])
 
                 gameInfo.spawnleft = gameInfo.spawnleft[2:]
-                gameInfo.spawndelay = 30
+                gameInfo.spawndelay = 0
 
                 gameInfo.spawnPath = (gameInfo.spawnPath + 1) % len(gameInfo.Map.path)
 
