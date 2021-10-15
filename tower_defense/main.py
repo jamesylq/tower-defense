@@ -274,15 +274,17 @@ class IceTower(Towers):
         def draw(self):
             if self.visibleTicks > 0:
                 self.visibleTicks -= 1
-                screen.blit(IceCircle, (self.x - 125, self.y - 125))
+                screen.blit(IceCircle, (self.x - 37.5, self.y - 37.5))
 
         def freeze(self):
             self.visibleTicks = 50
 
             for enemy in gameInfo.enemies:
-                if abs(enemy.x - self.x) ** 2 + abs(enemy.y - self.y) ** 2 <= 22500:
-                    if not enemy.isBoss:
+                if abs(enemy.x - self.x) ** 2 + abs(enemy.y - self.y) ** 2 <= 8100:
+                    if enemy.tier not in freezeImmune:
                         enemy.freezeTimer = max(enemy.freezeTimer, self.freezeDuration)
+                        enemy.kill(coinMultiplier=getCoinMultiplier(self.parent))
+                        self.parent.hits += 1
 
         def update(self):
             self.freezeDuration = [100, 150, 150, 199][self.parent.upgrades[2]]
@@ -295,7 +297,7 @@ class IceTower(Towers):
     upgradePrices = [
         [30, 60, 100],
         [30, 50, 85],
-        [30, 50, 75],
+        [30, 125, 50],
         250
     ]
     upgradeNames = [
@@ -352,7 +354,7 @@ class IceTower(Towers):
                 return
 
         if self.upgrades[2] >= 2:
-            if self.snowCircleTimer >= self.cooldown * 10:
+            if self.snowCircleTimer >= self.cooldown * 2.5:
                 self.snowCircle.freeze()
                 self.snowCircleTimer = 0
             else:
@@ -985,11 +987,10 @@ class InfernoTower(Towers):
     def attack(self):
         if self.abilityData['active']:
             for enemy in gameInfo.enemies:
-                if abs(enemy.x - self.x) ** 2 + abs(enemy.y - self.y) ** 2 <= self.range ** 2:
-                    enemy.freezeTimer = max(enemy.freezeTimer, 1000)
-                    self.inferno.renders.append(self.AttackRender(self, enemy))
-                    enemy.fireTicks = max(enemy.fireTicks, 500)
-                    enemy.fireIgnitedBy = self
+                enemy.freezeTimer = max(enemy.freezeTimer, 1000)
+                self.inferno.renders.append(self.AttackRender(self, enemy))
+                enemy.fireTicks = max(enemy.fireTicks, 500)
+                enemy.fireIgnitedBy = self
 
             self.abilityData['active'] = False
 
@@ -1073,12 +1074,14 @@ class Village(Towers):
                     try:
                         self.dx = abs(dx / (dx + dy)) * (-1 if self.tx < self.x else 1) * 2
                         self.dy = abs(dy / (dx + dy)) * (-1 if self.ty < self.y else 1) * 2
+
                     except ZeroDivisionError:
                         self.dx = None
                         self.dy = None
                         self.tx = None
                         self.ty = None
                         self.target = None
+
                     else:
                         self.x += self.dx
                         self.y += self.dy
@@ -1220,10 +1223,12 @@ class Sniper(Towers):
                                 pass
 
                     else:
+                        HP = 1
+                        if target.isBoss:
+                            HP = target.HP
+
                         spawn = target.kill(coinMultiplier=getCoinMultiplier(self), bossDamage=self.bossDamage, ceramDamage=self.ceramDamage)
-                        if target.isBoss and not spawn:
-                            info.statistics['bossesKilled'] += 1
-                        self.hits += 1
+                        self.hits += min(HP, self.bossDamage)
 
                     self.rifleFireTicks = 10
 
@@ -1924,8 +1929,10 @@ def reset() -> None:
     finally:
         with open(os.path.join(curr_path, os.pardir, 'save.txt'), 'w') as saveFile:
             saveFile.write('')
+
         with open(os.path.join(curr_path, os.pardir, 'game.txt'), 'w') as gameFile:
             gameFile.write('')
+
         print('tower-defense.core: Save file cleared!')
 
 
@@ -2369,9 +2376,6 @@ def draw() -> None:
 
                 if gameInfo.placing in ['Village', 'Banana Farm']:
                     for tower in gameInfo.towers:
-                        if tower == gameInfo.selected:
-                            continue
-
                         if abs(tower.x - mx) ** 2 + abs(tower.y - my) ** 2 < classObj.range ** 2:
                             pygame.draw.circle(screen, classObj.color, (tower.x, tower.y), 17, 5)
 
@@ -2454,6 +2458,7 @@ def draw() -> None:
         txt = INFINITYSTR
     else:
         txt = str(gameInfo.HP)
+
     leftAlignPrint(font, txt, (10, 500))
     screen.blit(healthImage if gameInfo.HP <= 250 else goldenHealthImage, (font.size(txt)[0] + 17, 493))
 
@@ -5131,7 +5136,7 @@ powerUps = {
     'reload': [pygame.image.load(os.path.join(resource_path, 'reload_power_up.png')), pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'reload_power_up.png')), (60, 60)), 'Reload Power Up']
 }
 
-IceCircle = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'ice_circle.png')), (250, 250)).copy()
+IceCircle = pygame.transform.scale(pygame.image.load(os.path.join(resource_path, 'ice_circle.png')), (75, 75)).copy()
 IceCircle.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
 
 possibleRanges = [0, 30, 50, 100, 125, 130, 150, 160, 165, 175, 180, 200, 250, 400]
