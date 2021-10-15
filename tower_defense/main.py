@@ -1624,7 +1624,7 @@ class Enemy:
                         self.direction = 0
 
                     if foundMove:
-                        self.totalMovement += 1
+                        self.totalMovement += s
                     else:
                         self.kill(coinMultiplier=0, spawnNew=False, ignoreBoss=True, ignoreRegularEnemyHealth=True)
                         info.statistics['enemiesMissed'] += 1
@@ -2210,7 +2210,7 @@ def getTarget(tower: Towers, *, targeting: str = FIRST, ignore: [Enemy] = None, 
             if abs(enemy.x - tower.x) ** 2 + abs(enemy.y - tower.y) ** 2 <= rangeRadius ** 2:
                 if (enemy.camo and canSeeCamo(tower)) or (not enemy.camo):
                     try:
-                        if enemy.totalMovement < minDistance:
+                        if enemy.totalMovement / enemy.totalPathLength < minDistance:
                             minDistance = enemy.totalMovement / enemy.totalPathLength
                             target = enemy
 
@@ -2234,7 +2234,7 @@ def getTarget(tower: Towers, *, targeting: str = FIRST, ignore: [Enemy] = None, 
             if abs(enemy.x - tower.x) ** 2 + abs(enemy.y - tower.y) ** 2 <= rangeRadius ** 2:
                 if (enemy.camo and canSeeCamo(tower)) or (not enemy.camo):
                     try:
-                        if enemy.totalMovement > maxDistance:
+                        if enemy.totalMovement / enemy.totalPathLength > maxDistance:
                             maxDistance = enemy.totalMovement / enemy.totalPathLength
                             target = enemy
 
