@@ -3467,7 +3467,7 @@ def app() -> None:
                                         info.status = 'game'
                                         gameInfo.coins = math.inf if info.sandboxMode else defaults['coins']
                                         gameInfo.HP = math.inf if info.sandboxMode else defaults['HP']
-                                        info.gameReplayData.clear()
+
                                         skinsEquipped = [getSkin(s) for s in info.skinsEquipped]
                                         skinLoaded = loadSkin(info.skinsEquipped[1], Towers.__subclasses__())
                                         if skinLoaded is not None:
@@ -3487,11 +3487,16 @@ def app() -> None:
                                         cont = False
 
                             if 10 <= mx <= 935 and 40 * len(Maps) + 60 <= my + scroll <= 40 * len(Maps) + 90 and my <= 500:
-                                gameInfo.Map = random.choice([Map for Map in Maps if info.PBs[Map.name] != LOCKED])
+                                if info.sandboxMode:
+                                    mapChoice = [Map for Map in Maps if info.PBs[Map.name] not in [None, LOCKED]]
+                                else:
+                                    mapChoice = [Map for Map in Maps if info.PBs[Map.name] != LOCKED]
+                                gameInfo.Map = random.choice(mapChoice)
+
                                 info.status = 'game'
                                 gameInfo.coins = math.inf if info.sandboxMode else defaults['coins']
                                 gameInfo.HP = math.inf if info.sandboxMode else defaults['HP']
-                                info.gameReplayData.clear()
+
                                 skinsEquipped = [getSkin(s) for s in info.skinsEquipped]
                                 skinLoaded = loadSkin(info.skinsEquipped[1], Towers.__subclasses__())
                                 if skinLoaded is not None:
