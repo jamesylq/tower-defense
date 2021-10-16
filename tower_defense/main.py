@@ -310,7 +310,7 @@ class IceTower(Towers):
     cooldown = 100
     freezeDuration = 20
     snowCircleTimer = 0
-    totalAbilityCooldown = 3000
+    totalAbilityCooldown = 2000
 
     def __init__(self, x: int, y: int):
         super().__init__(x, y)
@@ -328,7 +328,10 @@ class IceTower(Towers):
     def attack(self):
         if self.abilityData['active']:
             for enemy in gameInfo.enemies:
-                enemy.freezeTimer = max(300, enemy.freezeTimer)
+                if enemy.isBoss:
+                    enemy.bossFreeze = max(300, enemy.freezeTimer)
+                elif enemy.tier not in freezeImmune:
+                    enemy.freezeTimer = max(300, enemy.freezeTimer)
             self.abilityData['active'] = False
 
         if self.stun > 0:
@@ -1312,7 +1315,7 @@ class Elemental(Towers):
         self.abilityData = {
             'tick': 0,
             'rotation': 0,
-            'active': True
+            'active': False
         }
         self.infernoTimer = 0
         self.lightningTimer = 0
@@ -1327,23 +1330,26 @@ class Elemental(Towers):
 
     def attack(self):
         if self.abilityData['active']:
-            if self.abilityData['tick'] <= 5:
-                self.abilityData['tick'] += 1
-            else:
-                self.abilityData['tick'] = 0
+            tx = self.x + 10 * math.cos(self.abilityData['rotation'] * math.pi / 180)
+            ty = self.y + 10 * math.sin(self.abilityData['rotation'] * math.pi / 180)
+            Projectile(self, self.x, self.y, tx, ty, freezeDuration=100, removeRegen=canRemoveRegen(self))
 
-                tx = self.x + 1000 * SINDEGREES[self.abilityData['rotation'] % 360]
-                ty = self.y + 1000 * COSDEGREES[self.abilityData['rotation'] % 360]
-                Projectile(self, self.x, self.y, tx, ty, freezeDuration=100, removeRegen=canRemoveRegen(self))
+            tx = self.x + 10 * math.cos(self.abilityData['rotation'] * math.pi / 180 + math.pi / 2)
+            ty = self.y + 10 * math.sin(self.abilityData['rotation'] * math.pi / 180 + math.pi / 2)
+            Projectile(self, self.x, self.y, tx, ty, bossDamage=100, explosiveRadius=50, removeRegen=canRemoveRegen(self))
 
-                tx = self.x + 1000 * SINDEGREES[(self.abilityData['rotation'] + 180) % 360]
-                ty = self.y + 1000 * COSDEGREES[(self.abilityData['rotation'] + 180) % 360]
-                Projectile(self, self.x, self.y, tx, ty, bossDamage=100, explosiveRadius=50, removeRegen=canRemoveRegen(self))
+            tx = self.x + 10 * math.cos(self.abilityData['rotation'] * math.pi / 180 + math.pi)
+            ty = self.y + 10 * math.sin(self.abilityData['rotation'] * math.pi / 180 + math.pi)
+            Projectile(self, self.x, self.y, tx, ty, freezeDuration=100, removeRegen=canRemoveRegen(self))
 
-                self.abilityData['rotation'] += 30
-                if self.abilityData['rotation'] == 1800:
-                    self.abilityData['rotation'] = 0
-                    self.abilityData['active'] = False
+            tx = self.x + 10 * math.cos(self.abilityData['rotation'] * math.pi / 180 + math.pi * 3 / 2)
+            ty = self.y + 10 * math.sin(self.abilityData['rotation'] * math.pi / 180 + math.pi * 3 / 2)
+            Projectile(self, self.x, self.y, tx, ty, bossDamage=100, explosiveRadius=50, removeRegen=canRemoveRegen(self))
+
+            self.abilityData['rotation'] += 1
+            if self.abilityData['rotation'] == 360:
+                self.abilityData['rotation'] = 0
+                self.abilityData['active'] = False
 
         if self.stun > 0:
             self.stun -= 1
@@ -2882,10 +2888,12 @@ def app() -> None:
                             if 225 < mx < 400:
                                 gameInfo.reset()
                                 info.status = 'mapSelect'
+                                info.gameReplayData.clear()
                                 cont = True
+
                             elif 600 < mx < 775:
-                                cont = True
                                 skinsEquipped = [getSkin(s) for s in info.skinsEquipped]
+                                cont = True
 
             if cont:
                 break
@@ -3429,6 +3437,13 @@ def app() -> None:
                 else:
                     pygame.draw.rect(screen, (0, 0, 0), (825, 550, 150, 30), 3)
 
+                pygame.draw.rect(screen, (0, 225, 0) if info.recordGames else (255, 0, 0), (200, 510, 200, 30))
+                centredPrint(font, 'Recording: ' + ('ON' if info.recordGames else 'OFF'), (300, 525))
+                if 200 <= mx <= 400 and 510 <= my <= 540:
+                    pygame.draw.rect(screen, (128, 128, 128), (200, 510, 200, 30), 5)
+                else:
+                    pygame.draw.rect(screen, (0, 0, 0), (200, 510, 200, 30), 3)
+
                 tiersNotClaimed = 0
                 for achievement, requirement in achievementRequirements.items():
                     stat = info.statistics[requirement['attr']]
@@ -3468,6 +3483,8 @@ def app() -> None:
                                         gameInfo.coins = math.inf if info.sandboxMode else defaults['coins']
                                         gameInfo.HP = math.inf if info.sandboxMode else defaults['HP']
 
+                                        info.gameReplayData.clear()
+
                                         skinsEquipped = [getSkin(s) for s in info.skinsEquipped]
                                         skinLoaded = loadSkin(info.skinsEquipped[1], Towers.__subclasses__())
                                         if skinLoaded is not None:
@@ -3496,6 +3513,8 @@ def app() -> None:
                                 info.status = 'game'
                                 gameInfo.coins = math.inf if info.sandboxMode else defaults['coins']
                                 gameInfo.HP = math.inf if info.sandboxMode else defaults['HP']
+
+                                info.gameReplayData.clear()
 
                                 skinsEquipped = [getSkin(s) for s in info.skinsEquipped]
                                 skinLoaded = loadSkin(info.skinsEquipped[1], Towers.__subclasses__())
@@ -3562,6 +3581,9 @@ def app() -> None:
                                 info.status = 'achievements'
                                 cont = False
 
+                            if 200 <= mx <= 400 and 510 <= my <= 540:
+                                info.recordGames = not info.recordGames
+
                             if 200 <= mx <= 400 and 550 <= my <= 580:
                                 info.sandboxMode = not info.sandboxMode
 
@@ -3590,7 +3612,7 @@ def app() -> None:
 
                 centredPrint(font, f'Press [SPACE] to continue!', (500, 280), (255, 255, 255))
 
-                if not saved:
+                if not saved and info.recordGames:
                     pygame.draw.rect(screen, (128, 128, 128), (800, 550, 175, 30))
                     centredPrint(font, 'Download Replay', (887, 565))
                     if 800 <= mx <= 975 and 550 <= my <= 580:
@@ -3617,7 +3639,7 @@ def app() -> None:
 
                     elif event.type == pygame.MOUSEBUTTONDOWN:
                         if event.button == 1:
-                            if not saved:
+                            if not saved and info.recordGames:
                                 if 800 <= mx <= 975 and 550 <= my <= 580:
                                     filename = f'replay-{int(time.time())}.txt'
                                     open(os.path.join(curr_path, os.pardir, 'replay-files', filename), 'w')
@@ -4101,9 +4123,9 @@ def app() -> None:
                         try:
                             if towerImages[towerName] is not None:
                                 try:
-                                    screen.blit(towerImages[towerName], (x + 85, y + 55))
+                                    screen.blit(towerImages[towerName], (x + 85, y + 60))
                                 except TypeError:
-                                    screen.blit(towerImages[towerName][imageFrame], (x + 85, y + 55))
+                                    screen.blit(towerImages[towerName][imageFrame], (x + 85, y + 60))
 
                             elif color is None:
                                 raise AttributeError
@@ -4812,74 +4834,75 @@ def app() -> None:
             draw()
             move()
 
-            if gameInfo.replayRefresh >= ReplayRefreshRate:
-                replayTowers = []
-                replayEnemies = []
-                replayProjectiles = []
-                replayPiercingProjectiles = []
-                replayEffects = []
+            if info.recordGames:
+                if gameInfo.replayRefresh >= ReplayRefreshRate:
+                    replayTowers = []
+                    replayEnemies = []
+                    replayProjectiles = []
+                    replayPiercingProjectiles = []
+                    replayEffects = []
 
-                for tower in gameInfo.towers:
-                    replayTowers.append([tower.name, tower.x, tower.y, tower.getImageFrame()])
+                    for tower in gameInfo.towers:
+                        replayTowers.append([tower.name, tower.x, tower.y, tower.getImageFrame()])
 
-                    if type(tower) is SpikeTower:
-                        for spike in tower.spikes.spikes:
-                            if spike.visible:
-                                replayEffects.append(['circle', (0, 0, 0), (spike.x, spike.y), 2])
+                        if type(tower) is SpikeTower:
+                            for spike in tower.spikes.spikes:
+                                if spike.visible:
+                                    replayEffects.append(['circle', (0, 0, 0), (spike.x, spike.y), 2])
 
-                    if type(tower) is Wizard:
-                        if tower.lightning.visibleTicks >= 0:
-                            if tower.lightning.t1 is not None:
-                                replayEffects.append(['line', (191, 0, 255), (tower.x, tower.y), (tower.lightning.t1.x, tower.lightning.t1.y)])
-                                if tower.lightning.t2 is not None:
-                                    replayEffects.append(['line', (191, 0, 255), (tower.lightning.t1.x, tower.lightning.t1.y), (tower.lightning.t2.x, tower.lightning.t2.y)])
-                                    if tower.lightning.t3 is not None:
-                                        replayEffects.append(['line', (191, 0, 255), (tower.lightning.t2.x, tower.lightning.t2.y), (tower.lightning.t3.x, tower.lightning.t3.y)])
-                                        if tower.lightning.t4 is not None:
-                                            replayEffects.append(['line', (191, 0, 255), (tower.lightning.t2.x, tower.lightning.t3.y), (tower.lightning.t4.x, tower.lightning.t4.y)])
-                                            if tower.lightning.t5 is not None:
-                                                replayEffects.append(['line', (191, 0, 255), (tower.lightning.t2.x, tower.lightning.t4.y), (tower.lightning.t5.x, tower.lightning.t5.y)])
+                        if type(tower) is Wizard:
+                            if tower.lightning.visibleTicks > 0:
+                                if tower.lightning.t1 is not None:
+                                    replayEffects.append(['line', (191, 0, 255), (tower.x, tower.y), (tower.lightning.t1.x, tower.lightning.t1.y)])
+                                    if tower.lightning.t2 is not None:
+                                        replayEffects.append(['line', (191, 0, 255), (tower.lightning.t1.x, tower.lightning.t1.y), (tower.lightning.t2.x, tower.lightning.t2.y)])
+                                        if tower.lightning.t3 is not None:
+                                            replayEffects.append(['line', (191, 0, 255), (tower.lightning.t2.x, tower.lightning.t2.y), (tower.lightning.t3.x, tower.lightning.t3.y)])
+                                            if tower.lightning.t4 is not None:
+                                                replayEffects.append(['line', (191, 0, 255), (tower.lightning.t2.x, tower.lightning.t3.y), (tower.lightning.t4.x, tower.lightning.t4.y)])
+                                                if tower.lightning.t5 is not None:
+                                                    replayEffects.append(['line', (191, 0, 255), (tower.lightning.t2.x, tower.lightning.t4.y), (tower.lightning.t5.x, tower.lightning.t5.y)])
 
-                    if type(tower) is Sniper:
-                        if tower.rifleFireTicks > 0:
-                            dx = [0, 7, 14, 7, 0, -7, -14, -7][tower.rotation]
-                            dy = [14, 7, 0, -7, -14, -7, 0, 7][tower.rotation]
+                        if type(tower) is Sniper:
+                            if tower.rifleFireTicks > 0:
+                                dx = [0, 7, 14, 7, 0, -7, -14, -7][tower.rotation]
+                                dy = [14, 7, 0, -7, -14, -7, 0, 7][tower.rotation]
 
-                            replayEffects.append(['circle', (255, 128, 0), (tower.x + dx, tower.y + dy), 3])
+                                replayEffects.append(['circle', (255, 128, 0), (tower.x + dx, tower.y + dy), 3])
 
-                    if type(tower) in [InfernoTower, Elemental]:
-                        for render in tower.inferno.renders:
-                            replayEffects.append(['line', (255, 69, 0), (render.target.x, render.target.y), (tower.x, tower.y - 12)])
+                        if type(tower) in [InfernoTower, Elemental]:
+                            for render in tower.inferno.renders:
+                                replayEffects.append(['line', (255, 69, 0), (render.target.x, render.target.y), (tower.x, tower.y - 12)])
 
-                for enemy in gameInfo.enemies:
-                    replayEnemies.append([enemy.camo, enemy.regen, enemy.tier, enemy.x, enemy.y, enemy.HP, enemy.MaxHP])
+                    for enemy in gameInfo.enemies:
+                        replayEnemies.append([enemy.camo, enemy.regen, enemy.tier, enemy.x, enemy.y, enemy.HP, enemy.MaxHP])
 
-                for proj in gameInfo.projectiles:
-                    replayProjectiles.append([proj.color, proj.x, proj.y])
+                    for proj in gameInfo.projectiles:
+                        replayProjectiles.append([proj.color, proj.x, proj.y])
 
-                for piercingProj in gameInfo.piercingProjectiles:
-                    replayPiercingProjectiles.append([piercingProj.x, piercingProj.y])
+                    for piercingProj in gameInfo.piercingProjectiles:
+                        replayPiercingProjectiles.append([piercingProj.x, piercingProj.y])
 
-                for powerUp in PowerUps.objects:
-                    if type(powerUp) is PhysicalPowerUp.Spike:
-                        replayEffects.append(['circle', (0, 0, 0), (powerUp.x, powerUp.y), 3])
+                    for powerUp in PowerUps.objects:
+                        if type(powerUp) is PhysicalPowerUp.Spike:
+                            replayEffects.append(['circle', (0, 0, 0), (powerUp.x, powerUp.y), 3])
 
-                    if type(powerUp) is PhysicalPowerUp.Lightning:
-                        replayEffects.append(['line', (191, 0, 255), (500, -200), (powerUp.x, powerUp.y)])
+                        if type(powerUp) is PhysicalPowerUp.Lightning:
+                            replayEffects.append(['line', (191, 0, 255), (500, -200), (powerUp.x, powerUp.y)])
 
-                toAppend = {
-                    'towers': replayTowers,
-                    'enemies': replayEnemies,
-                    'projectiles': replayProjectiles,
-                    'piercingProjectiles': replayPiercingProjectiles,
-                    'effects': replayEffects
-                }
+                    toAppend = {
+                        'towers': replayTowers,
+                        'enemies': replayEnemies,
+                        'projectiles': replayProjectiles,
+                        'piercingProjectiles': replayPiercingProjectiles,
+                        'effects': replayEffects
+                    }
 
-                info.gameReplayData.append({k: v for k, v in toAppend.items() if v})
+                    info.gameReplayData.append({k: v for k, v in toAppend.items() if v})
 
-                gameInfo.replayRefresh = 0
-            else:
-                gameInfo.replayRefresh += 1
+                    gameInfo.replayRefresh = 0
+                else:
+                    gameInfo.replayRefresh += 1
 
             if info.equippedRune == 'Rainbow Rune':
                 rainbowShiftCount += 1
@@ -4952,6 +4975,7 @@ def app() -> None:
                         if mx <= 20 and 450 <= my <= 470:
                             gameInfo.reset()
                             info.status = 'mapSelect'
+                            info.gameReplayData.clear()
 
                         if 460 <= my <= 510:
                             if 810 <= mx <= 860 and info.powerUps['spikes'] > 0 and gameInfo.placing == '':
@@ -5055,7 +5079,7 @@ def app() -> None:
                                                 gameInfo.towers.remove(gameInfo.selected)
 
                                                 elemental = Elemental(gameInfo.selected.x, gameInfo.selected.y)
-                                                elemental.hits = sum([t.hits for t in sacrifice])
+                                                elemental.hits = sum([t.hits for t in sacrifice]) + gameInfo.selected.hits
                                                 gameInfo.towersPlaced += 1
 
                                                 gameInfo.selected = elemental
