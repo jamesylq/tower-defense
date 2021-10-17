@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "tower-defense"
-version = "3.8.10"
+version = "3.8.11"
 description = ""
 authors = ["Ying Liqian <jamesylq@gmail.com>"]
 
@@ -18,4 +18,4 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 tower-defense = "tower_defense.main:app"
-clear-tower-defense-savefile = "tower_defense.main:reset"
+clear-tower-defense-savefile = "tower_defense.main:factoryReset"

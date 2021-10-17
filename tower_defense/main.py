@@ -1919,7 +1919,7 @@ class Enemy:
             self.regenTimer += 1
 
 # Functions
-def reset() -> None:
+def factoryReset() -> None:
     try:
         open(os.path.join(curr_path, os.pardir, 'save.txt'), 'r')
 
@@ -1949,6 +1949,9 @@ def fileSelection(path: str) -> str:
     displayedFiles = textfiles + subdirectories
 
     scroll = 0
+    mode = 'select'
+
+    illegalFiles = [os.path.join(os.path.dirname(curr_path), 'save.txt'), os.path.join(os.path.dirname(curr_path), 'game.txt')]
     while True:
         screen.fill((200, 200, 200))
 
@@ -1956,15 +1959,28 @@ def fileSelection(path: str) -> str:
         maxScroll = max(30 * len(displayedFiles) - 490, 0)
 
         if len(displayedFiles) == 0:
-            centredPrint(font, 'No suitable files detected!', (500, 260))
+            centredPrint(font, 'No suitable files detected here!', (500, 260))
+
         else:
             n = 0
             for pathToFile in displayedFiles:
-                pygame.draw.rect(screen, (100, 100, 100), (25, 60 + 30 * n - scroll, 950, 25))
-                if 25 <= mx <= 975 and 60 + 30 * n - scroll <= my <= 85 + 30 * n - scroll and 60 <= my <= 550:
-                    pygame.draw.rect(screen, (128, 128, 128), (25, 60 + 30 * n - scroll, 950, 25), 5)
+                if pathToFile in textfiles or (pathToFile in subdirectories and mode == 'select'):
+                    if pathToFile in illegalFiles:
+                        pygame.draw.rect(screen, (255, 128, 128), (25, 60 + 30 * n - scroll, 950, 25))
+                        pygame.draw.rect(screen, (0, 0, 0), (25, 60 + 30 * n - scroll, 950, 25), 3)
+                        pygame.draw.circle(screen, (255, 0, 0), (870, 72 + 30 * n - scroll), 10, 2)
+                        pygame.draw.line(screen, (255, 0, 0), (864, 78 + 30 * n - scroll), (876, 66 + 30 * n - scroll), 4)
+
+                    else:
+                        pygame.draw.rect(screen, (100, 100, 100), (25, 60 + 30 * n - scroll, 950, 25))
+                        if 25 <= mx <= 975 and 60 + 30 * n - scroll <= my <= 85 + 30 * n - scroll and 60 <= my <= 550:
+                            pygame.draw.rect(screen, (128, 128, 128), (25, 60 + 30 * n - scroll, 950, 25), 5)
+                        else:
+                            pygame.draw.rect(screen, (0, 0, 0), (25, 60 + 30 * n - scroll, 950, 25), 3)
+
                 else:
-                    pygame.draw.rect(screen, (0, 0, 0), (25, 60 + 30 * n - scroll, 950, 25), 3)
+                    pygame.draw.rect(screen, (150, 150, 150), (25, 60 + 30 * n - scroll, 950, 25))
+                    pygame.draw.rect(screen, (64, 64, 64), (25, 60 + 30 * n - scroll, 950, 25), 3)
 
                 if len(pathToFile) > 85:
                     pathToFileText = '...' + pathToFile[-82:]
@@ -2013,6 +2029,19 @@ def fileSelection(path: str) -> str:
         else:
             pygame.draw.rect(screen, (0, 0, 0), (150, 560, 200, 30), 3)
 
+        if mode == 'select':
+            pygame.draw.rect(screen, (255, 0, 0), (25, 15, 100, 30))
+            centredPrint(font, 'Delete', (75, 30))
+            if 25 <= mx <= 125 and 15 <= my <= 45:
+                pygame.draw.rect(screen, (128, 128, 128), (25, 15, 100, 30), 5)
+            else:
+                pygame.draw.rect(screen, (0, 0, 0), (25, 15, 100, 30), 3)
+
+            rightAlignPrint(tinyFont, 'Select the file you want to replay!', (990, 30))
+
+        elif mode == 'delete':
+            rightAlignPrint(tinyFont, 'Select the file you want to delete!', (990, 30))
+
         if len(path) > 60:
             pathText = '...' + path[-57:]
         else:
@@ -2026,8 +2055,15 @@ def fileSelection(path: str) -> str:
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
+                    if 30 <= mx <= 130 and 15 <= my <= 45:
+                        mode = 'delete'
+
                     if 30 <= mx <= 130 and 560 <= my <= 590:
-                        return ''
+                        if mode == 'select':
+                            return ''
+
+                        elif mode == 'delete':
+                            mode = 'select'
 
                     if 150 <= mx <= 350 and 560 <= my <= 590:
                         oldpath = path
@@ -2043,17 +2079,37 @@ def fileSelection(path: str) -> str:
 
                     n = 0
                     for pathToFile in displayedFiles:
+                        if pathToFile in illegalFiles:
+                            n += 1
+                            continue
+
                         if 25 <= mx <= 975 and 60 + 30 * n - scroll <= my <= 85 + 30 * n - scroll and 60 <= my <= 550:
-                            if pathToFile in subdirectories:
-                                scroll = 0
-                                path = pathToFile
+                            if mode == 'select':
+                                if pathToFile in subdirectories:
+                                    scroll = 0
+                                    path = pathToFile
 
-                                textfiles = glob.glob(os.path.join(path, '*.txt'))
-                                subdirectories = glob.glob(os.path.join(path, '*', ''))
-                                displayedFiles = textfiles + subdirectories
+                                    textfiles = glob.glob(os.path.join(path, '*.txt'))
+                                    subdirectories = glob.glob(os.path.join(path, '*', ''))
+                                    displayedFiles = textfiles + subdirectories
 
-                            if pathToFile in textfiles:
-                                return pathToFile
+                                if pathToFile in textfiles:
+                                    return pathToFile
+
+                            elif mode == 'delete':
+                                if pathToFile in textfiles:
+                                    try:
+                                        os.remove(pathToFile)
+                                        print(f'Deleted file {pathToFile}!')
+
+                                        textfiles = glob.glob(os.path.join(path, '*.txt'))
+                                        subdirectories = glob.glob(os.path.join(path, '*', ''))
+                                        displayedFiles = textfiles + subdirectories
+
+                                        mode = 'select'
+
+                                    except OSError as e:
+                                        print(f'tower-defense.core: An error occured when trying to delete {pathToFile}. See details: {e}')
 
                         n += 1
 
