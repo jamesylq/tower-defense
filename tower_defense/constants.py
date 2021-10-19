@@ -346,7 +346,7 @@ achievementRequirements = {
 
 achievements = {
     'beatMaps': {
-        'names': ['First Map!', 'Map Conqueror', 'Master of The End'],
+        'names': ['First Map!', 'Map Conqueror', 'Master of Tower-defense'],
         'rewards': [50, 100, 250],
         'lore': 'Beat [%] unique maps!'
     },
@@ -366,7 +366,7 @@ achievements = {
         'lore': 'Spend [%] coins!'
     },
     'killBosses': {
-        'names': ['Slayer', 'Large Enemies Popper', 'Boss Exterminator'],
+        'names': ['Slayer', 'Boss Hunter', 'Boss Exterminator'],
         'rewards': [100, 250, 750],
         'lore': 'Kill [%] bosses!'
     }

@@ -4699,7 +4699,7 @@ def app() -> None:
                 n = 0
                 for achievement, information in achievements.items():
                     pygame.draw.rect(screen, (100, 100, 100), (10, 80 + 110 * n - scroll, 980, 100))
-                    leftAlignPrint(font, information['names'][min(info.achievements[achievement], 2)], (20, 93 + 110 * n - scroll))
+                    leftAlignPrint(font, information['names'][min(info.claimedAchievementRewards[achievement], 2)], (20, 93 + 110 * n - scroll))
 
                     leftAlignPrint(tinyFont, information['lore'].replace('[%]', str(achievementRequirements[achievement]['tiers'][min(info.claimedAchievementRewards[achievement], 2)])), (20, 120 + 110 * n - scroll))
 
