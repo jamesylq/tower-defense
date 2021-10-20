@@ -14,6 +14,7 @@ resource_path = os.path.join(curr_path, 'resources')
 class Skin:
     def __init__(self, name: str, icon: str, skins: Dict[List[str], list], price: int, skinType: str, *, iconSize: Tuple[int, int] = None):
         self.name = name
+
         self.skins = {}
         for k, v in skins.items():
             if k[0] == 'Enemy':
@@ -70,9 +71,11 @@ def getNotUnlockedSkin(info):
     notUnlocked = []
     for skin in Skins:
         if skin.name not in info.skins:
-            if skin.name == 'Christmas Towers Skin':
-                if now.month == 12 and 24 <= now.day <= 25:
+            if skin.name in specialSkins.keys():
+                obtainableDates = specialSkins[skin.name]
+                if obtainableDates[0][0] <= now.year <= obtainableDates[1][0] and obtainableDates[0][1] <= now.month <= obtainableDates[1][1] and obtainableDates[0][2] <= now.day <= obtainableDates[1][2]:
                     notUnlocked.append(skin)
+
             else:
                 notUnlocked.append(skin)
 
@@ -108,7 +111,7 @@ Skins = [
         ('Enemy', 'C'): ['DDT.png', (109, 75)],
         ('Enemy', 'D'): ['ZOMG.png', (174, 112)],
         ('Enemy', 'E'): ['BAD.png', (175, 127)]
-    }, 2499, 'Enemy', iconSize=(115, 75)),
+    }, 2499, 'Enemy', iconSize=(90, 75)),
 
     Skin('Christmas Towers Skin', 'christmas_skin_icon.png', {
         ('Tower', 'Turret'): ['christmas_turret.png', 'christmas_turret_45.png'],
@@ -124,7 +127,7 @@ Skins = [
         ('Tower', 'Elemental'): 'christmas_elemental.png'
     }, 0, 'Tower', iconSize=(75, 75)),
 
-    Skin('Golden Towers Skin', 'golden_skin_icon.png', {
+    Skin('Golden Towers Skin', os.path.join(os.pardir, 'gold_rune.png'), {
         ('Tower', 'Turret'): ['golden_turret.png', 'golden_turret_45.png'],
         ('Tower', 'Ice Tower'): 'golden_ice_tower.png',
         ('Tower', 'Spike Tower'): 'golden_spike_tower.png',
@@ -136,5 +139,24 @@ Skins = [
         ('Tower', 'Village'): 'golden_village.png',
         ('Tower', 'Sniper'): ['golden_sniper.png', 'golden_sniper_45.png'],
         ('Tower', 'Elemental'): 'golden_elemental.png'
-    }, 1499, 'Tower', iconSize=(75, 75))
+    }, 1499, 'Tower', iconSize=(75, 75)),
+
+    Skin('Halloween Towers Skin', 'halloween_skin_icon.png', {
+        ('Tower', 'Turret'): ['halloween_turret.png', 'halloween_turret_45.png'],
+        ('Tower', 'Ice Tower'): 'halloween_ice_tower.png',
+        ('Tower', 'Spike Tower'): 'halloween_spike_tower.png',
+        ('Tower', 'Bomb Tower'): 'halloween_bomb_tower.png',
+        ('Tower', 'Banana Farm'): 'halloween_banana_farm.png',
+        ('Tower', 'Bowler'): 'halloween_bowler.png',
+        ('Tower', 'Wizard'): 'halloween_wizard.png',
+        ('Tower', 'Inferno'): ['halloween_inferno.png', 'halloween_inactive_inferno.png'],
+        ('Tower', 'Village'): 'halloween_village.png',
+        ('Tower', 'Sniper'): ['halloween_sniper.png', 'halloween_sniper_45.png'],
+        ('Tower', 'Elemental'): 'halloween_elemental.png'
+    }, 0, 'Tower', iconSize=(75, 75))
 ]
+
+specialSkins = {
+    'Christmas Towers Skin': [[2021, 12, 18], [2021, 12, 25]],
+    'Halloween Towers Skin': [[2021, 10, 24], [2021, 10, 31]]
+}

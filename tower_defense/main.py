@@ -4565,7 +4565,7 @@ def app() -> None:
 
                         pygame.draw.rect(screen, (64, 64, 64), (55 + 100 * deltaX[i], y, 90, 90))
                         if skin in info.skinsEquipped:
-                            pygame.draw.rect(screen, (100, 100, 100), (55 + 100 * deltaX[i], y, 90, 90), 3)
+                            pygame.draw.rect(screen, (255, 255, 0), (55 + 100 * deltaX[i], y, 90, 90), 3)
 
                         centredBlit(skinObj.smallImageTexture, (100 + 100 * deltaX[i], y + 45))
 
@@ -4593,7 +4593,10 @@ def app() -> None:
                                             index = n
 
                                     if index is not None:
-                                        info.skinsEquipped[0] = enemySkins[index]
+                                        if info.skinsEquipped[0] == enemySkins[index]:
+                                            info.skinsEquipped[0] = None
+                                        else:
+                                            info.skinsEquipped[0] = enemySkins[index]
 
                                 if 245 <= my <= 335:
                                     index = None
@@ -4603,7 +4606,10 @@ def app() -> None:
                                             index = n
 
                                     if index is not None:
-                                        info.skinsEquipped[1] = towerSkins[index]
+                                        if info.skinsEquipped[1] == towerSkins[index]:
+                                            info.skinsEquipped[1] = None
+                                        else:
+                                            info.skinsEquipped[1] = towerSkins[index]
 
                     if not cont:
                         break
