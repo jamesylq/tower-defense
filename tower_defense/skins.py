@@ -157,6 +157,6 @@ Skins = [
 ]
 
 specialSkins = {
-    'Christmas Towers Skin': [[2021, 12, 18], [2021, 12, 25]],
-    'Halloween Towers Skin': [[2021, 10, 24], [2021, 10, 31]]
+    'Christmas Towers Skin': [[2021, 12, 15], [2021, 12, 25]],
+    'Halloween Towers Skin': [[2021, 10, 21], [2021, 10, 31]]
 }
