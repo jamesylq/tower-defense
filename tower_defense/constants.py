@@ -404,7 +404,8 @@ defaults = {
         'backgroundColor': '',
         'pathColor': '',
         'path': None,
-        'field': None
+        'field': None,
+        'page': 0
     },
     'sandboxMode': False,
     'statistics': {

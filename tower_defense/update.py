@@ -18,26 +18,16 @@ def update(info, gameInfo, PowerUps):
     for attr, default in defaults['statistics'].items():        # Update Statistics
         try:
             info.statistics[attr] = info.statistics[attr]
+
         except KeyError:
             if attr == 'totalWins':
                 try:
                     info.statistics[attr] = sum([val for val in info.statistics['wins'].values()])
                 except KeyError:
                     info.statistics[attr] = 0
+
             else:
                 info.statistics[attr] = default
-
-    for attr, default in defaults['achievements'].items():          # Update Achievements
-        try:
-            info.achievements[attr] = info.achievements[attr]
-        except KeyError:
-            info.achievements[attr] = default
-
-    for powerUp, default in defaults['powerUps'].items():           # Update Powerups
-        try:
-            info.powerUps[powerUp] = info.powerUps[powerUp]
-        except KeyError:
-            info.powerUps[powerUp] = default
 
     for tower in gameInfo.towers:       # Update pre-2.4
         if not hasattr(tower, 'ID'):

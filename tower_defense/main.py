@@ -1,5 +1,6 @@
 # Imports
 import os
+import sys
 import glob
 import math
 import pytz
@@ -7,11 +8,15 @@ import time
 import pickle
 import pygame
 import random
+import pyperclip
 
 from typing import *
 from _pickle import UnpicklingError
 
 from tower_defense import __version__
+
+runningOS = sys.platform
+command_key = pygame.K_LSUPER if runningOS == 'darwin' else pygame.K_LCTRL
 
 curr_path = os.path.dirname(__file__)
 resource_path = os.path.join(curr_path, 'resources')
@@ -86,6 +91,14 @@ class data:
                     setattr(self, attr, default.copy())
                 else:
                     setattr(self, attr, default)
+                
+            else:
+                if type(default) is dict:
+                    for k, v in default.items():
+                        try:
+                            getattr(self, attr)[k] = getattr(self, attr)[k]
+                        except KeyError:
+                            getattr(self, attr)[k] = v
 
 
 class gameData:
@@ -3745,7 +3758,7 @@ def app() -> None:
                     break
 
         elif info.status == 'mapMaker':
-            if info.mapMakerData['path'] is None:
+            if info.mapMakerData['page'] == 0:
                 ticks = 0
                 uppercase = False
                 try:
@@ -3859,8 +3872,10 @@ def app() -> None:
                         pygame.draw.rect(screen, (0, 0, 0), (30, 550, 100, 30), 3)
 
                     field = info.mapMakerData['field']
+
                     cont = True
-                    shifting = pygame.key.get_pressed()[pygame.K_LSHIFT]
+                    pressed = pygame.key.get_pressed()
+                    shifting = pressed[pygame.K_LSHIFT]
                     for event in pygame.event.get():
                         if field is not None:
                             if event.type == pygame.KEYDOWN:
@@ -3894,19 +3909,40 @@ def app() -> None:
                                         if event.key == translationKey:
                                             if event.key == pygame.K_0 and shifting:
                                                 letter = ')'
-                                            if event.key == pygame.K_3 and shifting:
+
+                                            elif event.key == pygame.K_3 and shifting:
                                                 letter = '#'
-                                            if event.key == pygame.K_9 and shifting:
+
+                                            elif event.key == pygame.K_9 and shifting:
                                                 letter = '('
 
-                                            if charInsertIndex == 0:
-                                                info.mapMakerData[field] = (letter.upper() if (uppercase or shifting) else letter.lower()) + info.mapMakerData[field]
-                                            elif charInsertIndex == len(info.mapMakerData[field]):
-                                                info.mapMakerData[field] += (letter.upper() if (uppercase or shifting) else letter.lower())
-                                            else:
-                                                info.mapMakerData[field] = info.mapMakerData[field][:charInsertIndex] + (letter.upper() if (uppercase or shifting) else letter.lower()) + info.mapMakerData[field][charInsertIndex:]
+                                            elif event.key == pygame.K_v and pressed[command_key]:
+                                                try:
+                                                    toPaste = pyperclip.paste()
 
-                                            charInsertIndex += 1
+                                                    if charInsertIndex == 0:
+                                                        info.mapMakerData[field] = toPaste + info.mapMakerData[field]
+
+                                                    elif charInsertIndex == len(info.mapMakerData[field]):
+                                                        info.mapMakerData[field] += toPaste
+
+                                                    else:
+                                                        info.mapMakerData[field] = info.mapMakerData[field][:charInsertIndex] + toPaste + info.mapMakerData[field][charInsertIndex:]
+
+                                                    charInsertIndex += len(toPaste)
+
+                                                except PyperclipException as e:
+                                                    print(f'An error occured while pasting from clipboard. See details: {e}\n If you are using Linux, please execute one of the following:\n- sudo apt-get install xclip\n- sudo apt-get install xsel\n- sudo apt-get install wl-clipboard')
+
+                                            else:
+                                                if charInsertIndex == 0:
+                                                    info.mapMakerData[field] = (letter.upper() if (uppercase or shifting) else letter.lower()) + info.mapMakerData[field]
+                                                elif charInsertIndex == len(info.mapMakerData[field]):
+                                                    info.mapMakerData[field] += (letter.upper() if (uppercase or shifting) else letter.lower())
+                                                else:
+                                                    info.mapMakerData[field] = info.mapMakerData[field][:charInsertIndex] + (letter.upper() if (uppercase or shifting) else letter.lower()) + info.mapMakerData[field][charInsertIndex:]
+
+                                                charInsertIndex += 1
 
                         if event.type == pygame.MOUSEBUTTONDOWN:
                             if event.button == 1:
@@ -3922,21 +3958,22 @@ def app() -> None:
                                         info.mapMakerData['pathColor'] = hexToRGB(info.mapMakerData['pathColor'])
 
                                     info.mapMakerData['path'] = [[]]
+                                    info.mapMakerData['page'] = 1
                                     cont = False
 
-                                elif 225 < mx < 900 and 150 < my < 180:
+                                elif 225 <= mx <= 900 and 150 <= my <= 180:
                                     info.mapMakerData['field'] = 'name'
                                     charInsertIndex = min((mx - 230) // font.size('a')[0], len(info.mapMakerData['name']))
 
-                                elif 225 < mx < 900 and 250 < my < 280:
+                                elif 225 <= mx <= 900 and 250 <= my <= 280:
                                     info.mapMakerData['field'] = 'backgroundColor'
                                     charInsertIndex = min((mx - 230) // font.size('a')[0], len(info.mapMakerData['backgroundColor']))
 
-                                elif 225 < mx < 900 and 350 < my < 380:
+                                elif 225 <= mx <= 900 and 350 <= my <= 380:
                                     info.mapMakerData['field'] = 'pathColor'
                                     charInsertIndex = min((mx - 230) // font.size('a')[0], len(info.mapMakerData['pathColor']))
 
-                                elif 30 < mx < 130 and 550 < my < 580:
+                                elif 30 <= mx <= 130 and 550 <= my <= 580:
                                     info.mapMakerData = defaults['mapMakerData'].copy()
                                     info.status = 'mapSelect'
                                     cont = False
@@ -3979,7 +4016,7 @@ def app() -> None:
                     ticks = (ticks + 1) % 50
                     clock.tick(MaxFPS)
 
-            else:
+            elif info.mapMakerData['page'] == 1:
                 while True:
                     mx, my = pygame.mouse.get_pos()
 
@@ -4107,15 +4144,7 @@ def app() -> None:
 
                                 if len(info.mapMakerData['path'][-1]) >= 2:
                                     if 20 <= mx <= 80 and 420 <= my <= 450:
-                                        mapShiftedPath = []
-                                        for path in info.mapMakerData['path']:
-                                            mapShiftedPath.append([])
-                                            for point in path:
-                                                mapShiftedPath[-1].append([point[0] - 100, point[1] - 125])
-
-                                        print(f'This is the map code for your map!\n\nMap({mapShiftedPath}, \'{info.mapMakerData["name"]}\', {tuple(info.mapMakerData["backgroundColor"])}, {tuple(info.mapMakerData["pathColor"])})')
-                                        info.status = 'mapSelect'
-                                        info.mapMakerData = defaults['mapMakerData'].copy()
+                                        info.mapMakerData['page'] = 2
                                         cont = False
 
                                     if 20 <= mx <= 80 and 460 <= my <= 490:
@@ -4137,6 +4166,72 @@ def app() -> None:
                         break
 
                     clock.tick(MaxFPS)
+            
+            elif info.mapMakerData['page'] == 2:
+                mapShiftedPath = []
+                for path in info.mapMakerData['path']:
+                    mapShiftedPath.append([])
+                    for point in path:
+                        mapShiftedPath[-1].append([point[0] - 100, point[1] - 125])
+
+                mapCode = f'Map({mapShiftedPath}, \'{info.mapMakerData["name"]}\', {tuple(info.mapMakerData["backgroundColor"])}, {tuple(info.mapMakerData["pathColor"])})'
+
+                while True:
+                    mx, my = pygame.mouse.get_pos()
+
+                    screen.fill((200, 200, 200))
+                    centredPrint(mediumFont, 'Map Maker', (500, 50))
+                    centredPrint(font, f'This is the map code for your map \"{info.mapMakerData["name"]}\":', (500, 100))
+
+                    leftAlignPrint(font, 'Map Code', (50, 250))
+                    pygame.draw.rect(screen, (100, 100, 100), (50, 275, 900, 30))
+                    if len(mapCode) <= 90:
+                        leftAlignPrint(tinyFont, mapCode, (65, 290))
+                    else:
+                        leftAlignPrint(tinyFont, mapCode[:87] + '...', (65, 290))
+
+                    pygame.draw.rect(screen, (100, 100, 100), (850, 330, 100, 30))
+                    centredPrint(font, 'Copy', (900, 345))
+                    if 850 <= mx <= 950 and 330 <= my <= 360:
+                        pygame.draw.rect(screen, (128, 128, 128), (850, 330, 100, 30), 5)
+                    else:
+                        pygame.draw.rect(screen, (0, 0, 0), (850, 330, 100, 30), 3)
+
+                    pygame.draw.rect(screen, (0, 255, 0), (20, 540, 100, 30))
+                    centredPrint(font, 'Finish', (70, 555))
+                    if 20 <= mx <= 120 and 540 <= my <= 570:
+                        pygame.draw.rect(screen, (128, 128, 128), (20, 540, 100, 30), 5)
+                    else:
+                        pygame.draw.rect(screen, (0, 0, 0), (20, 540, 100, 30), 3)
+
+                    pygame.display.update()
+
+                    cont = True
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            save()
+                            quit()
+
+                        elif event.type == pygame.MOUSEBUTTONDOWN:
+                            if event.button == 1:
+                                if 20 <= mx <= 120 and 540 <= my <= 570:
+                                    cont = False
+                                    info.status = 'mapSelect'
+
+                                elif 850 <= mx <= 950 and 330 <= my <= 360:
+                                    try:
+                                        pyperclip.copy(mapCode)
+                                        print('Copied to clipboard!')
+
+                                    except PyperclipException as e:
+                                        print(f'An error occured while copying to clipboard. See details: {e}\n If you are using Linux, please execute one of the following:\n- sudo apt-get install xclip\n- sudo apt-get install xsel\n- sudo apt-get install wl-clipboard')
+
+                    if not cont:
+                        break
+
+                    clock.tick(MaxFPS)
+
+                info.mapMakerData = defaults['mapMakerData'].copy()
 
         elif info.status == 'replay':
             screen.fill((200, 200, 200))
