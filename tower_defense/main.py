@@ -16,7 +16,7 @@ from _pickle import UnpicklingError
 from tower_defense import __version__
 
 runningOS = sys.platform
-command_key = pygame.K_LSUPER if runningOS == 'darwin' else pygame.K_LCTRL
+command_key = pygame.K_LCTRL
 
 curr_path = os.path.dirname(__file__)
 resource_path = os.path.join(curr_path, 'resources')
