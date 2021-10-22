@@ -111,7 +111,7 @@ Skins = [
         ('Enemy', 'C'): ['DDT.png', (109, 75)],
         ('Enemy', 'D'): ['ZOMG.png', (174, 112)],
         ('Enemy', 'E'): ['BAD.png', (175, 127)]
-    }, 2499, 'Enemy', iconSize=(90, 75)),
+    }, 2499, 'Enemy', iconSize=(90, 60)),
 
     Skin('Christmas Towers Skin', 'christmas_skin_icon.png', {
         ('Tower', 'Turret'): ['christmas_turret.png', 'christmas_turret_45.png'],
