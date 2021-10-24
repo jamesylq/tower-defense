@@ -1,6 +1,5 @@
 # Imports
 import os
-import sys
 import glob
 import math
 import pytz
@@ -14,9 +13,6 @@ from typing import *
 from _pickle import UnpicklingError
 
 from tower_defense import __version__
-
-runningOS = sys.platform
-command_key = pygame.K_LCTRL
 
 curr_path = os.path.dirname(__file__)
 resource_path = os.path.join(curr_path, 'resources')
@@ -65,6 +61,7 @@ from tower_defense.runes import *
 from tower_defense.update import *
 from tower_defense.powerups import *
 from tower_defense.constants import *
+from tower_defense.discounts import *
 from tower_defense.functions import *
 
 
@@ -719,21 +716,21 @@ class Bowler(Towers):
     req = 5
     price = 100
     upgradePrices = [
-        [20, 40, 60],
-        [20, 45, 80],
+        [20, 75, 250],
+        [20, 100, 1000],
         [25, 50, 100],
-        225
+        2250
     ]
     upgradeNames = [
         ['Faster Rocks', 'Double Damage', 'Snipe'],
-        ['More Rocks', 'Double Rocks', 'Infini-Rocks'],
+        ['More Rocks', 'Most Rocks', 'Defortifier'],
         ['5 Enemies Pierce', '20 Enemies Pierce', '50 Enemies Pierce'],
-        'Damage Buff'
+        'Projectile Rain'
     ]
     range = 0
     cooldown = 300
     pierce = 3
-    totalAbilityCooldown = 4500
+    totalAbilityCooldown = 3000
 
     def __init__(self, x: int, y: int):
         super().__init__(x, y)
@@ -742,11 +739,17 @@ class Bowler(Towers):
             'ticks': 0
         }
         self.abilityCooldown = 0
+        self.defortify = False
 
     def attack(self):
         if self.abilityData['active']:
             if self.abilityData['ticks'] <= 500:
+                if self.abilityData['ticks'] % 10 == 0:
+                    PiercingProjectile(self, self.abilityData['ticks'], 0, 1000, 'down', speed=5)
+                    PiercingProjectile(self, 1000 - self.abilityData['ticks'], 0, 1000, 'down', speed=5)
+
                 self.abilityData['ticks'] += 1
+
             else:
                 self.abilityData['active'] = False
                 self.abilityData['ticks'] = 0
@@ -758,7 +761,7 @@ class Bowler(Towers):
         if self.timer >= getActualCooldown(self.x, self.y, self.cooldown):
             try:
                 for direction in ['left', 'right', 'up', 'down']:
-                    PiercingProjectile(self, self.x, self.y, self.pierce, direction)
+                    PiercingProjectile(self, self.x, self.y, self.pierce, direction, defortify=self.defortify)
                 self.timer = 0
 
             except AttributeError:
@@ -770,8 +773,9 @@ class Bowler(Towers):
         if self.abilityCooldown < self.totalAbilityCooldown:
             self.abilityCooldown += 1
 
-        self.cooldown = [300, 200, 150, 100][self.upgrades[1]]
+        self.cooldown = [300, 200, 50, 50][self.upgrades[1]]
         self.pierce = [3, 5, 20, 50][self.upgrades[2]]
+        self.defortify = self.upgrades[1] == 3
 
 
 class Wizard(Towers):
@@ -1482,7 +1486,7 @@ class Projectile:
 
 
 class PiercingProjectile:
-    def __init__(self, parent: Towers, x: int, y: int, pierceLimit: int, direction: str, *, speed: int = 2, overrideAddToPiercingProjectiles: bool = False):
+    def __init__(self, parent: Towers, x: int, y: int, pierceLimit: int, direction: str, *, speed: int = 2, overrideAddToPiercingProjectiles: bool = False, defortify: bool = False):
         if not overrideAddToPiercingProjectiles:
             gameInfo.piercingProjectiles.append(self)
 
@@ -1495,11 +1499,7 @@ class PiercingProjectile:
         self.ignore = []
         self.movement = 0
         self.speed = speed
-
-        self.damageMultiplier = 1
-        if type(parent) is Bowler:
-            if parent.abilityData['active']:
-                self.damageMultipler = 2 * self.damageMultiplier
+        self.defortify = defortify
 
     def move(self):
         self.movement += self.speed
@@ -1740,9 +1740,12 @@ class Enemy:
                         damage = 1
                         if type(projectile.parent) is Bowler:
                             if projectile.parent.upgrades[0] == 2:
-                                damage = round(2 * projectile.damageMultiplier)
+                                damage = 2
                             elif projectile.parent.upgrades[0] == 3:
-                                damage = round(2 * (projectile.movement / 50 + 1) * projectile.damageMultiplier)
+                                damage = round(2 * (projectile.movement / 50 + 1))
+
+                        if projectile.defortify:
+                            self.fortified = False
 
                         toDamage = [self]
 
@@ -3916,7 +3919,7 @@ def app() -> None:
                                             elif event.key == pygame.K_9 and shifting:
                                                 letter = '('
 
-                                            elif event.key == pygame.K_v and pressed[command_key]:
+                                            elif event.key == pygame.K_v and pressed[pygame.K_LCTRL]:
                                                 try:
                                                     toPaste = pyperclip.paste()
 
@@ -4406,6 +4409,10 @@ def app() -> None:
 
                 centredPrint(mediumFont, 'Shop', (500, 40))
 
+                discount = getDiscount()
+                if discount is not None:
+                    centredPrint(font, f'{discount[0]} discount - {discount[1]}% OFF!', (500, 555))
+
                 for n in range(len(info.shopData)):
                     x = 100 + 300 * (n % 3)
                     y = 100 if n < 3 else 325
@@ -4435,9 +4442,14 @@ def app() -> None:
                         leftAlignPrint(font, 'BOUGHT', (x + 10, y + 20))
                     else:
                         centredBlit(tokenImage, (x + 20, y + 20))
+
                         price = info.shopData[n]['price']
+                        if discount is not None:
+                            price = math.ceil(price * (100 - discount[1]) / 100)
+
                         if price == 0:
                             leftAlignPrint(font, 'FREE', (x + 38, y + 20), (225, 225, 0))
+
                         else:
                             if info.tokens >= price:
                                 leftAlignPrint(font, str(price), (x + 38, y + 20))

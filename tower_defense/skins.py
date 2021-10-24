@@ -74,7 +74,7 @@ def getNotUnlockedSkin(info):
             if skin.name in specialSkins.keys():
                 obtainableDates = specialSkins[skin.name]
                 if obtainableDates[0][0] <= now.year <= obtainableDates[1][0] and obtainableDates[0][1] <= now.month <= obtainableDates[1][1] and obtainableDates[0][2] <= now.day <= obtainableDates[1][2]:
-                    notUnlocked.append(skin)
+                    return skin
 
             else:
                 notUnlocked.append(skin)
