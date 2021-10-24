@@ -743,10 +743,10 @@ class Bowler(Towers):
 
     def attack(self):
         if self.abilityData['active']:
-            if self.abilityData['ticks'] <= 500:
+            if self.abilityData['ticks'] <= 400:
                 if self.abilityData['ticks'] % 10 == 0:
                     PiercingProjectile(self, self.abilityData['ticks'], 0, 1000, 'down', speed=5)
-                    PiercingProjectile(self, 1000 - self.abilityData['ticks'], 0, 1000, 'down', speed=5)
+                    PiercingProjectile(self, 800 - self.abilityData['ticks'], 0, 1000, 'down', speed=5)
 
                 self.abilityData['ticks'] += 1
 
