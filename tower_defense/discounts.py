@@ -12,10 +12,4 @@ def getDiscount() -> List[Union[str, int]]:
             return date[1]
 
 
-discountDates = [
-    [[2021, 10, 24], ['Programmers\' Day', 25]],
-    [[2021, 10, 31], ['Spooky Halloween', 15]],
-    [[2021, 11, 20], ['School Holidays', 25]],
-    [[2021, 12, 24], ['Christmas Eve', 20]],
-    [[2021, 12, 25], ['Christmas Day', 40]]
-]
+discountDates = []

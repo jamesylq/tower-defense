@@ -1326,7 +1326,6 @@ class Elemental(Towers):
 
     def __init__(self, x: int, y: int):
         super().__init__(x, y)
-        self.inferno = InfernoTower.Inferno(self)
         self.lightning = Wizard.LightningBolt(self)
         self.abilityCooldown = 7500
         self.abilityData = {
@@ -1340,9 +1339,7 @@ class Elemental(Towers):
         self.upgrades = [3, 3, 3, True]
 
     def draw(self):
-        self.inferno.draw()
         self.lightning.draw()
-
         super().draw()
 
     def attack(self):
@@ -1375,8 +1372,8 @@ class Elemental(Towers):
         if self.timer >= getActualCooldown(self.x, self.y, 1):
             closest = getTarget(self, targeting=self.targeting)
             try:
-                Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=50, bossDamage=25, fireTicks=300, removeRegen=canRemoveRegen(self))
-                twin = Projectile(self, self.x, self.y, closest.x, closest.y, bossDamage=100, freezeDuration=100, removeRegen=canRemoveRegen(self))
+                Projectile(self, self.x, self.y, closest.x, closest.y, explosiveRadius=50, bossDamage=25, fireTicks=300, removeRegen=canRemoveRegen(self), visible=False)
+                twin = Projectile(self, self.x, self.y, closest.x, closest.y, bossDamage=100, freezeDuration=100, removeRegen=canRemoveRegen(self), visible=False)
                 twin.move(7)
                 self.timer = 0
             except AttributeError:
@@ -1390,30 +1387,13 @@ class Elemental(Towers):
         else:
             self.lightningTimer += 1
 
-        if self.infernoTimer >= getActualCooldown(self.x, self.y, 250):
-            found = False
-            for enemy in gameInfo.enemies:
-                if abs(enemy.x - self.x) ** 2 + abs(enemy.y - self.y) ** 2 <= self.range ** 2:
-                    enemy.fireTicks = max(enemy.fireTicks, 200)
-                    enemy.fireIgnitedBy = self
-                    if not enemy.isBoss:
-                        enemy.freezeTimer = max(enemy.freezeTimer, 75)
-
-                    self.inferno.renders.append(InfernoTower.AttackRender(self, enemy))
-                    found = True
-
-            if found:
-                self.infernoTimer = 0
-        else:
-            self.infernoTimer += 1
-
     def update(self):
         if self.abilityCooldown < self.totalAbilityCooldown:
             self.abilityCooldown += 1
 
 
 class Projectile:
-    def __init__(self, parent: Towers, x: int, y: int, tx: int, ty: int, *, explosiveRadius: int = 0, freezeDuration: int = 0, bossDamage: int = 1, impactDamage: int = 1, fireTicks: int = 0, overrideAddToProjectiles: bool = False, removeRegen: bool = False):
+    def __init__(self, parent: Towers, x: int, y: int, tx: int, ty: int, *, explosiveRadius: int = 0, freezeDuration: int = 0, bossDamage: int = 1, impactDamage: int = 1, fireTicks: int = 0, overrideAddToProjectiles: bool = False, removeRegen: bool = False, visible: bool = True):
         self.parent = parent
         self.x = x
         self.y = y
@@ -1428,6 +1408,7 @@ class Projectile:
         self.impactDamage = impactDamage
         self.fireTicks = fireTicks
         self.removeRegen = removeRegen
+        self.visible = visible
 
         if not overrideAddToProjectiles:
             gameInfo.projectiles.append(self)
@@ -1464,7 +1445,8 @@ class Projectile:
                 pass
 
     def draw(self):
-        pygame.draw.circle(screen, self.color, (self.x, self.y), 3)
+        if self.visible:
+            pygame.draw.circle(screen, self.color, (self.x, self.y), 3)
 
     def explode(self, centre):
         for enemy in gameInfo.enemies:
@@ -5039,14 +5021,14 @@ def app() -> None:
 
                                 replayEffects.append(['circle', (255, 128, 0), (tower.x + dx, tower.y + dy), 3])
 
-                        if type(tower) in [InfernoTower, Elemental]:
+                        if type(tower) is InfernoTower:
                             for render in tower.inferno.renders:
                                 replayEffects.append(['line', (255, 69, 0), (render.target.x, render.target.y), (tower.x, tower.y - 12)])
 
                     for enemy in gameInfo.enemies:
                         replayEnemies.append([enemy.camo, enemy.regen, enemy.tier, enemy.x, enemy.y, enemy.HP, enemy.MaxHP])
 
-                    for proj in gameInfo.projectiles:
+                    for proj in [p for p in gameInfo.projectiles if p.visible]:
                         replayProjectiles.append([proj.color, proj.x, proj.y])
 
                     for piercingProj in gameInfo.piercingProjectiles:

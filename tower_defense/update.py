@@ -52,6 +52,10 @@ def update(info, gameInfo, PowerUps):
         if not hasattr(enemy, 'maxRegenTier'):
             setattr(enemy, 'maxRegenTier', enemy.tier)
 
+    for proj in gameInfo.projectiles:          # Update pre-3.9.2
+        if not hasattr(proj, 'visible'):
+            setattr(proj, 'visible', True)
+
     if info.powerUpData is not None:        # Update Powerups
         PowerUps = info.powerUpData
 
